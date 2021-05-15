@@ -2,10 +2,11 @@ trigger:
 - main
 
 variables:
-  DockerImageName: 'kitsune-prod/CloudRun'
+- group: variable
 
 pool:
   vmImage: ubuntu-latest
+
 
 steps:
 - task: Docker@2
