@@ -20,28 +20,29 @@ steps:
     command: buildAndPush
     repository: '$(DockerImageName)'
 
-
-
-- task: Bash@3
-  displayName: 'Auth for deployment'
+- task: DownloadSecureFile@1
+  name: serviceAccount
   inputs:
-    targetType: 'inline'
-    script: |
-      gcloud auth activate-service-account \
-      --quiet \
-      --key-file _key.json
-
-- task: Bash@3
-  displayName: 'Deployment'
+    secureFile: 'service.json'
+- task: GoogleCloudSdkInstaller@0
   inputs:
-    targetType: 'inline'
-    script: |
-      gcloud run deploy clouddemo \
-      --quiet \
+    version: '306.0.0'
+
+- task: GcloudRunner@0
+  inputs:
+    command: 'auth activate-service-account'
+    arguments: '--key-file $(serviceAccount.secureFilePath)'
+  displayName: 'gcloud auth activate-service-account'
+
+- task: GcloudRunner@0
+  inputs:
+    command: 'run deploy clouddemo'
+    arguments: |
       --service-account=clouddemo-runner@$(CloudRun.ProjectId.Development).iam.gserviceaccount.com \
       --allow-unauthenticated \
       --image=gcr.io/$(ContainerRegistry.ProjectId)/clouddemo:$BUILD_BUILDID \
       --platform=managed \
       --region=$(CloudRun.Region) \
       --project=$(CloudRun.ProjectId.Development)
-
+    quiet: true
+  displayName: 'Deploy'
