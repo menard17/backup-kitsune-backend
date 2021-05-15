@@ -2,8 +2,7 @@ trigger:
 - main
 
 variables:
-  BuildConfig: 'Release'
-  DocckerImageName: 'kitsune-prod/CloudRun'
+  DockerImageName: 'kitsune-prod/CloudRun'
 
 pool:
   vmImage: ubuntu-latest
