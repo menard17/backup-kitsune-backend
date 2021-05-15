@@ -20,6 +20,8 @@ steps:
     command: buildAndPush
     repository: '$(DockerImageName)'
 
+
+
 - task: Bash@3
   displayName: 'Auth for deployment'
   inputs:
