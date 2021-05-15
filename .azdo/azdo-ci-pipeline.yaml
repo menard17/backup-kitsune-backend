@@ -1,0 +1,22 @@
+trigger:
+- main
+
+variables:
+  BuildConfig: 'Release'
+  DocckerImageName: 'kitsune-prod/CloudRun'
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Docker@2
+  displayName: 'Login to Container Registry'
+  inputs:
+    command: login
+    containerRegistry: 'gcr'
+- task: Docker@2
+  displayName: 'Build and push image'
+  inputs:
+    Dockerfile: 'src/Dockerfile'
+    command: buildAndPush
+    repository: '$(DockerImageName)'
