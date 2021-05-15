@@ -20,6 +20,7 @@ steps:
     Dockerfile: 'src/Dockerfile'
     command: buildAndPush
     repository: '$(DockerImageName)'
+    tags: 'latest'
 
 - task: DownloadSecureFile@1
   name: serviceAccount
@@ -39,6 +40,6 @@ steps:
   inputs:
     command: 'run deploy clouddemo'
     arguments: |
-      --service-account=clouddemo-runner@$(CloudRun.ProjectId.Development).iam.gserviceaccount.com --allow-unauthenticated --image=gcr.io/$(ContainerRegistry.ProjectId)/cloudrun:$BUILD_BUILDID --platform=managed --region=$(CloudRun.Region) --project=$(CloudRun.ProjectId.Development)
+      --service-account=clouddemo-runner@$(CloudRun.ProjectId.Development).iam.gserviceaccount.com --allow-unauthenticated --image=gcr.io/$(ContainerRegistry.ProjectId)/cloudrun:latest --platform=managed --region=$(CloudRun.Region) --project=$(CloudRun.ProjectId.Development)
     quiet: true
   displayName: 'Deploy'
