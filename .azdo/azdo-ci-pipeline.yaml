@@ -19,3 +19,27 @@ steps:
     Dockerfile: 'src/Dockerfile'
     command: buildAndPush
     repository: '$(DockerImageName)'
+
+- task: Bash@3
+  displayName: 'Auth for deployment'
+  inputs:
+    targetType: 'inline'
+    script: |
+      gcloud auth activate-service-account \
+      --quiet \
+      --key-file _key.json
+
+- task: Bash@3
+  displayName: 'Deployment'
+  inputs:
+    targetType: 'inline'
+    script: |
+      gcloud run deploy clouddemo \
+      --quiet \
+      --service-account=clouddemo-runner@$(CloudRun.ProjectId.Development).iam.gserviceaccount.com \
+      --allow-unauthenticated \
+      --image=gcr.io/$(ContainerRegistry.ProjectId)/clouddemo:$BUILD_BUILDID \
+      --platform=managed \
+      --region=$(CloudRun.Region) \
+      --project=$(CloudRun.ProjectId.Development)
+
