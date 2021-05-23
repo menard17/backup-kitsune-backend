@@ -1,6 +1,7 @@
 from get_zoom_jwt import get_zoom_jwt
 from flask import request, Flask, Response
 from middleware import jwt_authenticated
+from fhir_proxy import get_patient
 
 app = Flask(__name__)
 
@@ -17,6 +18,19 @@ def zoom_jwt() -> Response:
 @jwt_authenticated
 def dummy_auth() -> Response:
     response = "User authenticated. Uid: " + request.uid
+
+    return Response(
+        status = 200,
+        response = response
+    )
+
+@app.route("/dummy_fhir_get", methods=["GET"])
+@jwt_authenticated
+def dummy_fhir_get() -> Response:
+    response = "User {} has {} birthdate".format(
+        request.uid,
+        get_patient("bf8eb518-64c4-4f4a-b5e7-64a9435539e6")["birthDate"]
+    )
 
     return Response(
         status = 200,
