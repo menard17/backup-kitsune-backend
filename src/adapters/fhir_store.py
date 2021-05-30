@@ -1,15 +1,6 @@
-# Imports Python's built-in module
-import json
-import os
-
-# Import google.auth for default credential
 import google.auth
-
-# Imports the google.auth.transport.requests transport
+from fhir.resources.patient import Patient
 from google.auth.transport import requests
-
-# Imports a module to allow authentication using a service account
-from google.oauth2 import service_account
 
 # This configuration is only for testing purpose only. Should be separated to
 # different configuration for dev/test/prod in the future.
@@ -21,7 +12,7 @@ fhir_configuration = {
     "FHIR_STORE": "phat-fhir-store-id",
 }
 
-# Gets credentials from the Cloud Run environement or local GOOGLE_APPLICATION_CREDENTIALS
+# Gets credentials from the Cloud Run environment or local GOOGLE_APPLICATION_CREDENTIALS
 # See https://googleapis.dev/python/google-auth/latest/reference/google.auth.html#google.auth.default
 credentials, project_id = google.auth.default()
 
@@ -31,6 +22,10 @@ scoped_credentials = credentials.with_scopes(
 
 
 def get_patient(patient_uid):
+    return Patient.parse_obj(get_resource_raw("Patient", patient_uid))
+
+
+def get_resource_raw(resource_type, resource_uid):
 
     # Creates a requests Session object with the credentials.
     session = requests.AuthorizedSession(scoped_credentials)
@@ -45,8 +40,8 @@ def get_patient(patient_uid):
         url,
         fhir_configuration.get("DATASET"),
         fhir_configuration.get("FHIR_STORE"),
-        "Patient",
-        patient_uid,
+        resource_type,
+        resource_uid,
     )
 
     # Sets required application/fhir+json header on the request
@@ -56,8 +51,5 @@ def get_patient(patient_uid):
     response.raise_for_status()
 
     resource = response.json()
-
-    print("Got {} resource:".format(resource["resourceType"]))
-    print(json.dumps(resource, indent=2))
 
     return resource
