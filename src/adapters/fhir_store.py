@@ -1,5 +1,5 @@
 import google.auth
-from fhir.resources.patient import Patient
+from fhir.resources import construct_fhir_element
 from google.auth.transport import requests
 
 # This configuration is only for testing purpose only. Should be separated to
@@ -21,11 +21,20 @@ scoped_credentials = credentials.with_scopes(
 )
 
 
-def get_patient(patient_uid):
-    return Patient.parse_obj(get_resource_raw("Patient", patient_uid))
+def get_resource(resource_type, resource_id):
+    """Retrieve a resource from FHIR store.
 
+    The data retrieved from FHIR store is a JSON object, which will be converted
+    into an fhir.resources Python object, using Resource Factory Function.
 
-def get_resource_raw(resource_type, resource_uid):
+    :param resource_type: The FHIR resource type
+    :type resource_type: str
+
+    :param resource_id: The FHIR resource identifier
+    :type resource_id: str
+
+    :rtype: Resource
+    """
 
     # Creates a requests Session object with the credentials.
     session = requests.AuthorizedSession(scoped_credentials)
@@ -41,7 +50,7 @@ def get_resource_raw(resource_type, resource_uid):
         fhir_configuration.get("DATASET"),
         fhir_configuration.get("FHIR_STORE"),
         resource_type,
-        resource_uid,
+        resource_id,
     )
 
     # Sets required application/fhir+json header on the request
@@ -50,6 +59,4 @@ def get_resource_raw(resource_type, resource_uid):
     response = session.get(resource_path, headers=headers)
     response.raise_for_status()
 
-    resource = response.json()
-
-    return resource
+    return construct_fhir_element(resource_type, response.json())

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint
 from adapters import fhir_store
 from middleware import jwt_authenticated
 
@@ -9,4 +9,5 @@ patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 @jwt_authenticated
 def get_patient(user_id):
     # Have to get FHIR's UUID from UID somehow, bypassing for testing only
-    return fhir_store.get_patient(user_id).dict()
+    patient_id = user_id
+    return fhir_store.get_resource("Patient", patient_id).dict()
