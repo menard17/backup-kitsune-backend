@@ -22,6 +22,21 @@ To run your image and set the `service.json`
 >>> docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
 ```
 
+## Curl the endpoint with Firebase credential
+
+First you need to retrieve the `idToken` from itentity toolkit:
+
+```bash
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyD74Q7vKczSzW9NQCXP7wnZ3cCmCkk3yRk' \
+-H 'Content-Type: application/json' \
+--data-binary '{"email":[REDACTED],"password":[REDACTED],"returnSecureToken":true}'
+```
+
+Then, pass the `idToken` in the authorization header. For example:
+```bash
+curl -H "Authorization: Bearer [idToken]" http://localhost:8003/patients/bf8eb518-64c4-4f4a-b5e7-64a9435539e6
+```
+
 
 ## Run on cloud run
 If you merge your change, CICD pipeline will automatically deploy to cloud run.
