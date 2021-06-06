@@ -3,6 +3,7 @@ from fhir.resources.fhirabstractmodel import FHIRAbstractModel
 import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
+from fhir.resources.bundle import Bundle
 
 # This configuration is only for testing purpose only. Should be separated to
 # different configuration for dev/test/prod in the future.
@@ -39,50 +40,47 @@ class ResourceClient:
     def get_resource(
         self,
         resource_uid: str,
-        resource: DomainResource,
-    ) -> FHIRAbstractModel:
+        resource_type: str,
+    ) -> DomainResource:
         """Retrieve a resource from FHIR store.
         The data retrieved from FHIR store is a JSON object, which will be converted
-        into an FHIRAbstractModel Python object, using Resource Factory Function.
+        into an DomainResource Python object, using Resource Factory Function.
 
         :param resource_id: The FHIR resource identifier
         :type resource_id: str
-        :param resource: The FHIR resource
-        :type resource: DomainResource
+        :param resource_type: The FHIR resource type
+        :type resource_type: str
 
-        :rtype: FHIRAbstractModel
+        :rtype: DomainResource
         """
         resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}/{}".format(
             self._url,
             fhir_configuration.get("DATASET"),
             fhir_configuration.get("FHIR_STORE"),
-            resource.resource_type,
+            resource_type,
             resource_uid,
         )
 
         response = self._session.get(resource_path, headers=self._headers)
-        result = construct_fhir_element(resource.resource_type, response.json())
-        result.active = True
-
         response.raise_for_status()
-
+        result = construct_fhir_element(resource_type, response.json())
         return result
 
-    def get_resources(self, resource: DomainResource) -> DomainResource:
+    def get_resources(self, resource_type: str) -> DomainResource:
         """Retrieve all resources with given type from FHIR store.
         The data retrieved from FHIR store is a JSON object, which will be converted
-        into an FHIRAbstractModel Python object, using Resource Factory Function.
+        into an DomainResource Python object, using Resource Factory Function.
 
-        :param resource: The FHIR resource
-        :type resource: DomainResource
+        :param resource_type: The FHIR resource type
+        :type resource_type: str
 
-        :rtype: FHIRAbstractModel
+        :rtype: DomainResource
         """
         resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}".format(
             self._url,
             fhir_configuration.get("DATASET"),
             fhir_configuration.get("FHIR_STORE"),
-            resource.resource_type,
+            resource_type,
         )
 
         response = self._session.get(resource_path, headers=self._headers)
@@ -90,14 +88,14 @@ class ResourceClient:
 
         return construct_fhir_element("Bundle", response.json())
 
-    def create_resource(self, resource: DomainResource) -> FHIRAbstractModel:
+    def create_resource(self, resource: DomainResource) -> DomainResource:
         """Creates a resource with DomainResource. Returns newly create resource
-        in FHIRAbstractModel Python object.
+        in DomainResource Python object.
 
         :param resource: The FHIR resource
         :type resource: DomainResource
 
-        :rtype: FHIRAbstractModel
+        :rtype: DomainResource
         """
         resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}".format(
             self._url,
@@ -106,7 +104,10 @@ class ResourceClient:
             resource.resource_type,
         )
 
+        # NOTE: resource.json(indent=True) would make date field to string
+        # otherwise the json result would not be a string for date fields and
+        # would lead to error later
         response = self._session.post(
-            resource_path, headers=self._headers, json=resource.dict()
+            resource_path, headers=self._headers, data=resource.json(indent=True)
         )
         return construct_fhir_element(resource.resource_type, response.json())
