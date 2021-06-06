@@ -21,10 +21,12 @@ credentials, project_id = google.auth.default(
     scopes=["https://www.googleapis.com/auth/cloud-platform"]
 )
 
+session = requests.AuthorizedSession(credentials)
+
 
 class ResourceClient:
-    def __init__(self):
-        self._session = requests.AuthorizedSession(credentials)
+    def __init__(self, session=session):
+        self._session = session
 
         self._url = "{}/projects/{}/locations/{}".format(
             fhir_configuration.get("BASE_URL"),
@@ -59,9 +61,12 @@ class ResourceClient:
         )
 
         response = self._session.get(resource_path, headers=self._headers)
+        result = construct_fhir_element(resource.resource_type, response.json())
+        result.active = True
+
         response.raise_for_status()
 
-        return construct_fhir_element(resource.resource_type, response.json())
+        return result
 
     def get_resources(self, resource: DomainResource) -> DomainResource:
         """Retrieve all resources with given type from FHIR store.

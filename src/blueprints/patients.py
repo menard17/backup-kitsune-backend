@@ -23,7 +23,7 @@ def get_patient(user_id: str) -> dict:
 
 
 @patients_blueprint.route("/", methods=["GET"])
-# @jwt_authenticated
+@jwt_authenticated
 def get_patients() -> dict:
     """
     Returns details of all patients.
