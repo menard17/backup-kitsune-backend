@@ -17,7 +17,7 @@ def zoom_jwt() -> Response:
 
 
 @app.route("/dummy_auth", methods=["GET"])
-@jwt_authenticated
+@jwt_authenticated()
 def dummy_auth() -> Response:
     response = "User authenticated. Uid: " + request.uid
 

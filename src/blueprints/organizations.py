@@ -10,7 +10,7 @@ organization_blueprint = Blueprint(
 
 
 @organization_blueprint.route("/<organization_id>", methods=["GET"])
-@jwt_authenticated
+@jwt_authenticated()
 def get_organization(organization_id: str) -> dict:
     """Returns details of a organization. Organization can be clincs, hospitals, and etc.
     Have to get FHIR's UUID from UID bypass for test.
@@ -25,7 +25,7 @@ def get_organization(organization_id: str) -> dict:
 
 
 @organization_blueprint.route("/", methods=["GET"])
-@jwt_authenticated
+@jwt_authenticated()
 def get_organizations() -> dict:
     """Returns details of all organizations.
     Have to get FHIR's UUID from UID bypass for test
@@ -37,7 +37,7 @@ def get_organizations() -> dict:
 
 
 @organization_blueprint.route("/", methods=["POST"])
-@jwt_authenticated
+@jwt_authenticated()
 def create_organization() -> dict:
     """Returns details of a organization created.
     This creates a organization in fhir.
