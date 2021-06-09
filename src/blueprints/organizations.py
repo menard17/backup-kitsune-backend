@@ -21,7 +21,7 @@ def get_organization(organization_id: str) -> dict:
     :rtype: Dictionary
     """
     resourse_client = ResourceClient()
-    return resourse_client.get_resource(organization_id, Organization()).dict()
+    return resourse_client.get_resource(organization_id, "Organization").dict()
 
 
 @organization_blueprint.route("/", methods=["GET"])
@@ -33,7 +33,7 @@ def get_organizations() -> dict:
     :rtype: Dictionary
     """
     resourse_client = ResourceClient()
-    return resourse_client.get_resources(Organization()).dict()
+    return resourse_client.get_resources("Organization").dict()
 
 
 @organization_blueprint.route("/", methods=["POST"])

@@ -19,7 +19,7 @@ def get_patient(user_id: str) -> dict:
     :rtype: Dictionary
     """
     resourse_client = ResourceClient()
-    return resourse_client.get_resource(user_id, Patient()).dict()
+    return resourse_client.get_resource(user_id, "Patient").dict()
 
 
 @patients_blueprint.route("/", methods=["GET"])
@@ -33,4 +33,4 @@ def get_patients() -> dict:
     :rtype: Dictionary
     """
     resourse_client = ResourceClient()
-    return resourse_client.get_resources(Patient()).dict()
+    return resourse_client.get_resources("Patient").dict()
