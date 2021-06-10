@@ -1,11 +1,9 @@
-from typing import List
 from fhir.resources import construct_fhir_element
 from fhir.resources.fhirabstractmodel import FHIRAbstractModel
 import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
-from typing import List
 
 
 # This configuration is only for testing purpose only. Should be separated to
@@ -115,10 +113,8 @@ class ResourceClient:
         )
         return construct_fhir_element(resource.resource_type, response.json())
 
-    def get_resource_by_key(
-        self, key: str, value: str, resource_type: str
-    ) -> List[str]:
-        """Returns list of oid of for key value pair in FHIR
+    def get_resource_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
+        """Returns object containing key value pair in FHIR
 
         :param key: Key you want to search in FHIR. E.g. name
         :type key: str
@@ -127,7 +123,7 @@ class ResourceClient:
         :param resource_type: type of resource, e.g. Organization
         :type resource_type: str
 
-        rtype: List[str]
+        rtype: Bundle
         """
         resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}?{}:exact={}".format(
             self._url,
