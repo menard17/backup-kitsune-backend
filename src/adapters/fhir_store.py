@@ -1,9 +1,12 @@
+from typing import List
 from fhir.resources import construct_fhir_element
 from fhir.resources.fhirabstractmodel import FHIRAbstractModel
 import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
+from typing import List
+
 
 # This configuration is only for testing purpose only. Should be separated to
 # different configuration for dev/test/prod in the future.
@@ -111,3 +114,31 @@ class ResourceClient:
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
         return construct_fhir_element(resource.resource_type, response.json())
+
+    def get_resource_by_key(
+        self, key: str, value: str, resource_type: str
+    ) -> List[str]:
+        """Returns list of oid of for key value pair in FHIR
+
+        :param key: Key you want to search in FHIR. E.g. name
+        :type key: str
+        :param value: Value you want to search. E.g. UMed Inc,
+        :type value: str
+        :param resource_type: type of resource, e.g. Organization
+        :type resource_type: str
+
+        rtype: List[str]
+        """
+        resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}?{}:exact={}".format(
+            self._url,
+            fhir_configuration.get("DATASET"),
+            fhir_configuration.get("FHIR_STORE"),
+            resource_type,
+            key,
+            value,
+        )
+
+        response = self._session.get(resource_path, headers=self._headers)
+        response.raise_for_status()
+
+        return construct_fhir_element("Bundle", response.json())
