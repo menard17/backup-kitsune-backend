@@ -18,7 +18,7 @@ def get_organization(organization_id: str) -> dict:
     :param organization_id: uuid for organization
     :type organization_id: str
 
-    :rtype: Dictionary
+    :rtype: dict
     """
     resourse_client = ResourceClient()
     return resourse_client.get_resource(organization_id, "Organization").dict()
@@ -30,7 +30,7 @@ def get_organizations() -> dict:
     """Returns details of all organizations.
     Have to get FHIR's UUID from UID bypass for test
 
-    :rtype: Dictionary
+    :rtype: dict
     """
     resourse_client = ResourceClient()
     return resourse_client.get_resources("Organization").dict()
@@ -47,7 +47,7 @@ def create_organization() -> dict:
     Example:
         body: {"name": "example hospital"}
 
-    rtype: Dictionary
+    rtype: dict
     """
     resourse_client = ResourceClient()
     organization = Organization.parse_obj(request.get_json())

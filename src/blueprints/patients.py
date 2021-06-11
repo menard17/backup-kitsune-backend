@@ -17,7 +17,7 @@ def get_patient(patient_id: str) -> dict:
     :param patient_id: uuid for patient
     :type patient_id: str
 
-    :rtype: Dictionary
+    :rtype: dict
     """
     resourse_client = ResourceClient()
     return resourse_client.get_resource(patient_id, "Patient").dict()
@@ -32,7 +32,7 @@ def get_patients() -> dict:
     Access to this function should be limited.
     Have to get FHIR's UUID from UID bypass for test.
 
-    :rtype: Dictionary
+    :rtype: dict
     """
     resourse_client = ResourceClient()
     return resourse_client.get_resources("Patient").dict()
