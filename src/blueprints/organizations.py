@@ -66,11 +66,10 @@ def create_organization() -> dict:
         ).dict()
         if org_list.get("total") > 0:
             return Response(status=400, response=f"Organization already exists")
-        organization = Organization.parse_obj(body)
-        organization.active = True
-        organization.address = list()
         address = Address.construct()
         address.country = "Japan"
-        organization.address.append(address)
+        organization = Organization.parse_obj(body)
+        organization.active = True
+        organization.address = [address]
         return resourse_client.create_resource(organization).dict()
     return Response(status=400, response=f"Body should contain name")
