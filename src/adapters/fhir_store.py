@@ -113,7 +113,7 @@ class ResourceClient:
         )
         return construct_fhir_element(resource.resource_type, response.json())
 
-    def get_resource_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
+    def get_resources_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
         """Returns object containing key value pair in FHIR
 
         :param key: Key you want to search in FHIR. E.g. name

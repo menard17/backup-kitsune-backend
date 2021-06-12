@@ -35,7 +35,7 @@ def get_organizations() -> dict:
     """
     resourse_client = ResourceClient()
     if name := request.args.get("name"):
-        response = resourse_client.get_resource_by_key(
+        response = resourse_client.get_resources_by_key(
             "name", name, "Organization"
         ).dict()
         if response.get("total") > 0:
@@ -61,7 +61,7 @@ def create_organization() -> dict:
     resourse_client = ResourceClient()
     body = request.get_json()
     if name := body.get("name"):
-        org_list = resourse_client.get_resource_by_key(
+        org_list = resourse_client.get_resources_by_key(
             "name", name, "Organization"
         ).dict()
         if org_list.get("total") > 0:
@@ -73,4 +73,4 @@ def create_organization() -> dict:
         address.country = "Japan"
         organization.address.append(address)
         return resourse_client.create_resource(organization).dict()
-    return Response(status=403, response=f"Body should contain name")
+    return Response(status=400, response=f"Body should contain name")
