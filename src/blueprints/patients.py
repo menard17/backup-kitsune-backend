@@ -1,7 +1,7 @@
 from adapters.fhir_store import ResourceClient
 from fhir.resources.patient import Patient
 from firebase_admin import auth
-from flask import Blueprint, request
+from flask import Blueprint, Response, request
 from middleware import jwt_authenticated, jwt_authorized
 
 
@@ -41,19 +41,36 @@ def get_patients() -> dict:
 @patients_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def create_patient():
+    """Returns the details of a patient created.
 
-    # First create a resource in FHIR and acquire an ID
-    # Use a testing ID for now
-    patient_id = "fake_id"
+    This creates a patient in FHIR, as well as create a custom claims with
+    Patient role in Firebase. Note that this function should only be called
+    from the frontend client since everything assumes to use Firebase for
+    authentication/authorization.
 
-    # First grant the customer the role Patient
+    Currently there is no check for duplicate entry or retryable, all assuming
+    that the operations here succeeded without failure.
+
+    :rtype: dict
+    """
+    # Only allow user with verified email to create patient
+    if (
+        "email_verified" not in request.claims
+        or request.claims["email_verified"] == False
+    ):
+        return Response(
+            status=401, response="User not authorized due to missing email verification"
+        )
+
+    # First create a resource in FHIR and acquire a Patient resource with ID
+    resourse_client = ResourceClient()
+    patient = Patient.parse_obj(request.get_json())
+    patient = resourse_client.create_resource(patient)
+
+    # Then grant the custom claim for the caller in Firebase
     custom_claims = {}
     custom_claims["role"] = "Patient"
-    custom_claims["role_id"] = patient_id
+    custom_claims["role_id"] = patient.id
     auth.set_custom_user_claims(request.claims["sub"], custom_claims)
 
-    # Normally you should only return the created Patient JSON so that the
-    # frontend can do additional operation with it, for now printing the
-    # resulted claims for testing purpose
-    user = auth.get_user(request.claims["uid"])
-    return user.custom_claims, 202
+    return patient.dict(), 202
