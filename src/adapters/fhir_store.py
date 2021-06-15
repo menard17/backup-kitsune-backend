@@ -25,7 +25,7 @@ credentials, project_id = google.auth.default(
 
 session = requests.AuthorizedSession(credentials)
 
-ResourceSearchArgs = list[tuple[str, any]]
+ResourceSearchArgs = list[tuple[str, str]]
 class ResourceClient:
     def __init__(self, session=session):
         self._session = session
