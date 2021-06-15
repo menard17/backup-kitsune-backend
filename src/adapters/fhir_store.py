@@ -4,6 +4,7 @@ import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
+from urllib.parse import quote
 
 # This configuration is only for testing purpose only. Should be separated to
 # different configuration for dev/test/prod in the future.
@@ -24,7 +25,7 @@ credentials, project_id = google.auth.default(
 
 session = requests.AuthorizedSession(credentials)
 
-
+ResourceSearchArgs = list[tuple[str, any]]
 class ResourceClient:
     def __init__(self, session=session):
         self._session = session
@@ -82,6 +83,35 @@ class ResourceClient:
             fhir_configuration.get("FHIR_STORE"),
             resource_type,
         )
+
+        response = self._session.get(resource_path, headers=self._headers)
+        response.raise_for_status()
+
+        return construct_fhir_element("Bundle", response.json())
+
+    def search(self, resource_type: str, search: ResourceSearchArgs) -> DomainResource:
+        """Search all resources with given type and search condition from FHIR store.
+        The data retrieved from FHIR store is a JSON object, which will be converted
+        into an DomainResource Python object, using Resource Factory Function.
+
+        :param resource_type: The FHIR resource type
+        :param search: list of search (key, value) tuple
+
+        :rtype: DomainResource
+        """
+        resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}".format(
+            self._url,
+            fhir_configuration.get("DATASET"),
+            fhir_configuration.get("FHIR_STORE"),
+            resource_type,
+        )
+
+        for i, (key, value) in enumerate(search):
+            if i == 0:
+                resource_path += "?"
+            else:
+                resource_path += "&"
+            resource_path += '{}={}'.format(key, quote(value, safe=""))
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
