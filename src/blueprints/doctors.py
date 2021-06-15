@@ -14,6 +14,11 @@ doctors_blueprint = Blueprint("doctor", __name__, url_prefix="/doctors")
 def get_doctor_slots(doctor_id: str) -> dict:
     """Returns list of slots of a doctor with the given time range
 
+    Request params:
+    1. start: start time of the search of slots and schedule. Use iso date format. Default to 9am today.
+    2. end: end time of the search of slots and schedule. Use iso date format. Default to 6pm today.
+    3. status: free or busy. Default to free.
+
     :param doctor_id: uuid for doctor
     :type doctor_id: str
 
@@ -29,13 +34,14 @@ def get_doctor_slots(doctor_id: str) -> dict:
 
     start = request.args.get("start", nine_am.isoformat())
     end = request.args.get("end", six_pm.isoformat())
+    status = request.args.get("status", "free")
 
     print("search schedule")
     schedule_search = resource_client.search(
         "Schedule",
         search = [
             ("actor", doctor_id),
-            ("active", str(True)),
+            ("active", str(True)), # always find active schedule only
             ("date", "ge" + start),
             ("date", "le" + end)
         ]
@@ -44,6 +50,7 @@ def get_doctor_slots(doctor_id: str) -> dict:
     if schedule_search.entry is None:
         return {"data": []}
 
+    # assumes we only have one active schedule at the period
     schedule = schedule_search.entry[0].resource
     slot_search = resource_client.search(
         "Slot",
@@ -51,7 +58,7 @@ def get_doctor_slots(doctor_id: str) -> dict:
             ("schedule", schedule.id),
             ("start", "ge" + start),
             ("start", "lt" + end),
-            ("status", "free"),
+            ("status", status),
         ],
     )
     if slot_search.entry is None:
