@@ -5,6 +5,7 @@ from flask import request, Flask, Response
 from middleware import jwt_authenticated
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 app.register_blueprint(patients_blueprint)
 app.register_blueprint(organization_blueprint)
 
