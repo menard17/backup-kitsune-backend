@@ -8,8 +8,33 @@ from middleware import jwt_authenticated, jwt_authorized
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
 
+from json_serialize import json_serial
+
 
 practitioner_roles_blueprint = Blueprint("practitioner_roles", __name__, url_prefix="/practitioner_roles")
+
+
+@practitioner_roles_blueprint.route("/", methods=["GET"])
+# @jwt_authenticated()
+def get_practitioners():
+    resourse_client = ResourceClient()
+    roles = resourse_client.get_resources("PractitionerRole")
+    print(roles)
+    if roles.entry is None:
+        return json.dumps([])
+
+    resp = json.dumps(
+        [r.resource.dict() for r in roles.entry],
+        default=json_serial,
+    )
+    return resp
+
+@practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
+# @jwt_authenticated()
+def get_practitioner_role(role_id: str):
+    resource_client = ResourceClient()
+    role = resource_client.get_resource(role_id, "PractitionerRole")
+    return Response(status=200, response=role.json())
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])
 # @jwt_authenticated()
@@ -35,11 +60,11 @@ def create_practitioner_role():
     schedule = resource_client.create_resource(schedule)
 
     data = {
-        "practitioner_role": role.json(),
-        "schedule": schedule.json()
+        "practitioner_role": role.dict(),
+        "schedule": schedule.dict()
     }
 
-    return Response(status=202, response=json.dumps(data))
+    return Response(status=202, response=json.dumps(data, default=json_serial))
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["POST"])
