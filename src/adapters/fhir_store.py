@@ -1,6 +1,7 @@
+import google.auth
+import json
 from fhir.resources import construct_fhir_element
 from fhir.resources.fhirabstractmodel import FHIRAbstractModel
-import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
@@ -140,4 +141,9 @@ class ResourceClient:
         response = self._session.post(
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
-        return construct_fhir_element(resource.resource_type, response.json())
+
+        response_dict = response.json() # it will return a dict actually despite the name json()
+        if response_dict["resourceType"] == resource.resource_type:
+            return construct_fhir_element(resource.resource_type, response_dict)
+        else:
+            raise Exception("Failed in ResourceClient.create_resource: {}".format(response_dict))

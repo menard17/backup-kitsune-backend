@@ -25,7 +25,7 @@ def get_organization(organization_id: str) -> dict:
 
 
 @organization_blueprint.route("/", methods=["GET"])
-@jwt_authenticated()
+# @jwt_authenticated()
 def get_organizations() -> dict:
     """Returns details of all organizations.
     Have to get FHIR's UUID from UID bypass for test

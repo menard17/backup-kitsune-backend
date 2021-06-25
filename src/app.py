@@ -1,6 +1,7 @@
 from blueprints.patients import patients_blueprint
 from blueprints.organizations import organization_blueprint
-from blueprints.doctors import doctors_blueprint
+from blueprints.practitioners import practitioners_blueprint
+from blueprints.practitioner_roles import practitioner_roles_blueprint
 from get_zoom_jwt import get_zoom_jwt
 from flask import request, Flask, Response
 from middleware import jwt_authenticated
@@ -8,7 +9,8 @@ from middleware import jwt_authenticated
 app = Flask(__name__)
 app.register_blueprint(patients_blueprint)
 app.register_blueprint(organization_blueprint)
-app.register_blueprint(doctors_blueprint)
+app.register_blueprint(practitioners_blueprint)
+app.register_blueprint(practitioner_roles_blueprint)
 
 
 @app.route("/zoom_jwt", methods=["GET"])

@@ -6,11 +6,13 @@ from flask import Blueprint, request
 from middleware import jwt_authenticated, jwt_authorized
 
 
-doctors_blueprint = Blueprint("doctor", __name__, url_prefix="/doctors")
+practitioners_blueprint = Blueprint("practitioners", __name__, url_prefix="/practitioners")
 
 
-@doctors_blueprint.route("/<doctor_id>/slots", methods=["GET"])
-@jwt_authenticated()
+
+
+@practitioners_blueprint.route("/<doctor_id>/slots", methods=["GET"])
+# @jwt_authenticated()
 def get_doctor_slots(doctor_id: str) -> dict:
     """Returns list of slots of a doctor with the given time range
 
