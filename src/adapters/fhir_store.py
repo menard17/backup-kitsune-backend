@@ -101,19 +101,16 @@ class ResourceClient:
 
         :rtype: DomainResource
         """
-        resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}".format(
-            self._url,
-            fhir_configuration.get("DATASET"),
-            fhir_configuration.get("FHIR_STORE"),
-            resource_type,
-        )
+        dataset = fhir_configuration.get("DATASET")
+        fhir_store = fhir_configuration.get("FHIR_STORE")
+        resource_path = f"{self._url}/datasets/{dataset}/fhirStores/{fhir_store}/fhir/{resource_type}"
 
         for i, (key, value) in enumerate(search):
             if i == 0:
                 resource_path += "?"
             else:
                 resource_path += "&"
-            resource_path += '{}={}'.format(key, quote(value, safe=""))
+            resource_path += f"{key}={quote(value, safe='')}"
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()

@@ -15,11 +15,11 @@ practitioner_roles_blueprint = Blueprint("practitioner_roles", __name__, url_pre
 
 
 @practitioner_roles_blueprint.route("/", methods=["GET"])
-# @jwt_authenticated()
-def get_practitioners():
+@jwt_authenticated()
+def get_practitioner_roles():
     resourse_client = ResourceClient()
     roles = resourse_client.get_resources("PractitionerRole")
-    print(roles)
+
     if roles.entry is None:
         return json.dumps([])
 
@@ -30,14 +30,14 @@ def get_practitioners():
     return resp
 
 @practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
-# @jwt_authenticated()
+@jwt_authenticated()
 def get_practitioner_role(role_id: str):
     resource_client = ResourceClient()
     role = resource_client.get_resource(role_id, "PractitionerRole")
     return Response(status=200, response=role.json())
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])
-# @jwt_authenticated()
+@jwt_authenticated()
 def create_practitioner_role():
     resource_client = ResourceClient()
     role = PractitionerRole.parse_obj(request.get_json())
@@ -68,7 +68,7 @@ def create_practitioner_role():
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["POST"])
-# @jwt_authenticated()
+@jwt_authenticated()
 def create_practitioner_role_slots(role_id: str):
     """
     1. find role_id -> active schedule
@@ -124,7 +124,7 @@ def create_practitioner_role_slots(role_id: str):
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["GET"])
-# @jwt_authenticated()
+@jwt_authenticated()
 def get_role_slots(role_id: str) -> dict:
     """Returns list of slots of a doctor with the given time range
 
@@ -150,7 +150,6 @@ def get_role_slots(role_id: str) -> dict:
     end = request.args.get("end", six_pm.isoformat())
     status = request.args.get("status", "free")
 
-    print("search schedule")
     schedule_search = resource_client.search(
         "Schedule",
         search = [
@@ -163,7 +162,7 @@ def get_role_slots(role_id: str) -> dict:
         return {"data": []}
 
     schedule = schedule_search.entry[0].resource
-    print("search slots")
+
     slot_search = resource_client.search(
         "Slot",
         search = [
