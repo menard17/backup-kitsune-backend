@@ -1,4 +1,5 @@
 from flask import Blueprint, request
+from flask.wrappers import Response
 from adapters.fhir_store import ResourceClient
 from middleware import jwt_authenticated
 from fhir.resources.organization import Organization
@@ -33,6 +34,14 @@ def get_organizations() -> dict:
     :rtype: dict
     """
     resourse_client = ResourceClient()
+    if name := request.args.get("name"):
+        response = resourse_client.get_resources_by_key(
+            "name", name, "Organization"
+        ).dict()
+        if response.get("total") > 0:
+            return {k: v for (k, v) in response.items() if k == "entry"}
+
+        return {"entry": []}
     return resourse_client.get_resources("Organization").dict()
 
 
@@ -50,10 +59,17 @@ def create_organization() -> dict:
     rtype: dict
     """
     resourse_client = ResourceClient()
-    organization = Organization.parse_obj(request.get_json())
-    organization.active = True
-    organization.address = list()
-    address = Address.construct()
-    address.country = "Japan"
-    organization.address.append(address)
-    return resourse_client.create_resource(organization).dict()
+    body = request.get_json()
+    if name := body.get("name"):
+        org_list = resourse_client.get_resources_by_key(
+            "name", name, "Organization"
+        ).dict()
+        if org_list.get("total") > 0:
+            return Response(status=400, response=f"Organization already exists")
+        address = Address.construct()
+        address.country = "Japan"
+        organization = Organization.parse_obj(body)
+        organization.active = True
+        organization.address = [address]
+        return resourse_client.create_resource(organization).dict()
+    return Response(status=400, response=f"Body should contain name")
