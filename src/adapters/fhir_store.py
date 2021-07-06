@@ -1,9 +1,11 @@
+import google.auth
+import json
 from fhir.resources import construct_fhir_element
 from fhir.resources.fhirabstractmodel import FHIRAbstractModel
-import google.auth
 from google.auth.transport import requests
 from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
+from urllib.parse import quote
 
 
 # This configuration is only for testing purpose only. Should be separated to
@@ -25,7 +27,7 @@ credentials, project_id = google.auth.default(
 
 session = requests.AuthorizedSession(credentials)
 
-
+ResourceSearchArgs = list[tuple[str, str]]
 class ResourceClient:
     def __init__(self, session=session):
         self._session = session
@@ -89,6 +91,32 @@ class ResourceClient:
 
         return construct_fhir_element("Bundle", response.json())
 
+    def search(self, resource_type: str, search: ResourceSearchArgs) -> DomainResource:
+        """Search all resources with given type and search condition from FHIR store.
+        The data retrieved from FHIR store is a JSON object, which will be converted
+        into an DomainResource Python object, using Resource Factory Function.
+
+        :param resource_type: The FHIR resource type
+        :param search: list of search (key, value) tuple
+
+        :rtype: DomainResource
+        """
+        dataset = fhir_configuration.get("DATASET")
+        fhir_store = fhir_configuration.get("FHIR_STORE")
+        resource_path = f"{self._url}/datasets/{dataset}/fhirStores/{fhir_store}/fhir/{resource_type}"
+
+        for i, (key, value) in enumerate(search):
+            if i == 0:
+                resource_path += "?"
+            else:
+                resource_path += "&"
+            resource_path += f"{key}={quote(value, safe='')}"
+
+        response = self._session.get(resource_path, headers=self._headers)
+        response.raise_for_status()
+
+        return construct_fhir_element("Bundle", response.json())
+
     def create_resource(self, resource: DomainResource) -> DomainResource:
         """Creates a resource with DomainResource. Returns newly create resource
         in DomainResource Python object.
@@ -111,7 +139,12 @@ class ResourceClient:
         response = self._session.post(
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
-        return construct_fhir_element(resource.resource_type, response.json())
+
+        response_dict = response.json() # it will return a dict actually despite the name json()
+        if response_dict["resourceType"] == resource.resource_type:
+            return construct_fhir_element(resource.resource_type, response_dict)
+        else:
+            raise Exception("Failed in ResourceClient.create_resource: {}".format(response_dict))
 
     def get_resources_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
         """Returns object containing key value pair in FHIR
