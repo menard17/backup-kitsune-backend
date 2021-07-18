@@ -3,7 +3,7 @@
 FROM python:3.9-slim
 
 # Install production dependencies.
-RUN pip install Flask gunicorn pyjwt firebase-admin fhir.resources stripe
+RUN pip install Flask gunicorn pyjwt firebase-admin fhir.resources stripe flask-cors
 
 # Copy local code to the container image.
 WORKDIR /src

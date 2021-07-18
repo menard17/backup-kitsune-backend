@@ -11,6 +11,7 @@ payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 key = os.environ.get("STRIPE_API_KEY")
 stripe.api_key = key
 
+
 @payments_blueprint.route("/customer", methods=["POST"])
 @jwt_authenticated()
 def create_customer():
@@ -35,7 +36,7 @@ def create_payment_intent():
         )
 
         # Only for Testing purposes.
-        # Will need to add logic to calculate payment 
+        # Will need to add logic to calculate payment
         # through admin UI
         payment_intent = stripe.PaymentIntent.create(
             amount=1099,

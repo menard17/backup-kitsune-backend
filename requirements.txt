@@ -10,6 +10,7 @@ email-validator==1.1.2
 fhir.resources==6.1.0
 firebase-admin==5.0.0
 Flask==1.1.2
+Flask-Cors==3.0.7
 google-api-core==1.28.0
 google-api-python-client==2.7.0
 google-auth==1.30.1

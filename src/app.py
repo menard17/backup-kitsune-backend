@@ -6,8 +6,12 @@ from blueprints.payments import payments_blueprint
 from get_zoom_jwt import get_zoom_jwt
 from flask import request, Flask, Response
 from middleware import jwt_authenticated
+from flask_cors import CORS
+import os
 
 app = Flask(__name__)
+origins = os.environ.get("ORIGINS")
+cors = CORS(app, resources={r"*": {"origins": origins}})
 app.url_map.strict_slashes = False
 app.register_blueprint(patients_blueprint)
 app.register_blueprint(payments_blueprint)
