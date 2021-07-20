@@ -11,7 +11,6 @@ payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 key = os.environ.get("STRIPE_API_KEY")
 stripe.api_key = key
 
-
 @payments_blueprint.route("/customer", methods=["POST"])
 @jwt_authenticated()
 def create_customer():
@@ -23,26 +22,35 @@ def create_customer():
     return account
 
 
+@payments_blueprint.route("/customer/<customer_id>", methods=["GET"])
+@jwt_authenticated()
+def get_customer(customer_id: str):
+    """Returns details of a customer.
+
+    :param customer_id: uid for customer
+    :type customer_id: str
+
+    :rtype: Object
+    """
+    customer = stripe.Customer.retrieve(customer_id)
+    return customer
+
+
 @payments_blueprint.route("/payment-intent", methods=["POST"])
 @jwt_authenticated()
 def create_payment_intent():
     body = json.loads(request.data)
     customer_id = body["customerId"]
+    payment_method_id = body["paymentMethodId"]
+    amount = body["amount"]
+    currency = 'jpy'
 
     try:
-        payment_methods = stripe.PaymentMethod.list(
-            customer=customer_id,
-            type="card",
-        )
-
-        # Only for Testing purposes.
-        # Will need to add logic to calculate payment
-        # through admin UI
         payment_intent = stripe.PaymentIntent.create(
-            amount=1099,
-            currency='jpy',
+            amount=amount,
+            currency=currency,
             customer=customer_id,
-            payment_method=payment_methods.data[0].id,
+            payment_method=payment_method_id,
             off_session=True,
             confirm=True,
         )
@@ -68,7 +76,7 @@ def create_setup_intent():
     return intent
 
 
-@payments_blueprint.route("/payment-methods/<customer_id>", methods=["GET"])
+@payments_blueprint.route("/<customer_id>/payment-methods", methods=["GET"])
 @jwt_authenticated()
 def get_payment_methods(customer_id: str):
     """Returns details of a customer's payment methods.
@@ -84,3 +92,37 @@ def get_payment_methods(customer_id: str):
     )
 
     return payment_methods
+
+
+@payments_blueprint.route("/payment-methods/<payment_method_id>", methods=["GET"])
+@jwt_authenticated()
+def get_payment_method(payment_method_id: str):
+    """Returns details of a payment method.
+
+    :param payment_method_id: uid for payment method
+    :type payment_method_id: str
+
+    :rtype: Object
+    """
+    payment_method = stripe.PaymentMethod.retrieve(
+        payment_method_id
+    )
+
+    return payment_method
+
+
+@payments_blueprint.route("/payment-methods/<payment_method_id>", methods=["DELETE"])
+@jwt_authenticated()
+def detach_payment_method(payment_method_id: str):
+    """Detaches a payment method from customer.
+
+    :param payment_method_id: uid for payment method
+    :type payment_method_id: str
+
+    :rtype: Object
+    """
+    payment_method = stripe.PaymentMethod.detach(
+        payment_method_id
+    )
+
+    return payment_method
