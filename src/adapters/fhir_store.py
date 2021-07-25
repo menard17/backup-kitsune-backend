@@ -171,3 +171,32 @@ class ResourceClient:
         response.raise_for_status()
 
         return construct_fhir_element("Bundle", response.json())
+
+    def patch_resource(self, resource_uid: str,
+                       resource_type: str, resource: list) -> DomainResource:
+        """Updates a resource with patch. Returns updated resource
+        in DomainResource Python object.
+        :param resource: list with patch operation
+        :type resource: DomainResource
+        :rtype: DomainResource
+        """
+
+        resource_path = "{}/datasets/{}/fhirStores/{}/fhir/{}/{}".format(
+            self._url,
+            fhir_configuration.get("DATASET"),
+            fhir_configuration.get("FHIR_STORE"),
+            resource_type,
+            resource_uid,
+        )
+
+        # Need separate header for patch call
+        _headers = {"Content-Type": "application/json-patch+json"}
+
+        body = json.dumps(resource)
+
+        response = self._session.patch(
+            resource_path, headers=_headers, data=body
+        )
+
+        return construct_fhir_element(resource_type, response.json())
+

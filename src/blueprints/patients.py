@@ -74,3 +74,19 @@ def create_patient():
     auth.set_custom_user_claims(request.claims["sub"], custom_claims)
 
     return patient.dict(), 202
+
+@patients_blueprint.route("/<patient_id>", methods=["PATCH"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/{patient_id}")
+def patch_patient(patient_id: str) -> dict:
+    """Returns the details of an updated patient.
+    This updates a patient in FHIR
+    :param patient_id: uuid for patients id
+    :rtype: dict
+    """
+    # First create a resource in FHIR and acquire a Patient resource with ID
+    resourse_client = ResourceClient()
+    patient = request.get_json()
+    patient = resourse_client.patch_resource(patient_id, "Patient", patient)
+
+    return patient.dict(), 202
