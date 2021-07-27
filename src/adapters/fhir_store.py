@@ -1,4 +1,5 @@
 import json
+import os
 import google.auth
 from fhir.resources import construct_fhir_element
 from google.auth.transport import requests
@@ -10,10 +11,10 @@ from urllib.parse import quote
 def _get_url():
     return "{}/projects/{}/locations/{}/datasets/{}/fhirStores/{}/fhir".format(
         "https://healthcare.googleapis.com/v1",
-        "kitsune-dev-313313",
-        "asia-northeast1",
-        "phat-fhir-dataset-id",
-        "phat-fhir-store-id",
+        os.environ["PROJECT"],
+        os.environ["LOCATION"],
+        os.environ["FHIR_DATASET"],
+        os.environ["FHIR_STORE"],
     )
 
 
