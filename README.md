@@ -48,6 +48,13 @@ docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
 ```
 
+This repository also provides a convienent `dev.env` file for common environment
+variables required to run the service locally. To use the `local.env` file:
+```
+docker build --target development -t sample001:1.0 -f docker/Dockerfile .
+docker run -p 8003:8080 --env-file local.env sample001:1.0
+```
+
 #### Running unit tests and coverage
 
 ```shell
@@ -59,7 +66,7 @@ docker run -it sample001:1.0 coverage run --rcfile ./pyproject.toml -m pytest ./
 
 ```shell
 docker build --target production -t sample001:1.0 -f docker/Dockerfile .
-docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
+docker run -p 8003:8080 --env-file local.env sample001:1.0
 ```
 
 ### Curl the endpoint with Firebase credential
