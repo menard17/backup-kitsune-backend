@@ -193,8 +193,16 @@ Flask = ">=0.9"
 Six = "*"
 
 [[package]]
+name = "glob2"
+version = "0.7"
+description = "Version of the glob module that can capture patterns and supports recursive wildcards"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "google-api-core"
-version = "1.31.0"
+version = "1.31.1"
 description = "Google API client core library"
 category = "main"
 optional = false
@@ -217,7 +225,7 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2)"]
 
 [[package]]
 name = "google-api-python-client"
-version = "2.14.0"
+version = "2.15.0"
 description = "Google API Client Library for Python"
 category = "main"
 optional = false
@@ -228,12 +236,11 @@ google-api-core = ">=1.21.0,<3.0.0dev"
 google-auth = ">=1.16.0,<3.0.0dev"
 google-auth-httplib2 = ">=0.1.0"
 httplib2 = ">=0.15.0,<1dev"
-six = ">=1.13.0,<2dev"
 uritemplate = ">=3.0.0,<4dev"
 
 [[package]]
 name = "google-auth"
-version = "1.33.1"
+version = "1.34.0"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -265,7 +272,7 @@ six = "*"
 
 [[package]]
 name = "google-cloud-core"
-version = "1.7.1"
+version = "1.7.2"
 description = "Google Cloud API client core library"
 category = "main"
 optional = false
@@ -281,15 +288,15 @@ grpc = ["grpcio (>=1.8.2,<2.0dev)"]
 
 [[package]]
 name = "google-cloud-firestore"
-version = "2.1.3"
+version = "2.2.0"
 description = "Google Cloud Firestore API client library"
 category = "main"
 optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-google-api-core = {version = ">=1.22.2,<2.0.0dev", extras = ["grpc"]}
-google-cloud-core = ">=1.4.1,<2.0dev"
+google-api-core = {version = ">=1.26.0,<3.0.0dev", extras = ["grpc"]}
+google-cloud-core = ">=1.4.1,<3.0.0dev"
 packaging = ">=14.3"
 proto-plus = ">=1.10.0"
 pytz = "*"
@@ -430,6 +437,21 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "mako"
+version = "1.1.4"
+description = "A super-fast templating language that borrows the  best ideas from the existing templating languages."
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.dependencies]
+MarkupSafe = ">=0.9.2"
+
+[package.extras]
+babel = ["babel"]
+lingua = ["lingua"]
+
+[[package]]
 name = "markupsafe"
 version = "2.0.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -455,6 +477,30 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 pyparsing = ">=2.0.2"
+
+[[package]]
+name = "parse"
+version = "1.19.0"
+description = "parse() is the opposite of format()"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "parse-type"
+version = "0.5.2"
+description = "Simplifies to build parse types based on the parse module"
+category = "dev"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*"
+
+[package.dependencies]
+parse = ">=1.8.4"
+six = ">=1.11"
+
+[package.extras]
+develop = ["coverage (>=4.4)", "pytest (>=3.2)", "pytest-cov", "tox (>=2.8)"]
+docs = ["sphinx (>=1.2)"]
 
 [[package]]
 name = "pluggy"
@@ -587,6 +633,22 @@ toml = "*"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-bdd"
+version = "4.1.0"
+description = "BDD for pytest"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+glob2 = "*"
+Mako = "*"
+parse = "*"
+parse-type = "*"
+py = "*"
+pytest = ">=4.3"
+
+[[package]]
 name = "pytz"
 version = "2021.1"
 description = "World timezone definitions, modern and historical"
@@ -693,7 +755,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "e11e7b23e4acbd59bb36333a50e8907b2db398a2690d305bbfc8dbb9eda3fa8b"
+content-hash = "90b4a26e63571e7b144350a6e40fd37d24b56799527732d82664c1ef94713162"
 
 [metadata.files]
 atomicwrites = [
@@ -853,29 +915,32 @@ flask-cors = [
     {file = "Flask-Cors-3.0.10.tar.gz", hash = "sha256:b60839393f3b84a0f3746f6cdca56c1ad7426aa738b70d6c61375857823181de"},
     {file = "Flask_Cors-3.0.10-py2.py3-none-any.whl", hash = "sha256:74efc975af1194fc7891ff5cd85b0f7478be4f7f59fe158102e91abb72bb4438"},
 ]
+glob2 = [
+    {file = "glob2-0.7.tar.gz", hash = "sha256:85c3dbd07c8aa26d63d7aacee34fa86e9a91a3873bc30bf62ec46e531f92ab8c"},
+]
 google-api-core = [
-    {file = "google-api-core-1.31.0.tar.gz", hash = "sha256:7c8ba88e2b893ef4f67d67e229aade51a2db5053023b73b1394a5ee3dcdb561c"},
-    {file = "google_api_core-1.31.0-py2.py3-none-any.whl", hash = "sha256:a9f979b5c6a9cad31a4120ca6be712df76adc32336a7bf4bc2f4331a1b527fe7"},
+    {file = "google-api-core-1.31.1.tar.gz", hash = "sha256:108cf94336aed7e614eafc53933ef02adf63b9f0fd87e8f8212acaa09eaca456"},
+    {file = "google_api_core-1.31.1-py2.py3-none-any.whl", hash = "sha256:1d63e2b28057d79d64795c9a70abcecb5b7e96da732d011abf09606a39b48701"},
 ]
 google-api-python-client = [
-    {file = "google-api-python-client-2.14.0.tar.gz", hash = "sha256:30062b369623cb023592b7f721dd8463389f45bcf2713e56c7a3a509b65c250a"},
-    {file = "google_api_python_client-2.14.0-py2.py3-none-any.whl", hash = "sha256:2a8c34fccbf5c1636898c0dbaef6745f8f5150ba5304e6de0f8f0635dcf47847"},
+    {file = "google-api-python-client-2.15.0.tar.gz", hash = "sha256:8375489232823f44c601196a960505e03ec58c95ddb6415c6b1d1d76b468f8ba"},
+    {file = "google_api_python_client-2.15.0-py2.py3-none-any.whl", hash = "sha256:87af2462b922c976291fcd0d062a0011d4ac41b11cee04089aa9577dd7b44ae3"},
 ]
 google-auth = [
-    {file = "google-auth-1.33.1.tar.gz", hash = "sha256:7665c04f2df13cc938dc7d9066cddb1f8af62b038bc8b2306848c1b23121865f"},
-    {file = "google_auth-1.33.1-py2.py3-none-any.whl", hash = "sha256:036dd68c1e8baa422b6b61619b8e02793da2e20f55e69514612de6c080468755"},
+    {file = "google-auth-1.34.0.tar.gz", hash = "sha256:f1094088bae046fb06f3d1a3d7df14717e8d959e9105b79c57725bd4e17597a2"},
+    {file = "google_auth-1.34.0-py2.py3-none-any.whl", hash = "sha256:bd6aa5916970a823e76ffb3d5c3ad3f0bedafca0a7fa53bc15149ab21cb71e05"},
 ]
 google-auth-httplib2 = [
     {file = "google-auth-httplib2-0.1.0.tar.gz", hash = "sha256:a07c39fd632becacd3f07718dfd6021bf396978f03ad3ce4321d060015cc30ac"},
     {file = "google_auth_httplib2-0.1.0-py2.py3-none-any.whl", hash = "sha256:31e49c36c6b5643b57e82617cb3e021e3e1d2df9da63af67252c02fa9c1f4a10"},
 ]
 google-cloud-core = [
-    {file = "google-cloud-core-1.7.1.tar.gz", hash = "sha256:3bd1e679a3d38b9da93c5919ae56239dda91fb32a2d954b2cd830392337c1cc9"},
-    {file = "google_cloud_core-1.7.1-py2.py3-none-any.whl", hash = "sha256:31e8c8596d3fbe2ecbe8708572b48741f8b247a78740aebfaf4da445487a1af5"},
+    {file = "google-cloud-core-1.7.2.tar.gz", hash = "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"},
+    {file = "google_cloud_core-1.7.2-py2.py3-none-any.whl", hash = "sha256:5b77935f3d9573e27007749a3b522f08d764c5b5930ff1527b2ab2743e9f0c15"},
 ]
 google-cloud-firestore = [
-    {file = "google-cloud-firestore-2.1.3.tar.gz", hash = "sha256:143a88ef2b90c98f16d2b0bc192631ca3e2b7c66a236d93ba9961de64e50870e"},
-    {file = "google_cloud_firestore-2.1.3-py2.py3-none-any.whl", hash = "sha256:5befe5f157f50e5fd821f4af4d6374f102c8431b922e2b678f94c5c6d9f5d628"},
+    {file = "google-cloud-firestore-2.2.0.tar.gz", hash = "sha256:40cc2f30f79b0b66b4f5798a40a6053f05486d9967504697c5387c8659d2f49b"},
+    {file = "google_cloud_firestore-2.2.0-py2.py3-none-any.whl", hash = "sha256:458a1eb4766cc91ef7473355645b22da501fb5a8c36c4ac9c7dab460f60b2966"},
 ]
 google-cloud-storage = [
     {file = "google-cloud-storage-1.41.1.tar.gz", hash = "sha256:a81ecc0f382b8e4437cc7f152f74d77ef917c8280a5d1040f5dcfbd0502c7906"},
@@ -997,6 +1062,10 @@ jinja2 = [
     {file = "Jinja2-3.0.1-py3-none-any.whl", hash = "sha256:1f06f2da51e7b56b8f238affdd6b4e2c61e39598a378cc49345bc1bd42a978a4"},
     {file = "Jinja2-3.0.1.tar.gz", hash = "sha256:703f484b47a6af502e743c9122595cc812b0271f661722403114f71a79d0f5a4"},
 ]
+mako = [
+    {file = "Mako-1.1.4-py2.py3-none-any.whl", hash = "sha256:aea166356da44b9b830c8023cd9b557fa856bd8b4035d6de771ca027dfc5cc6e"},
+    {file = "Mako-1.1.4.tar.gz", hash = "sha256:17831f0b7087c313c0ffae2bcbbd3c1d5ba9eeac9c38f2eb7b50e8c99fe9d5ab"},
+]
 markupsafe = [
     {file = "MarkupSafe-2.0.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:f9081981fe268bd86831e5c75f7de206ef275defcb82bc70740ae6dc507aee51"},
     {file = "MarkupSafe-2.0.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:0955295dd5eec6cb6cc2fe1698f4c6d84af2e92de33fbcac4111913cd100a6ff"},
@@ -1066,6 +1135,13 @@ msgpack = [
 packaging = [
     {file = "packaging-21.0-py3-none-any.whl", hash = "sha256:c86254f9220d55e31cc94d69bade760f0847da8000def4dfe1c6b872fd14ff14"},
     {file = "packaging-21.0.tar.gz", hash = "sha256:7dc96269f53a4ccec5c0670940a4281106dd0bb343f47b7471f779df49c2fbe7"},
+]
+parse = [
+    {file = "parse-1.19.0.tar.gz", hash = "sha256:9ff82852bcb65d139813e2a5197627a94966245c897796760a3a2a8eb66f020b"},
+]
+parse-type = [
+    {file = "parse_type-0.5.2-py2.py3-none-any.whl", hash = "sha256:089a471b06327103865dfec2dd844230c3c658a4a1b5b4c8b6c16c8f77577f9e"},
+    {file = "parse_type-0.5.2.tar.gz", hash = "sha256:7f690b18d35048c15438d6d0571f9045cffbec5907e0b1ccf006f889e3a38c0b"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
@@ -1177,6 +1253,10 @@ pyparsing = [
 pytest = [
     {file = "pytest-6.2.4-py3-none-any.whl", hash = "sha256:91ef2131a9bd6be8f76f1f08eac5c5317221d6ad1e143ae03894b862e8976890"},
     {file = "pytest-6.2.4.tar.gz", hash = "sha256:50bcad0a0b9c5a72c8e4e7c9855a3ad496ca6a881a3641b4260605450772c54b"},
+]
+pytest-bdd = [
+    {file = "pytest-bdd-4.1.0.tar.gz", hash = "sha256:304cd2b09923b838d0c2f08331d1f4236a14ef3594efa94e3bdae0f384d3fa5d"},
+    {file = "pytest_bdd-4.1.0-py3-none-any.whl", hash = "sha256:7c5221680cec9a97630e1fae6132f4a97c2f86a90914206ee06a55ae1a409fe5"},
 ]
 pytz = [
     {file = "pytz-2021.1-py2.py3-none-any.whl", hash = "sha256:eb10ce3e7736052ed3623d49975ce333bcd712c7bb19a58b9e2089d4057d0798"},

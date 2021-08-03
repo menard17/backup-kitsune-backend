@@ -86,3 +86,11 @@ curl -H "Authorization: Bearer [idToken]" http://localhost:8003/patients/bf8eb51
 
 ### Run on cloud run
 If you merge your change, CICD pipeline will automatically deploy to cloud run.
+
+## Test
+
+To run the integration tests: `poetry run pytest -s -vv src/integtest/`
+
+Setup env vars:
+1. `FIREBASE_API_KEY`
+2. `ORIGINS` (can be set as `"*"`)
