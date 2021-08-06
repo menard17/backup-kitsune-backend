@@ -4,7 +4,7 @@ import re
 from firebase_admin import auth
 from functools import wraps
 from flask import request, Response
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 
 default_app = firebase_admin.initialize_app()

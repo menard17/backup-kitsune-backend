@@ -1,0 +1,17 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-18.04
+
+variables:
+- group: CloudRun
+
+stages:
+- stage: CI
+  jobs:
+  - template: templates/ci-jobs.yaml
+    parameters:
+      publish: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
+      containerRegistry: $(containerRegistry)
+      repository: $(repository)

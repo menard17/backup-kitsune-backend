@@ -54,10 +54,7 @@ def create_patient():
     :rtype: dict
     """
     # Only allow user with verified email to create patient
-    if (
-        "email_verified" not in request.claims
-        or request.claims["email_verified"] == False
-    ):
+    if "email_verified" not in request.claims or not request.claims["email_verified"]:
         return Response(
             status=401, response="User not authorized due to missing email verification"
         )
@@ -74,6 +71,7 @@ def create_patient():
     auth.set_custom_user_claims(request.claims["sub"], custom_claims)
 
     return patient.dict(), 202
+
 
 @patients_blueprint.route("/<patient_id>", methods=["PATCH"])
 @jwt_authenticated()

@@ -70,6 +70,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+test-output.xml
 *.cover
 *.py,cover
 .hypothesis/
@@ -131,7 +132,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/
@@ -162,5 +163,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# IDE
 .vscode
-.idea/ 
+.idea/
+
+# Tests
+junit

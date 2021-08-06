@@ -13,8 +13,8 @@ organization_blueprint = Blueprint(
 @organization_blueprint.route("/<organization_id>", methods=["GET"])
 @jwt_authenticated()
 def get_organization(organization_id: str) -> dict:
-    """Returns details of a organization. Organization can be clincs, hospitals, and etc.
-    Have to get FHIR's UUID from UID bypass for test.
+    """Returns details of a organization. Organization can be clincs,
+    hospitals, and etc. Have to get FHIR's UUID from UID bypass for test.
 
     :param organization_id: uuid for organization
     :type organization_id: str
@@ -65,11 +65,11 @@ def create_organization() -> dict:
             "name", name, "Organization"
         ).dict()
         if org_list.get("total") > 0:
-            return Response(status=400, response=f"Organization already exists")
+            return Response(status=400, response="Organization already exists")
         address = Address.construct()
         address.country = "Japan"
         organization = Organization.parse_obj(body)
         organization.active = True
         organization.address = [address]
         return resourse_client.create_resource(organization).dict()
-    return Response(status=400, response=f"Body should contain name")
+    return Response(status=400, response="Body should contain name")

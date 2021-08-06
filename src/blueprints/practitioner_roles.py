@@ -4,14 +4,16 @@ import json
 from adapters.fhir_store import ResourceClient
 from datetime import datetime, time, timedelta
 from flask import Blueprint, request, Response
-from middleware import jwt_authenticated, jwt_authorized
+from middleware import jwt_authenticated
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
 
 from json_serialize import json_serial
 
 
-practitioner_roles_blueprint = Blueprint("practitioner_roles", __name__, url_prefix="/practitioner_roles")
+practitioner_roles_blueprint = Blueprint(
+    "practitioner_roles", __name__, url_prefix="/practitioner_roles"
+)
 
 
 @practitioner_roles_blueprint.route("/", methods=["GET"])
@@ -29,12 +31,14 @@ def get_practitioner_roles():
     )
     return resp
 
+
 @practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
 @jwt_authenticated()
 def get_practitioner_role(role_id: str):
     resource_client = ResourceClient()
     role = resource_client.get_resource(role_id, "PractitionerRole")
     return Response(status=200, response=role.json())
+
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
@@ -46,10 +50,12 @@ def create_practitioner_role():
     schedule_jsondict = {
         "resourceType": "Schedule",
         "active": True,
-        "actor": [{
-            "reference": "PractitionerRole/" + role.id,
-            "display": "PractitionerRole: " + role.id,
-        }],
+        "actor": [
+            {
+                "reference": "PractitionerRole/" + role.id,
+                "display": "PractitionerRole: " + role.id,
+            }
+        ],
         "planningHorizon": {
             "start": role.period.start,
             "end": role.period.end,
@@ -59,10 +65,7 @@ def create_practitioner_role():
     schedule = construct_fhir_element("Schedule", schedule_jsondict)
     schedule = resource_client.create_resource(schedule)
 
-    data = {
-        "practitioner_role": role.dict(),
-        "schedule": schedule.dict()
-    }
+    data = {"practitioner_role": role.dict(), "schedule": schedule.dict()}
 
     return Response(status=202, response=json.dumps(data, default=json_serial))
 
@@ -85,10 +88,10 @@ def create_practitioner_role_slots(role_id: str):
     resource_client = ResourceClient()
     schedule_search = resource_client.search(
         "Schedule",
-        search = [
+        search=[
             ("actor", role_id),
-            ("active", str(True)), # assumes single active schedule at a time
-        ]
+            ("active", str(True)),  # assumes single active schedule at a time
+        ],
     )
 
     if schedule_search.entry is None:
@@ -98,7 +101,7 @@ def create_practitioner_role_slots(role_id: str):
     schedule = schedule_search.entry[0].resource
     slot_search = resource_client.search(
         "Slot",
-        search = [
+        search=[
             ("schedule", schedule.id),
             ("start", "ge" + start),
             ("start", "lt" + end),
@@ -110,13 +113,11 @@ def create_practitioner_role_slots(role_id: str):
 
     slot_jsondict = {
         "resourceType": "Slot",
-        "schedule": {
-            "reference": "Schedule/" + schedule.id
-        },
+        "schedule": {"reference": "Schedule/" + schedule.id},
         "status": status or "busy",
         "start": start,
         "end": end,
-        "comment": "slot creation from backend"
+        "comment": "slot creation from backend",
     }
     slot = construct_fhir_element("Slot", slot_jsondict)
     slot = resource_client.create_resource(slot)
@@ -152,10 +153,13 @@ def get_role_slots(role_id: str) -> dict:
 
     schedule_search = resource_client.search(
         "Schedule",
-        search = [
+        search=[
             ("actor", role_id),
-            ("active", str(True)), # assumes we only have one active schedule at the period
-        ]
+            (
+                "active",
+                str(True),
+            ),  # assumes we only have one active schedule at the period
+        ],
     )
 
     if schedule_search.entry is None:
@@ -165,7 +169,7 @@ def get_role_slots(role_id: str) -> dict:
 
     slot_search = resource_client.search(
         "Slot",
-        search = [
+        search=[
             ("schedule", schedule.id),
             ("start", "ge" + start),
             ("start", "lt" + end),

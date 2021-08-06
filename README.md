@@ -1,8 +1,13 @@
 # kitsune-backend
 
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![Build Status](https://dev.azure.com/UMedInc/Kitsune/_apis/build/status/kitsune-backend?branchName=akirakakar%2F150%2Fcloudrun)](https://dev.azure.com/UMedInc/Kitsune/_build/latest?definitionId=6&branchName=akirakakar%2F150%2Fcloudrun)
+
 ## Prerequisite
+
 * [python](https://www.python.org/downloads/)
 * [poetry](https://python-poetry.org/docs/#installation)
+* [pre-commit](https://pre-commit.com/)
 
 ## Development
 
@@ -30,6 +35,7 @@ poetry run python src/app.py
 ```
 
 #### Running development environment
+
 `sample001:1.0` can be replaced with any tag you want
 
 ```shell
@@ -43,6 +49,7 @@ Then you also need to grant your service account access to various resource (for
 example, the FHIR store).
 
 To run your image and set the `service.json`
+
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
@@ -50,7 +57,8 @@ docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json 
 
 This repository also provides a convienent `dev.env` file for common environment
 variables required to run the service locally. To use the `local.env` file:
-```
+
+```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -p 8003:8080 --env-file local.env sample001:1.0
 ```
@@ -59,7 +67,13 @@ docker run -p 8003:8080 --env-file local.env sample001:1.0
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -it sample001:1.0 coverage run --rcfile ./pyproject.toml -m pytest ./tests
+docker run -it sample001:1.0 pytest
+```
+
+#### Running unit tests and coverage in docker
+
+```shell
+poetry run pytest
 ```
 
 #### Running production environment
@@ -80,11 +94,13 @@ curl 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=
 ```
 
 Then, pass the `idToken` in the authorization header. For example:
+
 ```shell
 curl -H "Authorization: Bearer [idToken]" http://localhost:8003/patients/bf8eb518-64c4-4f4a-b5e7-64a9435539e6
 ```
 
 ### Run on cloud run
+
 If you merge your change, CICD pipeline will automatically deploy to cloud run.
 
 ## Test
@@ -92,5 +108,20 @@ If you merge your change, CICD pipeline will automatically deploy to cloud run.
 To run the integration tests: `poetry run pytest -s -vv src/integtest/`
 
 Setup env vars:
+
 1. `FIREBASE_API_KEY`
 2. `ORIGINS` (can be set as `"*"`)
+
+## Before Commit and Push code
+
+There are number of tests you can conduct before raising PR to save everyone's time. (CI can fail) Here are a few that we thought about. If you can come up something else that can improve code quality and stability, please update this section.
+
+### Unittest and Code Coverage
+
+* Code Coverage has not decreased since you added new code
+* All unittests have passed
+
+### Make sure pre-commit is installed before commit
+
+* If it's not installed or edited ```.pre-commit-config.yaml```, you can run ```pre-commit install```
+* If you have already commited code, you can also run ```pre-commit run --all-files```

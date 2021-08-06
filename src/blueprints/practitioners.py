@@ -3,16 +3,16 @@ import pytz
 from adapters.fhir_store import ResourceClient
 from datetime import datetime, time, timedelta
 from flask import Blueprint, request
-from middleware import jwt_authenticated, jwt_authorized
+from middleware import jwt_authenticated
 
 
-practitioners_blueprint = Blueprint("practitioners", __name__, url_prefix="/practitioners")
-
-
+practitioners_blueprint = Blueprint(
+    "practitioners", __name__, url_prefix="/practitioners"
+)
 
 
 @practitioners_blueprint.route("/<doctor_id>/slots", methods=["GET"])
-# @jwt_authenticated()
+@jwt_authenticated()
 def get_doctor_slots(doctor_id: str) -> dict:
     """Returns list of slots of a doctor with the given time range
 
@@ -41,12 +41,12 @@ def get_doctor_slots(doctor_id: str) -> dict:
     print("search schedule")
     schedule_search = resource_client.search(
         "Schedule",
-        search = [
+        search=[
             ("actor", doctor_id),
-            ("active", str(True)), # always find active schedule only
+            ("active", str(True)),  # always find active schedule only
             ("date", "ge" + start),
-            ("date", "le" + end)
-        ]
+            ("date", "le" + end),
+        ],
     )
 
     if schedule_search.entry is None:
@@ -56,7 +56,7 @@ def get_doctor_slots(doctor_id: str) -> dict:
     schedule = schedule_search.entry[0].resource
     slot_search = resource_client.search(
         "Slot",
-        search = [
+        search=[
             ("schedule", schedule.id),
             ("start", "ge" + start),
             ("start", "lt" + end),

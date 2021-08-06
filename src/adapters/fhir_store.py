@@ -42,8 +42,9 @@ class ResourceClient:
         resource_type: str,
     ) -> DomainResource:
         """Retrieve a resource from FHIR store.
-        The data retrieved from FHIR store is a JSON object, which will be converted
-        into an DomainResource Python object, using Resource Factory Function.
+        The data retrieved from FHIR store is a JSON object,
+        which will be converted into an DomainResource Python object,
+        using Resource Factory Function.
 
         :param resource_id: The FHIR resource identifier
         :type resource_id: str
@@ -61,8 +62,9 @@ class ResourceClient:
 
     def get_resources(self, resource_type: str) -> DomainResource:
         """Retrieve all resources with given type from FHIR store.
-        The data retrieved from FHIR store is a JSON object, which will be converted
-        into an DomainResource Python object, using Resource Factory Function.
+        The data retrieved from FHIR store is a JSON object,
+        which will be converted into an DomainResource Python object,
+        using Resource Factory Function.
 
         :param resource_type: The FHIR resource type
         :type resource_type: str
@@ -78,8 +80,9 @@ class ResourceClient:
 
     def search(self, resource_type: str, search: ResourceSearchArgs) -> DomainResource:
         """Search all resources with given type and search condition from FHIR store.
-        The data retrieved from FHIR store is a JSON object, which will be converted
-        into an DomainResource Python object, using Resource Factory Function.
+        The data retrieved from FHIR store is a JSON object,
+        which will be converted into an DomainResource Python object,
+        using Resource Factory Function.
 
         :param resource_type: The FHIR resource type
         :param search: list of search (key, value) tuple

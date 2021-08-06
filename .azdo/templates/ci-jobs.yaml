@@ -1,0 +1,63 @@
+parameters:
+- name: publish
+  default: false
+- name: containerRegistry
+- name: repository
+
+jobs:
+- job: Validation
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: 3.9
+    displayName: Install Python
+  - script: |
+      python -m pip install -U pip
+      pip install poetry
+      poetry install
+    displayName: Install software
+  - script: |
+      poetry run flake8 src/**/*.py --max-line-length=131
+    displayName: flake8
+  - script: |
+      poetry run pytest ./tests --junitxml=junit/test-results.xml --cov=. --cov-report=xml
+    displayName: pytest
+  - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFiles: '**/test-*.xml'
+      testRunTitle: 'Publish test results'
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+- job: Docker
+  steps:
+  - task: Docker@2
+    displayName: 'Login to Container Registry'
+    inputs:
+      command: login
+      containerRegistry: ${{ parameters.containerRegistry }}
+  - task: Docker@2
+    displayName: 'Docker Build'
+    inputs:
+      containerRegistry: ${{ parameters.containerRegistry }}
+      repository: ${{ parameters.repository }}
+      command: 'build'
+      Dockerfile: 'docker/Dockerfile'
+      buildContext: $(Build.Repository.LocalPath)
+      tags: |
+        $(Build.BuildId)
+        latest
+      arguments: '--target production'
+  - task: Docker@2
+    condition: ${{ parameters.publish }}
+    displayName: 'Docker Push'
+    inputs:
+      containerRegistry: ${{ parameters.containerRegistry }}
+      repository: ${{ parameters.repository }}
+      buildContext: $(Build.Repository.LocalPath)
+      command: 'push'
+      tags: |
+        $(Build.BuildId)
+        latest
