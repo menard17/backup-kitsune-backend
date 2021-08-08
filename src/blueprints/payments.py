@@ -37,7 +37,11 @@ def get_customer(customer_id: str):
 @payments_blueprint.route("/payment-intent", methods=["POST"])
 @jwt_authenticated()
 def create_payment_intent():
+    print("Got payment Intent")
+    print(request)
+    print(request.data)
     body = json.loads(request.data)
+
     customer_id = body["customerId"]
     payment_method_id = body["paymentMethodId"]
     amount = body["amount"]
@@ -119,3 +123,48 @@ def detach_payment_method(payment_method_id: str):
     payment_method = stripe.PaymentMethod.detach(payment_method_id)
 
     return payment_method
+
+
+@payments_blueprint.route("/<customer_id>/payment-intents", methods=["GET"])
+@jwt_authenticated()
+def get_payment_intents(customer_id: str):
+    """Returns details of payment intents from a customer.
+
+    :param customer_id: uid for customer
+    :type customer_id: str
+
+    :rtype: array
+    """
+
+    try:
+        payment_intents = stripe.PaymentIntent.list(
+            customer=customer_id
+        )
+    except:
+        return "There was a problem getting Payment Intents for customer: " + customer_id , 500
+
+    return payment_intents
+
+
+@payments_blueprint.route("/payment-intent/<payment_intent_id>", methods=["GET"])
+@jwt_authenticated()
+def get_payment_intent(payment_intent_id: str):
+    """Returns details of a payment intent from a customer.
+
+    :param payment_intent_id: uid for payment intent
+    :type payment_intent_id: str
+
+    :rtype: Object
+    """
+    try:
+        payment_intent = stripe.PaymentIntent.retrieve(
+                payment_intent_id
+            )
+    except:
+        return "There was a problem getting Payment Intent for id: " + payment_intent_id , 500
+
+    return payment_intent
+    
+    
+
+    
