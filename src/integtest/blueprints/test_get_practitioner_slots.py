@@ -1,7 +1,7 @@
 import json
 import pytz
 
-from pytest_bdd import scenarios, given, when, then, parsers
+from pytest_bdd import scenarios, given, when, then
 from firebase_admin import auth
 from datetime import datetime, timedelta
 
@@ -12,7 +12,8 @@ from urllib.parse import quote
 
 TEST_USER_1_UUID = "lFmnnQFWznZZ8C2l9hUmq41liPn1"
 
-scenarios('../features/get_practitioner_slots.feature')
+scenarios("../features/get_practitioner_slots.feature")
+
 
 @given("a practitioner role is created", target_fixture="role")
 def create_practitioner(client):
@@ -23,15 +24,7 @@ def create_practitioner(client):
     practitioner_data = {
         "resourceType": "Practitioner",
         "active": True,
-        "name": [{
-            "family": "Test",
-            "given": [
-                "Cool"
-            ],
-            "prefix": [
-                "Dr"
-            ]
-        }],
+        "name": [{"family": "Test", "given": ["Cool"], "prefix": ["Dr"]}],
     }
 
     practitioner = construct_fhir_element("Practitioner", practitioner_data)
@@ -40,53 +33,43 @@ def create_practitioner(client):
     role = {
         "resourceType": "PractitionerRole",
         "active": True,
-        "period": {
-            "start": "2001-01-01",
-            "end": "2099-03-31"
-        },
+        "period": {"start": "2001-01-01", "end": "2099-03-31"},
         "practitioner": {
             "reference": f"Practitioner/{practitioner.id}",
-            "display": "Dr Cool in test"
+            "display": "Dr Cool in test",
         },
         "availableTime": [
             {
-                "daysOfWeek": [
-                    "mon",
-                    "tue",
-                    "wed"
-                ],
+                "daysOfWeek": ["mon", "tue", "wed"],
                 "availableStartTime": "09:00:00",
-                "availableEndTime": "16:30:00"
+                "availableEndTime": "16:30:00",
             },
             {
-                "daysOfWeek": [
-                    "thu",
-                    "fri"
-                ],
+                "daysOfWeek": ["thu", "fri"],
                 "availableStartTime": "09:00:00",
-                "availableEndTime": "12:00:00"
+                "availableEndTime": "12:00:00",
+            },
+        ],
+        "notAvailable": [
+            {
+                "description": "Adam will be on extended leave during May 2017",
+                "during": {"start": "2017-05-01", "end": "2017-05-20"},
             }
         ],
-        "notAvailable": [{
-            "description": "Adam will be on extended leave during May 2017",
-            "during": {
-                "start": "2017-05-01",
-                "end": "2017-05-20"
-            }
-        }],
         "availabilityExceptions": "Adam is generally unavailable on public holidays and during the Christmas/New Year break",
     }
 
     resp = client.post(
-        '/practitioner_roles',
+        "/practitioner_roles",
         data=json.dumps(role),
         headers={"Authorization": f"Bearer {token}"},
-        content_type='application/json'
+        content_type="application/json",
     )
 
     role = json.loads(resp.data)["practitioner_role"]
     assert role["practitioner"]["reference"] == f"Practitioner/{practitioner.id}"
     return role
+
 
 @when("the practitioner role set the period to busy", target_fixture="slot")
 def set_busy_slots(client, role):
@@ -109,7 +92,7 @@ def set_busy_slots(client, role):
         url,
         data=json.dumps(request_body),
         headers={"Authorization": f"Bearer {token}"},
-        content_type='application/json'
+        content_type="application/json",
     )
     slot = json.loads(resp.data)
     assert slot["comment"] == "slot creation from backend"
@@ -117,6 +100,7 @@ def set_busy_slots(client, role):
     assert slot["start"] == start
     assert slot["end"] == end
     return slot
+
 
 @then("the user can fetch those busy slots")
 def available_slots(client, role, slot):
@@ -130,10 +114,7 @@ def available_slots(client, role, slot):
 
     url = f'/practitioner_roles/{role["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
 
-    resp = client.get(
-        url,
-        headers={"Authorization": f"Bearer {token}"}
-    )
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]
     hasSlot = False
     for s in slots:

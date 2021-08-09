@@ -3,4 +3,3 @@ Feature: Get Practitioner Slots
         Given a practitioner role is created
         When the practitioner role set the period to busy
         Then the user can fetch those busy slots
-

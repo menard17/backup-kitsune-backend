@@ -137,11 +137,12 @@ def get_payment_intents(customer_id: str):
     """
 
     try:
-        payment_intents = stripe.PaymentIntent.list(
-            customer=customer_id
+        payment_intents = stripe.PaymentIntent.list(customer=customer_id)
+    except:  # noqa: E722
+        return (
+            "There was a problem getting Payment Intents for customer: " + customer_id,
+            500,
         )
-    except:
-        return "There was a problem getting Payment Intents for customer: " + customer_id , 500
 
     return payment_intents
 
@@ -157,14 +158,11 @@ def get_payment_intent(payment_intent_id: str):
     :rtype: Object
     """
     try:
-        payment_intent = stripe.PaymentIntent.retrieve(
-                payment_intent_id
-            )
-    except:
-        return "There was a problem getting Payment Intent for id: " + payment_intent_id , 500
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+    except:  # noqa: E722
+        return (
+            "There was a problem getting Payment Intent for id: " + payment_intent_id,
+            500,
+        )
 
     return payment_intent
-    
-    
-
-    
