@@ -120,16 +120,9 @@ class ResourceClient:
         response = self._session.post(
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
+        response.raise_for_status()
 
-        response_dict = (
-            response.json()
-        )  # it will return a dict actually despite the name json()
-        if response_dict["resourceType"] == resource.resource_type:
-            return construct_fhir_element(resource.resource_type, response_dict)
-        else:
-            raise Exception(
-                f"Failed in ResourceClient.create_resource: {response_dict}"
-            )
+        return construct_fhir_element(resource.resource_type, response.json())
 
     def get_resources_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
         """Returns object containing key value pair in FHIR
@@ -168,5 +161,6 @@ class ResourceClient:
         body = json.dumps(resource)
 
         response = self._session.patch(resource_path, headers=_headers, data=body)
+        response.raise_for_status()
 
         return construct_fhir_element(resource_type, response.json())

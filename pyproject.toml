@@ -20,6 +20,7 @@ pytest_bdd = "^4.1.0"
 pytest-azurepipelines = "^0.8.0"
 flake8 = "^3.9.2"
 pytest-cov = "^2.12.1"
+pytest-mock = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
