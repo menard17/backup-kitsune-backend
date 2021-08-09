@@ -68,7 +68,7 @@ def create_patient():
     custom_claims = {}
     custom_claims["role"] = "Patient"
     custom_claims["role_id"] = patient.id
-    auth.set_custom_user_claims(request.claims["sub"], custom_claims)
+    auth.set_custom_user_claims(request.claims["uid"], custom_claims)
 
     return patient.dict(), 202
 

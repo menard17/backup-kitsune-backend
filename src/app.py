@@ -1,7 +1,7 @@
 from blueprints.patients import patients_blueprint
 from blueprints.organizations import organization_blueprint
-from blueprints.practitioners import practitioners_blueprint
 from blueprints.practitioner_roles import practitioner_roles_blueprint
+from blueprints.appointments import appointment_blueprint
 from blueprints.payments import payments_blueprint
 from get_zoom_jwt import get_zoom_jwt
 from flask import request, Flask, Response
@@ -16,8 +16,8 @@ app.url_map.strict_slashes = False
 app.register_blueprint(patients_blueprint)
 app.register_blueprint(payments_blueprint)
 app.register_blueprint(organization_blueprint)
-app.register_blueprint(practitioners_blueprint)
 app.register_blueprint(practitioner_roles_blueprint)
+app.register_blueprint(appointment_blueprint)
 
 
 @app.route("/zoom_jwt", methods=["GET"])

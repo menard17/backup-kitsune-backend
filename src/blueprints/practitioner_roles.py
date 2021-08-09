@@ -7,6 +7,7 @@ from flask import Blueprint, request, Response
 from middleware import jwt_authenticated
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
+from slots.slots_service import SlotService
 
 from json_serialize import json_serial
 
@@ -80,47 +81,23 @@ def create_practitioner_role_slots(role_id: str):
     request_body = request.get_json()
     start = request_body.get("start")
     end = request_body.get("end")
-    status = request_body.get("status")
+    status = request_body.get("status", "busy")
 
     if start is None or end is None:
         return Response(status=400, response="must provide start and end")
 
     resource_client = ResourceClient()
-    schedule_search = resource_client.search(
-        "Schedule",
-        search=[
-            ("actor", role_id),
-            ("active", str(True)),  # assumes single active schedule at a time
-        ],
+    slot_service = SlotService(resource_client)
+    err, slot = slot_service.create_slot_for_practitioner_role(
+        role_id,
+        start,
+        end,
+        status,
     )
 
-    if schedule_search.entry is None:
-        return Response(status=404, response="cannot find schedule")
+    if err is not None:
+        return Response(status=400, response=err.args[0])
 
-    # check if the time is available
-    schedule = schedule_search.entry[0].resource
-    slot_search = resource_client.search(
-        "Slot",
-        search=[
-            ("schedule", schedule.id),
-            ("start", "ge" + start),
-            ("start", "lt" + end),
-            ("status", "busy"),
-        ],
-    )
-    if slot_search.entry is not None:
-        return Response(status=400, response="the time is already booked")
-
-    slot_jsondict = {
-        "resourceType": "Slot",
-        "schedule": {"reference": "Schedule/" + schedule.id},
-        "status": status or "busy",
-        "start": start,
-        "end": end,
-        "comment": "slot creation from backend",
-    }
-    slot = construct_fhir_element("Slot", slot_jsondict)
-    slot = resource_client.create_resource(slot)
     return Response(status=200, response=slot.json())
 
 
