@@ -7,6 +7,11 @@ parameters:
 jobs:
 - job: Validation
   steps:
+  - task: DownloadSecureFile@1
+    name: googleApplicationCredentials
+    displayName: 'Download GOOGLE_APPLICATION_CREDENTIALS'
+    inputs:
+      secureFile: 'kitsune-dev-service-account.json'
   - task: UsePythonVersion@0
     inputs:
       versionSpec: 3.9
@@ -20,8 +25,10 @@ jobs:
       poetry run flake8 src/**/*.py --max-line-length=131
     displayName: flake8
   - script: |
-      poetry run pytest ./tests --junitxml=junit/test-results.xml --cov=. --cov-report=xml
+      poetry run pytest . --junitxml=junit/test-results.xml --cov=. --cov-report=xml
     displayName: pytest
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)
   - task: PublishTestResults@2
     condition: succeededOrFailed()
     inputs:

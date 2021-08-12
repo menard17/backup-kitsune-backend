@@ -6,6 +6,7 @@ pool:
 
 variables:
 - group: CloudRun
+- group: ValidationCI
 
 stages:
 - stage: CI
