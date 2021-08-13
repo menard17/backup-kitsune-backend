@@ -7,6 +7,7 @@ pool:
 variables:
 - group: CloudRun
 - group: ValidationCI
+- group: CloudRunCICD
 
 stages:
 - stage: CI
@@ -16,3 +17,33 @@ stages:
       publish: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
       containerRegistry: $(containerRegistry)
       repository: $(repository)
+- stage: CD_DEV
+  displayName: CD for Dev
+  condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
+  jobs:
+  - template: templates/cd-jobs.yaml
+    parameters:
+      env: dev
+      build_id: $(Build.BuildId)
+      project_id: $(project-dev)
+      serviceAccounts: $(deployer-sp)
+- stage: CD_STG
+  displayName: CD for Stage
+  condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
+  jobs:
+  - template: templates/cd-jobs.yaml
+    parameters:
+      env: stg
+      build_id: $(Build.BuildId)
+      project_id: $(project-stg)
+      serviceAccounts: $(deployer-sp)
+- stage: CD_PROD
+  displayName: CD for Prod
+  condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
+  jobs:
+  - template: templates/cd-jobs.yaml
+    parameters:
+      env: prod
+      build_id: $(Build.BuildId)
+      project_id: $(project-prod)
+      serviceAccounts: $(deployer-sp)
