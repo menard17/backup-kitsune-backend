@@ -25,7 +25,7 @@ jobs:
         - script: |
             gcloud run deploy run-kitsune-${{ parameters.env }}-asia-northeast1 \
             --quiet \
-            --service-account=cloud-runner@${{ parameters.project_id }}.iam.gserviceaccount.com \
+            --service-account=kitsune-${{ parameters.env }}-asia-northeast1@${{ parameters.project_id }}.iam.gserviceaccount.com \
             --allow-unauthenticated \
             --image=gcr.io/kitsune-321314/kitsune-backend:${{ parameters.build_id }} \
             --platform=managed \
