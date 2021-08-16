@@ -43,6 +43,27 @@ def jwt_authorized(scope: str):
     """Decorator function to authorize the user.
     Should be use after @jwt_authenticated() to obtain the custom claims
 
+    The decorator usage is as below:
+    ```
+    @jwt_authorized("/role/role_id}")
+    def function(role_id: str):
+        ...
+    ```
+    in which "role" and *roleId" combination defines the scope - minimum
+    permission required for the caller to access the above function.
+
+    Below are some examples:
+
+    * @jwt_authorized("/Patient/{patient_id}"): the caller need to have access
+    to Patient resource with patient_id
+    * @jwt_authorized("/Patient/*"): the caller need to have access to all
+    Patients resource
+
+    Please note that permission relationship are defined inside this decorator
+    as well. For now, Doctor has access to all Patients resource, and Patient
+    has access to his/her own resources. It should be managed in a different
+    function and unit tested.
+
     :param scope: the minimum scope required to access the resource
     :type scope: str
     """
@@ -70,17 +91,8 @@ def jwt_authorized(scope: str):
             scope_role = scope_dict["role"]
             scope_role_id = scope_dict["role_id"]
 
-            # Below logic is the basic authorization for patients/doctors
-            # related. This should be factored into a different method
-            # Write it here just for demonstration purpose
-            if scope_role == "Patient":
-
-                # Bypass all patients access for doctor
-                if claims_role == "Doctor":
-                    return func(*args, **kwargs)
-
-                if claims_role == "Patient" and claims_role_id == scope_role_id:
-                    return func(*args, **kwargs)
+            if is_authorized(claims_role, claims_role_id, scope_role, scope_role_id):
+                return func(*args, **kwargs)
 
             return Response(
                 status=401, response="User not authorized to perform given action"
@@ -89,3 +101,29 @@ def jwt_authorized(scope: str):
         return wrapper
 
     return decorator
+
+
+def is_authorized(
+    claims_role: str, claims_role_id: str, scope_role: str, scope_role_id: str
+) -> bool:
+    """Determine if a user claims (identity from Firebase) have access to the
+    defined scope.
+
+    :param claims_role: the role identity of user, e.g. Patient/Doctor
+    :type claims_role: str
+    :param claims_role_id: the ID for the claims_role
+    :type claims_role_id: str
+    :param scope_role_id: the scope to determine access, e.g. Patient/Doctor
+    :type scope_role: str
+    :param scope_role_id: the ID for the above scope ("*" means ALL)
+    :type scope_role_id: str
+    """
+    if scope_role == "Patient":
+        # Bypass all patients access for doctor
+        if claims_role == "Doctor":
+            return True
+
+        if claims_role == "Patient" and claims_role_id == scope_role_id:
+            return True
+
+    return False

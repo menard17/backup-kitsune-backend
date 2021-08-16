@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from flask.wrappers import Response
 from adapters.fhir_store import ResourceClient
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 from fhir.resources.organization import Organization
 from fhir.resources.address import Address
 

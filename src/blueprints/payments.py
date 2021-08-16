@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask.globals import request
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 import stripe
 import json
 

@@ -1,5 +1,5 @@
 from flask import request, Blueprint, Response
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 
 from fhir.resources import construct_fhir_element
 from adapters.fhir_store import ResourceClient

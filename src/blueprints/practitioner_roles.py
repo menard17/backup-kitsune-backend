@@ -4,7 +4,7 @@ import json
 from adapters.fhir_store import ResourceClient
 from datetime import datetime, time, timedelta
 from flask import Blueprint, request, Response
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
 from slots.slots_service import SlotService

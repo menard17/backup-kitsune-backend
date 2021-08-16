@@ -3,7 +3,7 @@ import pytz
 from adapters.fhir_store import ResourceClient
 from datetime import datetime, time, timedelta
 from flask import Blueprint, request
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 
 
 practitioners_blueprint = Blueprint(

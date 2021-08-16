@@ -5,7 +5,7 @@ from blueprints.appointments import appointment_blueprint
 from blueprints.payments import payments_blueprint
 from get_zoom_jwt import get_zoom_jwt
 from flask import request, Flask, Response
-from middleware import jwt_authenticated
+from utils.middleware import jwt_authenticated
 from flask_cors import CORS
 import os
 

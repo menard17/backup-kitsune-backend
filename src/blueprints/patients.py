@@ -2,7 +2,7 @@ from adapters.fhir_store import ResourceClient
 from fhir.resources.patient import Patient
 from firebase_admin import auth
 from flask import Blueprint, Response, request
-from middleware import jwt_authenticated, jwt_authorized
+from utils.middleware import jwt_authenticated, jwt_authorized
 
 
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
