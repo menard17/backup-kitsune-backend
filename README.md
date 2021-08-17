@@ -55,10 +55,15 @@ docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
 ```
 
-This repository also provides a convienent `dev.env` file for common environment
+This repository also provides a convienent `local.env.example` file for common environment
 variables required to run the service locally. To use the `local.env` file:
 
 ```shell
+cp local.env.example local.env
+```
+
+And then run the following to stub the env file to the docker
+``` shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file local.env sample001:1.0
 ```
@@ -109,8 +114,10 @@ To run the integration tests: `poetry run pytest -s -vv src/integtest/`
 
 Setup env vars:
 
-1. `FIREBASE_API_KEY`
-2. `ORIGINS` (can be set as `"*"`)
+1. copy the env var template: `cp local.env.example local.env`
+2. setup the env vars
+3. export those env vars to local env: `set -a && . ./local.env && set +a`
+4. run test: `poetry run pytest`
 
 ## Before Commit and Push code
 

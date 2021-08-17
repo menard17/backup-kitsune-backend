@@ -164,3 +164,18 @@ class ResourceClient:
         response.raise_for_status()
 
         return construct_fhir_element(resource_type, response.json())
+
+    def put_resource(
+        self, resource_uid: str, resource: DomainResource
+    ) -> DomainResource:
+        """Updates a resource with put. Returns updated resource
+        in DomainResource Python object.
+        """
+
+        resource_path = f"{self._url}/{resource.resource_type}/{resource_uid}"
+
+        response = self._session.put(
+            resource_path, headers=self._headers, data=resource.json(indent=True)
+        )
+        response.raise_for_status()
+        return construct_fhir_element(resource.resource_type, response.json())

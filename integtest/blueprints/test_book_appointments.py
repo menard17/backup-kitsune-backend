@@ -201,3 +201,43 @@ def available_slots(client, patient, doctor):
     slots = json.loads(resp.data)["data"]
     assert len(slots) == 1
     assert slots[0]["status"] == "busy"
+
+
+@when(
+    "the patients end up not showing up so doctor set the appointment status as no show",
+    target_fixture="appointment",
+)
+def set_appointment_no_show(client, doctor, appointment):
+    token = get_token(doctor.uid)
+    resp = client.put(
+        f"/appointments/{appointment['id']}/status",
+        data=json.dumps({"status": "noshow"}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+    return json.loads(resp.data)
+
+
+@then("the appointment status is updated as no show")
+def check_appointment_status_no_show(appointment):
+    assert appointment["status"] == "noshow"
+
+
+@then("frees the slot")
+def frees_the_slot(client, patient, doctor):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    start = (now - timedelta(hours=1)).isoformat()
+    end = (now + timedelta(hours=1)).isoformat()
+
+    url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+
+    token = get_token(patient.uid)
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+
+    slots = json.loads(resp.data)["data"]
+    assert len(slots) == 1
+    assert slots[0]["status"] == "free"

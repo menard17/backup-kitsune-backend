@@ -113,6 +113,26 @@ def test_patch_resource(mocker, session, url, test_patient_data):
     response.raise_for_status.assert_called_once()
 
 
+def test_put_resource(mocker, session, url, test_patient_data):
+    response = mocker.Mock()
+    mocker.patch.object(response, "json", return_value=test_patient_data.json())
+    mocker.patch.object(session, "put", return_value=response)
+
+    patient_input = Patient()
+    resource_client = ResourceClient(session=session, url=url)
+
+    result = resource_client.put_resource("patient-id", patient_input)
+
+    assert result.resource_type == "Patient"
+    assert result.id == "patient-id"
+    session.put.assert_called_once_with(
+        "testurl/Patient/patient-id",
+        headers={"Content-Type": "application/fhir+json;charset=utf-8"},
+        data='{\n "resourceType": "Patient"\n}',
+    )
+    response.raise_for_status.assert_called_once()
+
+
 @pytest.fixture
 def session(mocker):
     yield mocker.Mock()

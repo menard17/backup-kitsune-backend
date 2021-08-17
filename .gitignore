@@ -169,3 +169,7 @@ cython_debug/
 
 # Tests
 junit
+
+
+# local env var
+local.env
