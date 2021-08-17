@@ -1,13 +1,14 @@
 from flask import Blueprint
 from flask.globals import request
 from middleware import jwt_authenticated
-import os
 import stripe
 import json
 
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 
-key = os.environ.get("STRIPE_API_KEY")
+
+file_system = open("/secrets/stripe_key", "r")
+key = file_system.readlines()
 stripe.api_key = key
 
 

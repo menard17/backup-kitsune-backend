@@ -40,7 +40,7 @@ poetry run python src/app.py
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -p 8003:8080 sample001:1.0
+docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 sample001:1.0
 ```
 
 For most API to work, you need your own `service.json` file, obtained from
@@ -52,7 +52,7 @@ To run your image and set the `service.json`
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
+docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
 ```
 
 This repository also provides a convienent `dev.env` file for common environment
@@ -60,7 +60,7 @@ variables required to run the service locally. To use the `local.env` file:
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -p 8003:8080 --env-file local.env sample001:1.0
+docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file local.env sample001:1.0
 ```
 
 #### Running unit tests and coverage
