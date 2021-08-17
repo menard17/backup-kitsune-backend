@@ -10,6 +10,8 @@ jobs:
   - script: |
       sudo mkdir /secrets
       sudo touch /secrets/stripe_key
+      sudo chmod 777 /secrets/stripe_key
+      sudo echo "key" > /secrets/stripe_key
     displayName: 'Create secrets file'
   - task: DownloadSecureFile@1
     name: googleApplicationCredentials
@@ -34,6 +36,9 @@ jobs:
     displayName: pytest
     env:
       GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)
+  - script: |
+      sudo rm /secrets/stripe_key
+    displayName: 'Delete a secret'
   - task: PublishTestResults@2
     condition: succeededOrFailed()
     inputs:
