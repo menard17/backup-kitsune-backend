@@ -4,12 +4,8 @@ from utils.middleware import jwt_authenticated
 import stripe
 import json
 
+
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
-
-
-file_system = open("/secrets/stripe_key", "r")
-key = file_system.readlines()[0]
-stripe.api_key = key
 
 
 @payments_blueprint.route("/customer", methods=["POST"])

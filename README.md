@@ -40,19 +40,20 @@ poetry run python src/app.py
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 sample001:1.0
+docker run -p 8003:8080 sample001:1.0
 ```
 
 For most API to work, you need your own `service.json` file, obtained from
 gcloud. See [here](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 Then you also need to grant your service account access to various resource (for
 example, the FHIR store).
+You can use env for secrets path but production system picks it up automatically in cloudrun.
 
 To run your image and set the `service.json`
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json sample001:1.0
+docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json -e SECRETS_PATH=/path/to/secrets sample001:1.0
 ```
 
 This repository also provides a convienent `local.env.example` file for common environment
