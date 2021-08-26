@@ -48,12 +48,15 @@ gcloud. See [here](https://cloud.google.com/iam/docs/creating-managing-service-a
 Then you also need to grant your service account access to various resource (for
 example, the FHIR store).
 You can use env for secrets path but production system picks it up automatically in cloudrun.
+When you are mounting secret files, you need to create a file in local env and mount the destination.
+Currently in the example below uses /secrets/stripe_key but it can be anywhere with a read permissions.
+Destination of where you are mounting to needs to have a write permission.
 
 To run your image and set the `service.json`
 
 ```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
-docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json -e SECRETS_PATH=/path/to/secrets sample001:1.0
+docker run -v /secrets/stripe_key:/home/secrets -p 8003:8080 -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service.json -e SECRETS_PATH=/home/secrets sample001:1.0
 ```
 
 This repository also provides a convienent `local.env.example` file for common environment
@@ -64,7 +67,8 @@ cp local.env.example local.env
 ```
 
 And then run the following to stub the env file to the docker
-``` shell
+
+```shell
 docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file local.env sample001:1.0
 ```
