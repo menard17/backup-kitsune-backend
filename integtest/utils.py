@@ -24,5 +24,4 @@ def get_token(uid):
     resp = requests.post(
         url, data=json.dumps(data), headers={"Content-Type": "application/json"}
     )
-
     return resp.json()["idToken"]

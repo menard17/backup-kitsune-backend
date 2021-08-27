@@ -11,5 +11,5 @@ def test_patient_should_not_have_access_to_other_patients():
 
 
 def test_doctor_should_have_access_to_all_patients():
-    assert is_authorized("Doctor", "doctor_id", "Patient", "patient_id") is True
-    assert is_authorized("Doctor", "doctor_id", "Patient", "*") is True
+    assert is_authorized("Practitioner", "doctor_id", "Patient", "patient_id") is True
+    assert is_authorized("Practitioner", "doctor_id", "Patient", "*") is True

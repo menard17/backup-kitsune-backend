@@ -35,10 +35,13 @@ def get_practitioner_roles():
 
 @practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
 @jwt_authenticated()
+def get_practitioner_role_json(role_id: str):
+    return Response(status=200, response=get_practitioner_role(role_id).json())
+
+
 def get_practitioner_role(role_id: str):
     resource_client = ResourceClient()
-    role = resource_client.get_resource(role_id, "PractitionerRole")
-    return Response(status=200, response=role.json())
+    return resource_client.get_resource(role_id, "PractitionerRole")
 
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])

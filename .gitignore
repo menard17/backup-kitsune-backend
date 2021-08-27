@@ -173,3 +173,5 @@ junit
 
 # local env var
 local.env
+
+./secrets/

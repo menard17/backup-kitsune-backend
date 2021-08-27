@@ -3,7 +3,8 @@ import json
 from fhir.resources.appointment import Appointment
 from fhir.resources.slot import Slot
 
-from blueprints.appointments import Controller
+from blueprints.appointments import AppointmentController
+from helper import MockResourceClient, FakeRequest
 
 BOOKED_APPOINTMENT_DATA = {
     "resourceType": "Appointment",
@@ -62,18 +63,6 @@ SLOT_DATA = {
 }
 
 
-class MockResourceClient:
-    pass
-
-
-class FakeRequest:
-    def __init__(self, data):
-        self.data = data
-
-    def get_json(self):
-        return self.data
-
-
 def test_update_appointment():
     test_appointment_id = "dummy-appointment-id"
 
@@ -93,7 +82,7 @@ def test_update_appointment():
     resource_client.get_resource = mock_get_resource
     resource_client.put_resource = mock_put_resource
 
-    controller = Controller(resource_client)
+    controller = AppointmentController(resource_client)
     req = FakeRequest({"status": "noshow"})
     resp = controller.update_appointment(req, test_appointment_id)
 
@@ -106,7 +95,7 @@ def test_update_appointment():
 def test_update_appointment_return_400_if_not_updating_for_noshow():
     resource_client = MockResourceClient()
 
-    controller = Controller(resource_client)
+    controller = AppointmentController(resource_client)
     req = FakeRequest({"status": "cancelled"})
     resp = controller.update_appointment(req, "dummy-appointment-id")
 

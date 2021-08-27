@@ -5,25 +5,14 @@ import uuid
 from pytest_bdd import scenarios, given, when, then
 from firebase_admin import auth
 from datetime import datetime, timedelta
-
-from fhir.resources import construct_fhir_element
-from adapters.fhir_store import ResourceClient
-from integtest.utils import get_token
 from urllib.parse import quote
 
+from integtest.utils import get_token
+from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
+from integtest.blueprints.characters import Doctor, Patient
+from integtest.blueprints.helper import get_role
+
 scenarios("../features/book_appointments.feature")
-
-
-class Patient:
-    def __init__(self, firebase_uid, patient):
-        self.uid = firebase_uid
-        self.fhir_data = patient
-
-
-class Doctor:
-    def __init__(self, firebase_uid, practitioner_role):
-        self.uid = firebase_uid
-        self.fhir_data = practitioner_role
 
 
 @given("a doctor", target_fixture="doctor")
@@ -38,54 +27,24 @@ def get_doctor(client):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
 
-    practitioner_data = {
-        "resourceType": "Practitioner",
-        "active": True,
-        "name": [{"family": "Test", "given": ["Cool"], "prefix": ["Dr"]}],
-    }
-
-    practitioner = construct_fhir_element("Practitioner", practitioner_data)
-    practitioner = ResourceClient().create_resource(practitioner)
-
-    role = {
-        "resourceType": "PractitionerRole",
-        "active": True,
-        "period": {"start": "2001-01-01", "end": "2099-03-31"},
-        "practitioner": {
-            "reference": f"Practitioner/{practitioner.id}",
-            "display": "Dr Cool in test",
-        },
-        "availableTime": [
-            {
-                "daysOfWeek": ["mon", "tue", "wed"],
-                "availableStartTime": "09:00:00",
-                "availableEndTime": "16:30:00",
-            },
-            {
-                "daysOfWeek": ["thu", "fri"],
-                "availableStartTime": "09:00:00",
-                "availableEndTime": "12:00:00",
-            },
-        ],
-        "notAvailable": [
-            {
-                "description": "Adam will be on extended leave during May 2017",
-                "during": {"start": "2017-05-01", "end": "2017-05-20"},
-            }
-        ],
-        "availabilityExceptions": "Adam is generally unavailable on public holidays and during the Christmas/New Year break",
-    }
-
-    resp = client.post(
+    practitioner_resp = client.post(
+        "/practitioners",
+        data=json.dumps(PRACTITIONER_DATA),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert practitioner_resp.status_code == 202
+    practitioner_id = json.loads(practitioner_resp.data.decode("utf-8"))["id"]
+    practitioner_roles_resp = client.post(
         "/practitioner_roles",
-        data=json.dumps(role),
+        data=json.dumps(get_role(practitioner_id)),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
 
-    assert resp.status_code == 202
+    assert practitioner_roles_resp.status_code == 202
 
-    doctor_role = json.loads(resp.data)["practitioner_role"]
+    doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
     return Doctor(doctor.uid, doctor_role)
 
 
@@ -95,38 +54,14 @@ def get_patient(client):
         email=f"patient-{uuid.uuid4()}@fake.umed.jp",
         email_verified=True,
         password=f"password-{uuid.uuid4()}",
-        display_name="Test Doctor",
+        display_name="Test Patient",
         disabled=False,
     )
     token = get_token(patient.uid)
 
-    patient_fhir_data = {
-        "resourceType": "Patient",
-        "id": "example",
-        "active": True,
-        "name": [
-            {"use": "official", "family": "Chalmers", "given": ["Peter", "James"]}
-        ],
-        "gender": "male",
-        "birthDate": "1990-01-01",
-        "deceasedBoolean": False,
-        "address": [
-            {
-                "use": "home",
-                "type": "both",
-                "text": "534 Erewhon St PeasantVille, Rainbow, Vic  3999",
-                "line": ["534 Erewhon St"],
-                "city": "PleasantVille",
-                "district": "Rainbow",
-                "state": "Vic",
-                "postalCode": "3999",
-                "period": {"start": "1974-12-25"},
-            }
-        ],
-    }
     resp = client.post(
         "/patients",
-        data=json.dumps(patient_fhir_data),
+        data=json.dumps(PATIENT_DATA),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )

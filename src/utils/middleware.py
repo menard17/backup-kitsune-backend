@@ -120,7 +120,7 @@ def is_authorized(
     """
     if scope_role == "Patient":
         # Bypass all patients access for doctor
-        if claims_role == "Doctor":
+        if claims_role == "Practitioner":
             return True
 
         if claims_role == "Patient" and claims_role_id == scope_role_id:

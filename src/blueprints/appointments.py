@@ -8,7 +8,7 @@ from slots.slots_service import SlotService
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
 
 
-class Controller:
+class AppointmentController:
     """
     Controller is the class that holds the functions for the calls of appointments blueprint.
     """
@@ -146,10 +146,10 @@ class Controller:
 @appointment_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def book_appointment():
-    return Controller().book_appointment()
+    return AppointmentController().book_appointment()
 
 
 @appointment_blueprint.route("/<appointment_id>/status", methods=["PUT"])
 @jwt_authenticated()
 def update_appointment(appointment_id: str):
-    return Controller().update_appointment(request, appointment_id)
+    return AppointmentController().update_appointment(request, appointment_id)

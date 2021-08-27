@@ -13,7 +13,7 @@ organization_blueprint = Blueprint(
 @organization_blueprint.route("/<organization_id>", methods=["GET"])
 @jwt_authenticated()
 def get_organization(organization_id: str) -> dict:
-    """Returns details of a organization. Organization can be clincs,
+    """Returns details of an organization. Organization can be clincs,
     hospitals, and etc. Have to get FHIR's UUID from UID bypass for test.
 
     :param organization_id: uuid for organization
@@ -21,8 +21,12 @@ def get_organization(organization_id: str) -> dict:
 
     :rtype: dict
     """
+    return _get_organization(organization_id).dict()
+
+
+def _get_organization(organization_id: str) -> Organization:
     resourse_client = ResourceClient()
-    return resourse_client.get_resource(organization_id, "Organization").dict()
+    return resourse_client.get_resource(organization_id, "Organization")
 
 
 @organization_blueprint.route("/", methods=["GET"])
