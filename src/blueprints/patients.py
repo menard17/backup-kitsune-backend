@@ -2,11 +2,11 @@ from datetime import datetime
 
 import pytz
 from fhir.resources.patient import Patient
-from firebase_admin import auth
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from utils.middleware import jwt_authenticated, jwt_authorized
+from utils import role_auth
 
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 
@@ -46,9 +46,8 @@ def list_appointments(patient_id: str):
 
 
 class Controller:
-    def __init__(self, resource_client=None, firebase_auth=None):
+    def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
-        self.firebase_auth = firebase_auth or auth
 
     def get_patient(self, patient_id: str) -> dict:
         """Returns details of a patient.
@@ -99,10 +98,7 @@ class Controller:
         patient = self.resource_client.create_resource(patient)
 
         # Then grant the custom claim for the caller in Firebase
-        custom_claims = {}
-        custom_claims["role"] = "Patient"
-        custom_claims["role_id"] = patient.id
-        self.firebase_auth.set_custom_user_claims(request.claims["uid"], custom_claims)
+        role_auth.grant_role(request.claims, "Patient", patient.id)
 
         return patient.dict(), 202
 

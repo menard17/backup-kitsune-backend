@@ -3,6 +3,7 @@ from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from services.slots_service import SlotService
+from utils import role_auth
 from utils.middleware import jwt_authenticated
 
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
@@ -37,10 +38,8 @@ class AppointmentController:
 
         if role_id is None:
             return Response(status=400, response="missing param: practitioner_role_id")
-        if (
-            request.claims["role"] == "Patient"
-            and patient_id != request.claims["role_id"]
-        ):
+        claims_roles = role_auth.extract_roles(request.claims)
+        if "Patient" in claims_roles and claims_roles["Patient"]["id"] != patient_id:
             return Response(
                 status=401, response="could only book appointment for the patient"
             )

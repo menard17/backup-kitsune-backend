@@ -2,10 +2,10 @@ from datetime import datetime, time, timedelta
 
 import pytz
 from fhir.resources.practitioner import Practitioner
-from firebase_admin import auth
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
+from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.email_verification import is_email_in_allowed_list, is_email_verified
 from utils.middleware import jwt_authenticated
@@ -16,9 +16,8 @@ practitioners_blueprint = Blueprint(
 
 
 class PractitionerController:
-    def __init__(self, resource_client=None, auth=auth):
+    def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
-        self.auth = auth
 
     def get_practitioner_slots(
         self, practitioner_id: str, start: str, end: str, status: str
@@ -64,7 +63,7 @@ class PractitionerController:
         )
         return slot_search.entry
 
-    def create_practitioner(self, uid: str, data):
+    def create_practitioner(self, request):
         """Returns the details of a doctor created.
         This creates a practitioner in FHIR, as well as create a custom claims with it
         Note that this function should only be called
@@ -73,22 +72,16 @@ class PractitionerController:
         Currently there is no check for duplicate entry or retryable, all assuming
         that the operations here succeeded without failure.
 
-        :param uid: id of practitioner associated to Firebase
-        :type uid: str
-        :param data: FHIR data for practitioner
-        :type data: JSON
+        :param request: the request for this operation
 
         :rtype: DomainResource
         """
-        practitioner = Practitioner.parse_obj(data)
+        practitioner = Practitioner.parse_obj(request.get_json())
         practitioner = self.resource_client.create_resource(practitioner)
 
         if practitioner:
             # Then grant the custom claim for the caller in Firebase
-            custom_claims = {}
-            custom_claims["role"] = "Practitioner"
-            custom_claims["role_id"] = practitioner.id
-            self.auth.set_custom_user_claims(uid, custom_claims)
+            role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
         return practitioner
 
 
@@ -115,9 +108,7 @@ def create_practitioner():
     if not is_email_verified(request) or not is_email_in_allowed_list(request):
         return Response(status=401, response="Not authorized correctly")
 
-    result = PractitionerController().create_practitioner(
-        request.claims["uid"], request.get_json()
-    )
+    result = PractitionerController().create_practitioner(request)
 
     if result is None:
         return Response(status=401, response="No Response")

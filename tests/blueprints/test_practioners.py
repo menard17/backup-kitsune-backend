@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from helper import MockResourceClient
 
 from blueprints.practitioners import PractitionerController
@@ -43,10 +45,30 @@ PRACTITIONER_DATA = {
 
 
 def test_create_practioner(mocker):
-    mock_auth = mocker.Mock()
-    mock_resource = MockResourceClient()
-    practitioner = PractitionerController(mock_resource, mock_auth).create_practitioner(
-        "firebaseid", PRACTITIONER_DATA
+    request = FakeRequest(
+        data=PRACTITIONER_DATA, claims={"uid": "test-uid", "email_verified": True}
     )
+    mock_resource = MockResourceClient()
 
-    assert practitioner.id == "id1"
+    with patch("blueprints.practitioners.role_auth") as mock_role_auth:
+        controller = PractitionerController(mock_resource)
+
+        practitioner = controller.create_practitioner(request)
+
+        assert practitioner.id == "id1"
+        mock_role_auth.grant_role.assert_called_once_with(
+            {"uid": "test-uid", "email_verified": True}, "Practitioner", "id1"
+        )
+
+
+class FakeRequest:
+    def __init__(self, data={}, args={}, claims=None):
+        self.data = data
+        self.claims = claims
+        self.args = args
+
+    def get_json(self):
+        return self.data
+
+    def args(self):
+        return self.args

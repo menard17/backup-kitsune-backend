@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from unittest.mock import patch
 import pytest
 import pytz
 from fhir.resources import construct_fhir_element
@@ -126,9 +127,9 @@ def test_list_appointment_with_date_provided():
     controller.list_appointments(request, patient_id)
 
 
-def test_get_patient(mocker, resource_client, firebase_auth, test_patient_data):
+def test_get_patient(mocker, resource_client, test_patient_data):
     mocker.patch.object(resource_client, "get_resource", return_value=test_patient_data)
-    controller = Controller(resource_client, firebase_auth)
+    controller = Controller(resource_client)
 
     result = controller.get_patient("test-patient-id")
 
@@ -136,9 +137,9 @@ def test_get_patient(mocker, resource_client, firebase_auth, test_patient_data):
     resource_client.get_resource.assert_called_once_with("test-patient-id", "Patient")
 
 
-def test_get_patients(mocker, resource_client, firebase_auth, test_bundle_data):
+def test_get_patients(mocker, resource_client, test_bundle_data):
     mocker.patch.object(resource_client, "get_resources", return_value=test_bundle_data)
-    controller = Controller(resource_client, firebase_auth)
+    controller = Controller(resource_client)
 
     result = controller.get_patients()
 
@@ -146,9 +147,7 @@ def test_get_patients(mocker, resource_client, firebase_auth, test_bundle_data):
     resource_client.get_resources.assert_called_once_with("Patient")
 
 
-def test_create_patient_happy_path(
-    mocker, resource_client, firebase_auth, test_patient_data
-):
+def test_create_patient_happy_path(mocker, resource_client, test_patient_data):
     patient_input = Patient()
     request = FakeRequest(
         data=patient_input, claims={"uid": "test-uid", "email_verified": True}
@@ -156,26 +155,27 @@ def test_create_patient_happy_path(
     mocker.patch.object(
         resource_client, "create_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client, firebase_auth)
+    with patch("blueprints.patients.role_auth") as mock_role_auth:
+        controller = Controller(resource_client)
 
-    result = controller.create_patient(request)
+        result = controller.create_patient(request)
 
-    assert result == (test_patient_data, 202)
-    resource_client.create_resource.assert_called_once_with(patient_input)
-    firebase_auth.set_custom_user_claims.assert_called_once_with(
-        "test-uid", {"role": "Patient", "role_id": "test-patient-id"}
-    )
+        assert result == (test_patient_data, 202)
+        resource_client.create_resource.assert_called_once_with(patient_input)
+        mock_role_auth.grant_role.assert_called_once_with(
+            {"uid": "test-uid", "email_verified": True}, "Patient", "test-patient-id"
+        )
 
 
 def test_create_patient_should_return_401_when_no_email_verified(
-    mocker, resource_client, firebase_auth, test_patient_data
+    mocker, resource_client, test_patient_data
 ):
     patient_input = Patient()
     request = FakeRequest(data=patient_input, claims={"uid": "test-uid"})
     mocker.patch.object(
         resource_client, "create_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client, firebase_auth)
+    controller = Controller(resource_client)
 
     result = controller.create_patient(request)
 
@@ -183,7 +183,7 @@ def test_create_patient_should_return_401_when_no_email_verified(
 
 
 def test_create_patient_should_return_401_when_email_unverified(
-    mocker, resource_client, firebase_auth, test_patient_data
+    mocker, resource_client, test_patient_data
 ):
     patient_input = Patient()
     request = FakeRequest(
@@ -192,20 +192,20 @@ def test_create_patient_should_return_401_when_email_unverified(
     mocker.patch.object(
         resource_client, "create_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client, firebase_auth)
+    controller = Controller(resource_client)
 
     result = controller.create_patient(request)
 
     assert result.status == "401 UNAUTHORIZED"
 
 
-def test_patch_patient(mocker, resource_client, firebase_auth, test_patient_data):
+def test_patch_patient(mocker, resource_client, test_patient_data):
     patient_input = Patient()
     request = FakeRequest(patient_input)
     mocker.patch.object(
         resource_client, "patch_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client, firebase_auth)
+    controller = Controller(resource_client)
 
     result = controller.patch_patient(request, "test-patient-id")
 
@@ -226,6 +226,11 @@ class FakeRequest:
 
     def args(self):
         return self.args
+
+
+@pytest.fixture
+def resource_client(mocker):
+    yield mocker.Mock()
 
 
 @pytest.fixture

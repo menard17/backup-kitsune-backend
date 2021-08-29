@@ -1,10 +1,11 @@
 import logging
 import re
+from firebase_admin import auth as firebase_auth
 from functools import wraps
 from typing import Any, Callable
+from utils import role_auth
 
 import firebase_admin
-from firebase_admin import auth
 from flask import Response, request
 
 default_app = firebase_admin.initialize_app()
@@ -22,7 +23,7 @@ def jwt_authenticated():
             if header:
                 token = header.split(" ")[1]
                 try:
-                    decoded_token = auth.verify_id_token(token)
+                    decoded_token = firebase_auth.verify_id_token(token)
                 except Exception as e:
                     log.error(e)
                     return Response(
@@ -59,10 +60,7 @@ def jwt_authorized(scope: str):
     * @jwt_authorized("/Patient/*"): the caller need to have access to all
     Patients resource
 
-    Please note that permission relationship are defined inside this decorator
-    as well. For now, Doctor has access to all Patients resource, and Patient
-    has access to his/her own resources. It should be managed in a different
-    function and unit tested.
+
 
     :param scope: the minimum scope required to access the resource
     :type scope: str
@@ -71,12 +69,6 @@ def jwt_authorized(scope: str):
     def decorator(func: Callable[..., int]) -> Callable[..., int]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-
-            # request.claims acquired from authentication
-            claims = request.claims
-            claims_role = claims["role"]
-            claims_role_id = claims["role_id"]
-
             # This would produce the formatted scope with role and roleId
             # e.g. if scope is "/Patient/{patient_id}" and patient_id is 123
             # then the result is "/Patient/123"
@@ -91,7 +83,9 @@ def jwt_authorized(scope: str):
             scope_role = scope_dict["role"]
             scope_role_id = scope_dict["role_id"]
 
-            if is_authorized(claims_role, claims_role_id, scope_role, scope_role_id):
+            # request.claims acquired from authentication
+            claims_roles = role_auth.extract_roles(request.claims)
+            if role_auth.is_authorized(claims_roles, scope_role, scope_role_id):
                 return func(*args, **kwargs)
 
             return Response(
@@ -101,29 +95,3 @@ def jwt_authorized(scope: str):
         return wrapper
 
     return decorator
-
-
-def is_authorized(
-    claims_role: str, claims_role_id: str, scope_role: str, scope_role_id: str
-) -> bool:
-    """Determine if a user claims (identity from Firebase) have access to the
-    defined scope.
-
-    :param claims_role: the role identity of user, e.g. Patient/Doctor
-    :type claims_role: str
-    :param claims_role_id: the ID for the claims_role
-    :type claims_role_id: str
-    :param scope_role_id: the scope to determine access, e.g. Patient/Doctor
-    :type scope_role: str
-    :param scope_role_id: the ID for the above scope ("*" means ALL)
-    :type scope_role_id: str
-    """
-    if scope_role == "Patient":
-        # Bypass all patients access for doctor
-        if claims_role == "Practitioner":
-            return True
-
-        if claims_role == "Patient" and claims_role_id == scope_role_id:
-            return True
-
-    return False
