@@ -6,6 +6,7 @@ from datetime import datetime, time, timedelta
 
 from fhir.resources.practitioner import Practitioner
 from adapters.fhir_store import ResourceClient
+from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
 from utils.email_verification import is_email_verified, is_email_in_allowed_list
 
@@ -106,7 +107,7 @@ def get_practitioner_slots(practitioner_id: str) -> dict:
     )
     if slots is None:
         return {"data": []}
-    return {"data": [e.resource.dict() for e in slots]}
+    return {"data": [datetime_encoder(e.resource.dict()) for e in slots]}
 
 
 @practitioners_blueprint.route("/", methods=["POST"])

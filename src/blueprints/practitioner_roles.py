@@ -4,6 +4,7 @@ import json
 from adapters.fhir_store import ResourceClient
 from datetime import datetime, time, timedelta
 from flask import Blueprint, request, Response
+from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
@@ -158,4 +159,4 @@ def get_role_slots(role_id: str) -> dict:
     )
     if slot_search.entry is None:
         return {"data": []}
-    return {"data": [e.resource.dict() for e in slot_search.entry]}
+    return {"data": [datetime_encoder(e.resource.dict()) for e in slot_search.entry]}
