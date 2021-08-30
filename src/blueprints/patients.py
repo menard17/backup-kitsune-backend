@@ -1,3 +1,6 @@
+import pytz
+
+from datetime import datetime
 from adapters.fhir_store import ResourceClient
 from fhir.resources.patient import Patient
 from firebase_admin import auth
@@ -33,6 +36,13 @@ def create_patient():
 @jwt_authorized("/Patient/{patient_id}")
 def patch_patient(patient_id: str) -> dict:
     return Controller().patch_patient(request, patient_id)
+
+
+@patients_blueprint.route("/<patient_id>/appointments", methods=["GET"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/{patient_id}")
+def list_appointments(patient_id: str):
+    return Controller().list_appointments(request, patient_id)
 
 
 class Controller:
@@ -110,3 +120,25 @@ class Controller:
         patient = self.resource_client.patch_resource(patient_id, "Patient", patient)
 
         return patient.dict(), 202
+
+    def list_appointments(self, request, patient_id: str):
+        """
+        Returns list of appointments of the patient within the period.
+        url params:
+        * date: the start date of the appointment, default to current date. eg. '2021-08-05', '2021-08-25T00:00:00+09:00'
+        """
+
+        date = request.args.get("date")
+        if date is None:
+            tokyo_timezone = pytz.timezone("Asia/Tokyo")
+            now = tokyo_timezone.localize(datetime.now())
+            date = now.date().isoformat()
+
+        result = self.resource_client.search(
+            "Appointment",
+            search=[
+                ("date", "ge" + date),
+                ("actor", patient_id),
+            ],
+        )
+        return Response(status=200, response=result.json())

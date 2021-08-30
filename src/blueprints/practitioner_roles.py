@@ -7,7 +7,7 @@ from flask import Blueprint, request, Response
 from utils.middleware import jwt_authenticated
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources import construct_fhir_element
-from slots.slots_service import SlotService
+from services.slots_service import SlotService
 
 from json_serialize import json_serial
 

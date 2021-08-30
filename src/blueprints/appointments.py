@@ -3,7 +3,7 @@ from utils.middleware import jwt_authenticated
 
 from fhir.resources import construct_fhir_element
 from adapters.fhir_store import ResourceClient
-from slots.slots_service import SlotService
+from services.slots_service import SlotService
 
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
 

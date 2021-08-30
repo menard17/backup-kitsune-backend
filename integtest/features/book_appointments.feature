@@ -5,6 +5,7 @@ Feature: Book Appointment
         When the patient books a free time of the doctor
         Then an appointment is created
         Then the period would be set as busy slots
+        Then the patient can see his/her own appointment
 
     Scenario: Patient no show
         Given a doctor

@@ -138,6 +138,25 @@ def available_slots(client, patient, doctor):
     assert slots[0]["status"] == "busy"
 
 
+@then("the patient can see his/her own appointment")
+def patient_can_see_appointment_with_list_appointment(client, patient):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+
+    url = f'/patients/{patient.fhir_data["id"]}/appointments?date={now.date().isoformat()}'
+    token = get_token(patient.uid)
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+
+    appointments = json.loads(resp.data)["entry"]
+
+    found_patient = False
+    for participant in appointments[0]["resource"]["participant"]:
+        if participant["actor"]["reference"] == f"Patient/{patient.fhir_data['id']}":
+            found_patient = True
+            break
+    assert found_patient
+
+
 @when(
     "the patients end up not showing up so doctor set the appointment status as no show",
     target_fixture="appointment",
