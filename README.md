@@ -115,7 +115,7 @@ If you merge your change, CICD pipeline will automatically deploy to cloud run.
 
 ## Test
 
-To run the integration tests: `poetry run pytest -s -vv src/integtest/`
+To run the integration tests: `poetry run pytest -s -vv integtest/`
 
 Setup env vars:
 

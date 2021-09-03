@@ -2,12 +2,11 @@ import json
 import uuid
 
 from firebase_admin import auth
-from pytest_bdd import scenarios, given, then
+from pytest_bdd import given, scenarios, then
 
-from integtest.utils import get_token
 from integtest.blueprints.characters import Doctor, Patient
 from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
-
+from integtest.utils import get_token
 
 scenarios("../features/claims.feature")
 
@@ -85,7 +84,6 @@ def access_only_one_patient(client, patient):
     )
 
     assert all_resp.status_code == 401
-    print(patient.fhir_data)
 
     patient_resp = client.get(
         f"/patients/{patient.fhir_data['id']}",

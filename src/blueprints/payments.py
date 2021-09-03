@@ -1,9 +1,10 @@
-from flask import Blueprint
-from flask.globals import request
-from utils.middleware import jwt_authenticated
-import stripe
 import json
 
+import stripe
+from flask import Blueprint
+from flask.globals import request
+
+from utils.middleware import jwt_authenticated
 
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 
@@ -34,9 +35,6 @@ def get_customer(customer_id: str):
 @payments_blueprint.route("/payment-intent", methods=["POST"])
 @jwt_authenticated()
 def create_payment_intent():
-    print("Got payment Intent")
-    print(request)
-    print(request.data)
     body = json.loads(request.data)
 
     customer_id = body["customerId"]

@@ -1,16 +1,16 @@
-import uuid
 import json
-import pytz
-
-from pytest_bdd import scenarios, given, when, then
-from firebase_admin import auth
+import uuid
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-from integtest.utils import get_token
+import pytz
+from firebase_admin import auth
+from pytest_bdd import given, scenarios, then, when
+
 from integtest.blueprints.characters import Doctor
-from integtest.blueprints.helper import get_role
 from integtest.blueprints.fhir_input_constants import PRACTITIONER_DATA
+from integtest.blueprints.helper import get_role
+from integtest.utils import get_token
 
 scenarios("../features/get_practitioner_slots.feature")
 

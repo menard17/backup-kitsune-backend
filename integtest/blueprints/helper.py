@@ -28,3 +28,24 @@ def get_role(id: str) -> dict:
         "availabilityExceptions": "Adam is generally unavailable on public holidays and during the Christmas/New Year break",
     }
     return role
+
+
+def get_encounter(patient_id: str, practitioner_id: str, appointment_id: str) -> dict:
+    encounter = {
+        "resourceType": "Encounter",
+        "status": "in-progress",
+        "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "HH",
+            "display": "home health",
+        },
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "participant": [
+            {
+                "individual": {
+                    "reference": f"Practitioner/{practitioner_id}",
+                },
+            }
+        ],
+    }
+    return encounter

@@ -1,4 +1,5 @@
 import pytest
+
 from utils.stripe_setup import StripeSingleton
 
 
@@ -10,3 +11,13 @@ class MockStripe:
 def mock_stripe():
     yield MockStripe()
     StripeSingleton._instance = None
+
+
+@pytest.fixture
+def resource_client(mocker):
+    yield mocker.Mock()
+
+
+@pytest.fixture
+def firebase_auth(mocker):
+    yield mocker.Mock()

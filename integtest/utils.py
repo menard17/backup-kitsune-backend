@@ -1,7 +1,7 @@
-import requests
 import json
 import os
 
+import requests
 from firebase_admin import auth
 
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")

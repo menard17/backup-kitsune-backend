@@ -1,7 +1,8 @@
-from adapters.fhir_store import ResourceClient
+import pytest
 from fhir.resources.bundle import Bundle
 from fhir.resources.patient import Patient
-import pytest
+
+from adapters.fhir_store import ResourceClient
 
 
 def test_get_resource(mocker, session, url, test_patient_data):

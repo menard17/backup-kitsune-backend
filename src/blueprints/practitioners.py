@@ -1,15 +1,14 @@
-import pytz
-
-from firebase_admin import auth
-from flask import Blueprint, request, Response
 from datetime import datetime, time, timedelta
 
+import pytz
 from fhir.resources.practitioner import Practitioner
+from firebase_admin import auth
+from flask import Blueprint, Response, request
+
 from adapters.fhir_store import ResourceClient
 from utils.datetime_encoder import datetime_encoder
+from utils.email_verification import is_email_in_allowed_list, is_email_verified
 from utils.middleware import jwt_authenticated
-from utils.email_verification import is_email_verified, is_email_in_allowed_list
-
 
 practitioners_blueprint = Blueprint(
     "practitioners", __name__, url_prefix="/practitioners"
@@ -79,10 +78,10 @@ class PractitionerController:
         :param data: FHIR data for practitioner
         :type data: JSON
 
-        :rtype: dict
+        :rtype: DomainResource
         """
-        practitioner_data = Practitioner.parse_obj(data)
-        practitioner = self.resource_client.create_resource(practitioner_data)
+        practitioner = Practitioner.parse_obj(data)
+        practitioner = self.resource_client.create_resource(practitioner)
 
         if practitioner:
             # Then grant the custom claim for the caller in Firebase

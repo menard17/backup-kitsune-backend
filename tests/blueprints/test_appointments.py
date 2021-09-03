@@ -2,9 +2,9 @@ import json
 
 from fhir.resources.appointment import Appointment
 from fhir.resources.slot import Slot
+from helper import FakeRequest, MockResourceClient
 
 from blueprints.appointments import AppointmentController
-from helper import MockResourceClient, FakeRequest
 
 BOOKED_APPOINTMENT_DATA = {
     "resourceType": "Appointment",

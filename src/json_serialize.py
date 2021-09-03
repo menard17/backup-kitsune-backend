@@ -1,4 +1,4 @@
-from datetime import datetime, time, date
+from datetime import date, datetime, time
 
 
 def json_serial(obj):

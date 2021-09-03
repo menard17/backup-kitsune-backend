@@ -1,9 +1,9 @@
-from flask import request, Blueprint, Response
-from utils.middleware import jwt_authenticated
-
 from fhir.resources import construct_fhir_element
+from flask import Blueprint, Response, request
+
 from adapters.fhir_store import ResourceClient
 from services.slots_service import SlotService
+from utils.middleware import jwt_authenticated
 
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
 

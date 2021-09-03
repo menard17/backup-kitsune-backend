@@ -1,6 +1,7 @@
-from adapters.fhir_store import ResourceClient
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
+
+from adapters.fhir_store import ResourceClient
 
 
 class SlotService:

@@ -1,6 +1,7 @@
-import jwt
 import datetime
 import os
+
+import jwt
 
 
 def get_zoom_jwt() -> str:

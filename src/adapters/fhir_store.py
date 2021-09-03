@@ -1,11 +1,12 @@
 import json
 import os
+from urllib.parse import quote
+
 import google.auth
 from fhir.resources import construct_fhir_element
-from google.auth.transport import requests
-from fhir.resources.domainresource import DomainResource
 from fhir.resources.bundle import Bundle
-from urllib.parse import quote
+from fhir.resources.domainresource import DomainResource
+from google.auth.transport import requests
 
 
 def _get_url():
@@ -148,13 +149,11 @@ class ResourceClient:
     ) -> DomainResource:
         """Updates a resource with patch. Returns updated resource
         in DomainResource Python object.
-        :param resource: list with patch operation
-        :type resource: DomainResource
+        :param resource: list with patch operation. replace does not work
+        :type resource: list
         :rtype: DomainResource
         """
-
         resource_path = f"{self._url}/{resource_type}/{resource_uid}"
-
         # Need separate header for patch call
         _headers = {"Content-Type": "application/json-patch+json"}
 

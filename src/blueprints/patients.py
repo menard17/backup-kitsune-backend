@@ -1,12 +1,12 @@
-import pytz
-
 from datetime import datetime
-from adapters.fhir_store import ResourceClient
+
+import pytz
 from fhir.resources.patient import Patient
 from firebase_admin import auth
 from flask import Blueprint, Response, request
-from utils.middleware import jwt_authenticated, jwt_authorized
 
+from adapters.fhir_store import ResourceClient
+from utils.middleware import jwt_authenticated, jwt_authorized
 
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 

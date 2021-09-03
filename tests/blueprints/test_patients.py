@@ -1,12 +1,13 @@
-import pytz
-import pytest
-
 from datetime import datetime
+
+import pytest
+import pytz
 from fhir.resources import construct_fhir_element
 from fhir.resources.bundle import Bundle
 from fhir.resources.patient import Patient
-from blueprints.patients import Controller
 from helper import MockResourceClient
+
+from blueprints.patients import Controller
 
 SAMPLE_APPOINTMENT_SEARCH_DATA = {
     "entry": [
@@ -225,16 +226,6 @@ class FakeRequest:
 
     def args(self):
         return self.args
-
-
-@pytest.fixture
-def resource_client(mocker):
-    yield mocker.Mock()
-
-
-@pytest.fixture
-def firebase_auth(mocker):
-    yield mocker.Mock()
 
 
 @pytest.fixture

@@ -1,17 +1,16 @@
-import pytz
 import json
+from datetime import datetime, time, timedelta
+
+import pytz
+from fhir.resources import construct_fhir_element
+from fhir.resources.practitionerrole import PractitionerRole
+from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
-from datetime import datetime, time, timedelta
-from flask import Blueprint, request, Response
+from json_serialize import json_serial
+from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
-from fhir.resources.practitionerrole import PractitionerRole
-from fhir.resources import construct_fhir_element
-from services.slots_service import SlotService
-
-from json_serialize import json_serial
-
 
 practitioner_roles_blueprint = Blueprint(
     "practitioner_roles", __name__, url_prefix="/practitioner_roles"

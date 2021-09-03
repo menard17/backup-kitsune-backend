@@ -1,11 +1,11 @@
-import firebase_admin
 import logging
 import re
-from firebase_admin import auth
 from functools import wraps
-from flask import request, Response
 from typing import Any, Callable
 
+import firebase_admin
+from firebase_admin import auth
+from flask import Response, request
 
 default_app = firebase_admin.initialize_app()
 log = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def jwt_authorized(scope: str):
 
     The decorator usage is as below:
     ```
-    @jwt_authorized("/role/role_id}")
+    @jwt_authorized("/role/role_id")
     def function(role_id: str):
         ...
     ```

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 from utils.stripe_setup import StripeSingleton
 

@@ -1,6 +1,6 @@
-from blueprints.practitioners import PractitionerController
 from helper import MockResourceClient
 
+from blueprints.practitioners import PractitionerController
 
 PRACTITIONER_DATA = {
     "resourceType": "Practitioner",
