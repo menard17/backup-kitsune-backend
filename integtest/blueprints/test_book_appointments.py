@@ -141,9 +141,9 @@ def available_slots(client, patient, doctor):
 @then("the patient can see his/her own appointment")
 def patient_can_see_appointment_with_list_appointment(client, patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    now = tokyo_timezone.localize(datetime.now())
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/patients/{patient.fhir_data["id"]}/appointments?date={now.date().isoformat()}'
+    url = f'/patients/{patient.fhir_data["id"]}/appointments?date={yesterday.date().isoformat()}'
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 

@@ -18,6 +18,7 @@ stages:
       containerRegistry: $(containerRegistry)
       repository: $(repository)
 - stage: CD_DEV
+  dependsOn: CI
   displayName: CD for Dev
   condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
   jobs:
@@ -28,6 +29,7 @@ stages:
       project_id: $(project-dev)
       serviceAccounts: $(deployer-sp)
 - stage: CD_STG
+  dependsOn: CD_DEV
   displayName: CD for Stage
   condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
   jobs:
@@ -38,6 +40,7 @@ stages:
       project_id: $(project-stg)
       serviceAccounts: $(deployer-sp)
 - stage: CD_PROD
+  dependsOn: CD_STG
   displayName: CD for Prod
   condition: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
   jobs:
