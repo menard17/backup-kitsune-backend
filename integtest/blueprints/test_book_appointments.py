@@ -143,7 +143,7 @@ def patient_can_see_appointment_with_list_appointment(client, patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/patients/{patient.fhir_data["id"]}/appointments?date={yesterday.date().isoformat()}'
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patient.fhir_data["id"]}'
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
@@ -152,6 +152,30 @@ def patient_can_see_appointment_with_list_appointment(client, patient):
     found_patient = False
     for participant in appointments[0]["resource"]["participant"]:
         if participant["actor"]["reference"] == f"Patient/{patient.fhir_data['id']}":
+            found_patient = True
+            break
+    assert found_patient
+
+
+@then("the doctor can see the appointment being booked")
+def doctor_can_see_appointment_being_booked(client, doctor):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+
+    url = (
+        f'/appointments?date={now.date().isoformat()}&actor_id={doctor.fhir_data["id"]}'
+    )
+    token = get_token(doctor.uid)
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+
+    appointments = json.loads(resp.data)["entry"]
+
+    found_patient = False
+    for participant in appointments[0]["resource"]["participant"]:
+        if (
+            participant["actor"]["reference"]
+            == f"PractitionerRole/{doctor.fhir_data['id']}"
+        ):
             found_patient = True
             break
     assert found_patient

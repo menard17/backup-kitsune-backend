@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import pytz
 from fhir.resources import construct_fhir_element
 from flask import Blueprint, Response, request
 
@@ -19,17 +22,6 @@ class AppointmentController:
         self.slot_service = slot_service or SlotService(self.resource_client)
 
     def book_appointment(self):
-        """
-        The endpoint to book an appointment
-
-        Sample request body:
-        {
-            'practitioner_role_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d170',
-            'patient_id': 'd67e4a18-f386-4721-a2e7-fa6526494228',
-            'start': '2021-08-15T13:55:57.967345+09:00',
-            'end': '2021-08-15T14:55:57.967345+09:00'
-        }
-        """
         request_body = request.get_json()
         role_id = request_body.get("practitioner_role_id")
         patient_id = request_body.get("patient_id")
@@ -109,14 +101,6 @@ class AppointmentController:
         return Response(status=202, response=appointment.json())
 
     def update_appointment(self, request, appointment_id: str):
-        """
-        Update appointment status. Currently only support to update to noshow.
-
-        Sample Request Body:
-        {
-            "status": "noshow"
-        }
-        """
         request_body = request.get_json()
         status = request_body.get("status")
 
@@ -141,14 +125,75 @@ class AppointmentController:
 
         return Response(status=200, response=resp.json())
 
+    def search_appointments(self, request):
+        date = request.args.get("date")
+        actor_id = request.args.get("actor_id")
+
+        if actor_id is None:
+            return Response(status=400, response="missing param: actor_id")
+
+        claims_roles = role_auth.extract_roles(request.claims)
+        if "Patient" in claims_roles and claims_roles["Patient"]["id"] != actor_id:
+            return Response(
+                status=401,
+                response="patient can only search appointment for him/herself",
+            )
+
+        if date is None:
+            tokyo_timezone = pytz.timezone("Asia/Tokyo")
+            now = tokyo_timezone.localize(datetime.now())
+            date = now.date().isoformat()
+
+        result = self.resource_client.search(
+            "Appointment",
+            search=[
+                ("date", "ge" + date),
+                ("actor", actor_id),
+            ],
+        )
+        return Response(status=200, response=result.json())
+
 
 @appointment_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def book_appointment():
+    """
+    The endpoint to book an appointment
+
+    Sample request body:
+    {
+        'practitioner_role_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d170',
+        'patient_id': 'd67e4a18-f386-4721-a2e7-fa6526494228',
+        'start': '2021-08-15T13:55:57.967345+09:00',
+        'end': '2021-08-15T14:55:57.967345+09:00'
+    }
+    """
     return AppointmentController().book_appointment()
 
 
 @appointment_blueprint.route("/<appointment_id>/status", methods=["PUT"])
 @jwt_authenticated()
 def update_appointment(appointment_id: str):
+    """
+    Update appointment status. Currently only support to update to noshow.
+
+    Sample Request Body:
+    {
+        "status": "noshow"
+    }
+    """
     return AppointmentController().update_appointment(request, appointment_id)
+
+
+@appointment_blueprint.route("/", methods=["Get"])
+@jwt_authenticated()
+def search():
+    """
+    The endpoint to search and get a list of appointments, could search with url args.
+
+    Args:
+    * date: optional, default to current date.
+            Will filter appointment with its start date to be greater or equal to the given date.
+    * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
+    """
+    return AppointmentController().search_appointments(request)
