@@ -87,7 +87,9 @@ class EncountersController:
         encounter_search = self.resource_client.search("Encounter", search=search_list)
 
         if encounter_search.entry is None:
-            return Response(status=200, response=json.dumps({"data": []}, json_serial))
+            return Response(
+                status=200, response=json.dumps({"data": []}, default=json_serial)
+            )
         return Response(
             status=200,
             response=json.dumps(
