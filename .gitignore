@@ -175,3 +175,5 @@ junit
 local.env
 
 **/secrets/
+
+src/service.json
