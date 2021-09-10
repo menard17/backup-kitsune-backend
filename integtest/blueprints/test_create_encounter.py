@@ -1,98 +1,35 @@
 import json
-import uuid
 from datetime import datetime, timedelta
 
 import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Doctor, Patient
-from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
-from integtest.blueprints.helper import get_encounter, get_role
-from integtest.utils import get_token
+from integtest.blueprints.characters import Appointment, Doctor, Encounter, Patient
+from integtest.blueprints.helper import get_encounter
+from integtest.conftest import Client
+from integtest.utils import create_doctor, create_patient, get_token
 
 scenarios("../features/create_encounter.feature")
 
 
 @given("a doctor", target_fixture="doctor")
-def get_doctor(client):
-    doctor = auth.create_user(
-        email=f"doctor-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Test Doctor",
-        disabled=False,
-    )
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
-
-    practitioner_resp = client.post(
-        "/practitioners",
-        data=json.dumps(PRACTITIONER_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert practitioner_resp.status_code == 202
-    practitioner = json.loads(practitioner_resp.data.decode("utf-8"))
-    practitioner_roles_resp = client.post(
-        "/practitioner_roles",
-        data=json.dumps(get_role(practitioner["id"])),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert practitioner_roles_resp.status_code == 202
-
-    doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
-    return Doctor(doctor.uid, doctor_role, practitioner)
+def get_doctor(client: Client):
+    return create_doctor(client)
 
 
 @given("patient A", target_fixture="patientA")
-def get_patient_a(client):
-    patient = auth.create_user(
-        email=f"patient-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Patient A",
-        disabled=False,
-    )
-    token = get_token(patient.uid)
-
-    resp = client.post(
-        "/patients",
-        data=json.dumps(PATIENT_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert resp.status_code == 202
-    return Patient(patient.uid, json.loads(resp.data))
+def get_patient_a(client: Client):
+    return create_patient(client)
 
 
 @given("patient B", target_fixture="patientB")
-def get_patient_b(client):
-    patient = auth.create_user(
-        email=f"patient-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Patient B",
-        disabled=False,
-    )
-    token = get_token(patient.uid)
-
-    resp = client.post(
-        "/patients",
-        data=json.dumps(PATIENT_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert resp.status_code == 202
-    return Patient(patient.uid, json.loads(resp.data))
+def get_patient_b(client: Client):
+    return create_patient(client)
 
 
 @when("patient A makes an appointment", target_fixture="appointment")
-def book_appointment(client, doctor, patientA):
+def book_appointment(client: Client, doctor: Doctor, patientA: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
@@ -119,7 +56,9 @@ def book_appointment(client, doctor, patientA):
 
 
 @when("the doctor creates an encounter", target_fixture="encounter")
-def create_encounter(appointment, patientA: Patient, doctor: Doctor, client):
+def create_encounter(
+    client: Client, doctor: Doctor, patientA: Patient, appointment: Appointment
+):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
 
@@ -143,7 +82,7 @@ def create_encounter(appointment, patientA: Patient, doctor: Doctor, client):
 
 
 @when("the doctor starts the encounter")
-def start_encounter(encounter, doctor: Doctor, client, patientA: Patient):
+def start_encounter(client, doctor: Doctor, patientA: Patient, encounter: Encounter):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
     resp_patch = client.patch(
@@ -164,7 +103,9 @@ def start_encounter(encounter, doctor: Doctor, client, patientA: Patient):
 
 
 @then("the doctor can finish the encounter")
-def finish_encounter(encounter, doctor: Doctor, client, patientA: Patient):
+def finish_encounter(
+    client: Client, doctor: Doctor, patientA: Patient, encounter: Encounter
+):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
     resp = client.patch(
@@ -185,7 +126,7 @@ def finish_encounter(encounter, doctor: Doctor, client, patientA: Patient):
 
 
 @then("patient A can see the encounter but patient B cannnot see the encounter")
-def permission_for_patient(patientA: Patient, patientB: Patient, client):
+def permission_for_patient(client: Client, patientA: Patient, patientB: Patient):
     token_a = auth.create_custom_token(patientA.uid)
     token_a = get_token(patientA.uid)
 
@@ -210,7 +151,7 @@ def permission_for_patient(patientA: Patient, patientB: Patient, client):
 
 
 @then("patient A cannot change the status of encounter")
-def cannot_update_status(patientA: Patient, encounter, client):
+def cannot_update_status(client: Client, patientA: Patient, encounter: Encounter):
     token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
     resp = client.patch(

@@ -1,77 +1,30 @@
 import json
-import uuid
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
 import pytz
-from firebase_admin import auth
-from pytest_bdd import given, scenarios, then, when
+from pytest_bdd import scenarios, then, when
+from pytest_bdd.steps import given
 
-from integtest.blueprints.characters import Doctor, Patient
-from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
-from integtest.blueprints.helper import get_role
-from integtest.utils import get_token
+from integtest.blueprints.characters import Appointment, Doctor, Patient
+from integtest.conftest import Client
+from integtest.utils import create_doctor, create_patient, get_token
 
 scenarios("../features/book_appointments.feature")
 
 
 @given("a doctor", target_fixture="doctor")
-def get_doctor(client):
-    doctor = auth.create_user(
-        email=f"doctor-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Test Doctor",
-        disabled=False,
-    )
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
-
-    practitioner_resp = client.post(
-        "/practitioners",
-        data=json.dumps(PRACTITIONER_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert practitioner_resp.status_code == 202
-    practitioner_id = json.loads(practitioner_resp.data.decode("utf-8"))["id"]
-    practitioner_roles_resp = client.post(
-        "/practitioner_roles",
-        data=json.dumps(get_role(practitioner_id)),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert practitioner_roles_resp.status_code == 202
-
-    doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
-    return Doctor(doctor.uid, doctor_role)
+def get_doctor(client: Client):
+    return create_doctor(client)
 
 
 @given("a patient", target_fixture="patient")
-def get_patient(client):
-    patient = auth.create_user(
-        email=f"patient-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Test Patient",
-        disabled=False,
-    )
-    token = get_token(patient.uid)
-
-    resp = client.post(
-        "/patients",
-        data=json.dumps(PATIENT_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert resp.status_code == 202
-    return Patient(patient.uid, json.loads(resp.data))
+def get_patient(client: Client):
+    return create_patient(client)
 
 
 @when("the patient books a free time of the doctor", target_fixture="appointment")
-def book_appointment(client, doctor, patient):
+def book_appointment(client: Client, doctor: Doctor, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
@@ -98,7 +51,7 @@ def book_appointment(client, doctor, patient):
 
 
 @then("an appointment is created")
-def check_appointment(appointment, patient, doctor):
+def check_appointment(doctor: Doctor, patient: Patient, appointment: Appointment):
     assert appointment["description"] == "Booking practitioner role"
 
     participants = appointment["participant"]
@@ -121,7 +74,7 @@ def check_appointment(appointment, patient, doctor):
 
 
 @then("the period would be set as busy slots")
-def available_slots(client, patient, doctor):
+def available_slots(client: Client, doctor: Doctor, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()
@@ -139,7 +92,7 @@ def available_slots(client, patient, doctor):
 
 
 @then("the patient can see his/her own appointment")
-def patient_can_see_appointment_with_list_appointment(client, patient):
+def patient_can_see_appointment_with_list_appointment(client: Client, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
@@ -160,11 +113,9 @@ def patient_can_see_appointment_with_list_appointment(client, patient):
 @then("the doctor can see the appointment being booked")
 def doctor_can_see_appointment_being_booked(client, doctor):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    now = tokyo_timezone.localize(datetime.now())
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = (
-        f'/appointments?date={now.date().isoformat()}&actor_id={doctor.fhir_data["id"]}'
-    )
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={doctor.fhir_data["id"]}'
     token = get_token(doctor.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
@@ -185,7 +136,7 @@ def doctor_can_see_appointment_being_booked(client, doctor):
     "the patients end up not showing up so doctor set the appointment status as no show",
     target_fixture="appointment",
 )
-def set_appointment_no_show(client, doctor, appointment):
+def set_appointment_no_show(client: Client, doctor: Doctor, appointment: Appointment):
     token = get_token(doctor.uid)
     resp = client.put(
         f"/appointments/{appointment['id']}/status",
@@ -204,7 +155,7 @@ def check_appointment_status_no_show(appointment):
 
 
 @then("frees the slot")
-def frees_the_slot(client, patient, doctor):
+def frees_the_slot(client: Client, doctor: Doctor, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()

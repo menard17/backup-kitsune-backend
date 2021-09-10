@@ -174,4 +174,4 @@ junit
 # local env var
 local.env
 
-./secrets/
+**/secrets/

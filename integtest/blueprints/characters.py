@@ -1,3 +1,6 @@
+from typing import TypedDict
+
+
 class Patient:
     def __init__(self, firebase_uid, patient):
         self.uid = firebase_uid
@@ -9,3 +12,15 @@ class Doctor:
         self.uid = firebase_uid
         self.fhir_data = practitioner_role
         self.fhir_practitioner_data = practitioner
+
+
+class Appointment(TypedDict):
+    ...
+
+
+class Encounter(TypedDict):
+    ...
+
+
+class Slot(TypedDict):
+    ...
