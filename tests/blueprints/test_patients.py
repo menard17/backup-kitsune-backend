@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +14,7 @@ def test_get_patient(mocker, resource_client, test_patient_data):
 
     result = controller.get_patient("test-patient-id")
 
-    assert result == test_patient_data
+    assert json.loads(result.data)["data"] == test_patient_data
     resource_client.get_resource.assert_called_once_with("test-patient-id", "Patient")
 
 
@@ -23,7 +24,7 @@ def test_get_patients(mocker, resource_client, test_bundle_data):
 
     result = controller.get_patients()
 
-    assert result == test_bundle_data
+    assert json.loads(result.data)["data"] == test_bundle_data
     resource_client.get_resources.assert_called_once_with("Patient")
 
 

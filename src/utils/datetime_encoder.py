@@ -1,11 +1,13 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, z):
         if isinstance(z, datetime):
             return str(z)
+        if isinstance(z, date):
+            return z.strftime("%Y-%m-%d")
         else:
             return super().default(z)
 

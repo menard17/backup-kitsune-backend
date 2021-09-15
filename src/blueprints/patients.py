@@ -1,8 +1,11 @@
+import json
+
 from fhir.resources.patient import Patient
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from utils import role_auth
+from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
 
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
@@ -47,7 +50,10 @@ class Controller:
 
         :rtype: dict
         """
-        return self.resource_client.get_resource(patient_id, "Patient").dict()
+        patient = self.resource_client.get_resource(patient_id, "Patient")
+        return Response(
+            status=200, response=json.dumps({"data": datetime_encoder(patient.dict())})
+        )
 
     def get_patients(self) -> dict:
         """
@@ -57,7 +63,10 @@ class Controller:
 
         :rtype: dict
         """
-        return self.resource_client.get_resources("Patient").dict()
+        patients = self.resource_client.get_resources("Patient")
+        return Response(
+            status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
+        )
 
     def create_patient(self, request) -> dict:
         """Returns the details of a patient created.
