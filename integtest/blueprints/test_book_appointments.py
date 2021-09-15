@@ -6,16 +6,16 @@ import pytz
 from pytest_bdd import scenarios, then, when
 from pytest_bdd.steps import given
 
-from integtest.blueprints.characters import Appointment, Doctor, Patient
+from integtest.blueprints.characters import Appointment, Patient, Practitioner
 from integtest.conftest import Client
-from integtest.utils import create_doctor, create_patient, get_token
+from integtest.utils import create_patient, create_practitioner, get_token
 
 scenarios("../features/book_appointments.feature")
 
 
 @given("a doctor", target_fixture="doctor")
 def get_doctor(client: Client):
-    return create_doctor(client)
+    return create_practitioner(client)
 
 
 @given("a patient", target_fixture="patient")
@@ -24,7 +24,7 @@ def get_patient(client: Client):
 
 
 @when("the patient books a free time of the doctor", target_fixture="appointment")
-def book_appointment(client: Client, doctor: Doctor, patient: Patient):
+def book_appointment(client: Client, doctor: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
@@ -51,7 +51,7 @@ def book_appointment(client: Client, doctor: Doctor, patient: Patient):
 
 
 @then("an appointment is created")
-def check_appointment(doctor: Doctor, patient: Patient, appointment: Appointment):
+def check_appointment(doctor: Practitioner, patient: Patient, appointment: Appointment):
     assert appointment["description"] == "Booking practitioner role"
 
     participants = appointment["participant"]
@@ -74,7 +74,7 @@ def check_appointment(doctor: Doctor, patient: Patient, appointment: Appointment
 
 
 @then("the period would be set as busy slots")
-def available_slots(client: Client, doctor: Doctor, patient: Patient):
+def available_slots(client: Client, doctor: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()
@@ -111,7 +111,7 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
 
 
 @then("the doctor can see the appointment being booked")
-def doctor_can_see_appointment_being_booked(client, doctor):
+def doctor_can_see_appointment_being_booked(client, doctor: Practitioner):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
@@ -136,7 +136,9 @@ def doctor_can_see_appointment_being_booked(client, doctor):
     "the patients end up not showing up so doctor set the appointment status as no show",
     target_fixture="appointment",
 )
-def set_appointment_no_show(client: Client, doctor: Doctor, appointment: Appointment):
+def set_appointment_no_show(
+    client: Client, doctor: Practitioner, appointment: Appointment
+):
     token = get_token(doctor.uid)
     resp = client.put(
         f"/appointments/{appointment['id']}/status",
@@ -155,7 +157,7 @@ def check_appointment_status_no_show(appointment):
 
 
 @then("frees the slot")
-def frees_the_slot(client: Client, doctor: Doctor, patient: Patient):
+def frees_the_slot(client: Client, doctor: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()

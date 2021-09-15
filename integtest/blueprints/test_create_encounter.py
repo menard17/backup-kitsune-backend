@@ -5,17 +5,22 @@ import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Appointment, Doctor, Encounter, Patient
+from integtest.blueprints.characters import (
+    Appointment,
+    Encounter,
+    Patient,
+    Practitioner,
+)
 from integtest.blueprints.helper import get_encounter
 from integtest.conftest import Client
-from integtest.utils import create_doctor, create_patient, get_token
+from integtest.utils import create_patient, create_practitioner, get_token
 
 scenarios("../features/create_encounter.feature")
 
 
 @given("a doctor", target_fixture="doctor")
 def get_doctor(client: Client):
-    return create_doctor(client)
+    return create_practitioner(client)
 
 
 @given("patient A", target_fixture="patientA")
@@ -29,7 +34,7 @@ def get_patient_b(client: Client):
 
 
 @when("patient A makes an appointment", target_fixture="appointment")
-def book_appointment(client: Client, doctor: Doctor, patientA: Patient):
+def book_appointment(client: Client, doctor: Practitioner, patientA: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
@@ -57,7 +62,7 @@ def book_appointment(client: Client, doctor: Doctor, patientA: Patient):
 
 @when("the doctor creates an encounter", target_fixture="encounter")
 def create_encounter(
-    client: Client, doctor: Doctor, patientA: Patient, appointment: Appointment
+    client: Client, doctor: Practitioner, patientA: Patient, appointment: Appointment
 ):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
@@ -82,7 +87,9 @@ def create_encounter(
 
 
 @when("the doctor starts the encounter")
-def start_encounter(client, doctor: Doctor, patientA: Patient, encounter: Encounter):
+def start_encounter(
+    client, doctor: Practitioner, patientA: Patient, encounter: Encounter
+):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
     resp_patch = client.patch(
@@ -104,7 +111,7 @@ def start_encounter(client, doctor: Doctor, patientA: Patient, encounter: Encoun
 
 @then("the doctor can finish the encounter")
 def finish_encounter(
-    client: Client, doctor: Doctor, patientA: Patient, encounter: Encounter
+    client: Client, doctor: Practitioner, patientA: Patient, encounter: Encounter
 ):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)

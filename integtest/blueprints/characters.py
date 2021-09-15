@@ -7,7 +7,7 @@ class Patient:
         self.fhir_data = patient
 
 
-class Doctor:
+class Practitioner:
     def __init__(self, firebase_uid, practitioner_role=None, practitioner=None):
         self.uid = firebase_uid
         self.fhir_data = practitioner_role

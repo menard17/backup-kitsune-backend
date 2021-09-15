@@ -7,7 +7,7 @@ import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Doctor, Slot
+from integtest.blueprints.characters import Practitioner, Slot
 from integtest.blueprints.fhir_input_constants import PRACTITIONER_DATA
 from integtest.blueprints.helper import get_role
 from integtest.conftest import Client
@@ -48,11 +48,11 @@ def create_practitioner(client: Client):
 
     role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
     assert role["practitioner"]["reference"] == f"Practitioner/{practitioner_id}"
-    return Doctor(doctor.uid, role)
+    return Practitioner(doctor.uid, role)
 
 
 @when("the practitioner role set the period to busy", target_fixture="slot")
-def set_busy_slots(client: Client, doctor: Doctor):
+def set_busy_slots(client: Client, doctor: Practitioner):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
 
@@ -83,7 +83,7 @@ def set_busy_slots(client: Client, doctor: Doctor):
 
 
 @then("the user can fetch those busy slots")
-def available_slots(client: Client, doctor: Doctor, slot: Slot):
+def available_slots(client: Client, doctor: Practitioner, slot: Slot):
     token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
 

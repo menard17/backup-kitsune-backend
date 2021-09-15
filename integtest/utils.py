@@ -5,7 +5,7 @@ import uuid
 import requests
 from firebase_admin import auth
 
-from integtest.blueprints.characters import Doctor, Patient
+from integtest.blueprints.characters import Patient, Practitioner
 from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
 from integtest.blueprints.helper import get_role
 from integtest.conftest import Client
@@ -33,16 +33,16 @@ def get_token(uid):
     return resp.json()["idToken"]
 
 
-def create_doctor(client: Client):
-    doctor = auth.create_user(
+def create_practitioner(client: Client):
+    practitioner = auth.create_user(
         email=f"doctor-{uuid.uuid4()}@fake.umed.jp",
         email_verified=True,
         password=f"password-{uuid.uuid4()}",
-        display_name="Test Doctor",
+        display_name="Test User",
         disabled=False,
     )
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
 
     practitioner_resp = client.post(
         "/practitioners",
@@ -51,10 +51,10 @@ def create_doctor(client: Client):
         content_type="application/json",
     )
     assert practitioner_resp.status_code == 202
-    practitioner = json.loads(practitioner_resp.data.decode("utf-8"))
+    practitioner_output = json.loads(practitioner_resp.data.decode("utf-8"))
     practitioner_roles_resp = client.post(
         "/practitioner_roles",
-        data=json.dumps(get_role(practitioner["id"])),
+        data=json.dumps(get_role(practitioner_output["id"])),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -62,7 +62,7 @@ def create_doctor(client: Client):
     assert practitioner_roles_resp.status_code == 202
 
     doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
-    return Doctor(doctor.uid, doctor_role, practitioner)
+    return Practitioner(practitioner.uid, doctor_role, practitioner_output)
 
 
 def create_patient(client: Client):
