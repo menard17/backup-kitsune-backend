@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
@@ -11,44 +10,14 @@ from integtest.blueprints.characters import Practitioner, Slot
 from integtest.blueprints.fhir_input_constants import PRACTITIONER_DATA
 from integtest.blueprints.helper import get_role
 from integtest.conftest import Client
-from integtest.utils import get_token
+from integtest.utils import create_practitioner, get_token
 
 scenarios("../features/get_practitioner_slots.feature")
 
 
-@given("a practitioner role is created", target_fixture="doctor")
-def create_practitioner(client: Client):
-    doctor = auth.create_user(
-        email=f"doctor-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Test Doctor",
-        disabled=False,
-    )
-
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
-
-    practitioner_resp = client.post(
-        "/practitioners",
-        data=json.dumps(PRACTITIONER_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert practitioner_resp.status_code == 202
-    practitioner_id = json.loads(practitioner_resp.data.decode("utf-8"))["id"]
-
-    practitioner_roles_resp = client.post(
-        "/practitioner_roles",
-        data=json.dumps(get_role(practitioner_id)),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
-    assert role["practitioner"]["reference"] == f"Practitioner/{practitioner_id}"
-    return Practitioner(doctor.uid, role)
+@given("a practitioner", target_fixture="doctor")
+def get_doctor(client: Client):
+    return create_practitioner(client)
 
 
 @when("the practitioner role set the period to busy", target_fixture="slot")
