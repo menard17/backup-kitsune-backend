@@ -15,3 +15,4 @@ Feature: Encounters
         When patient A makes an appointment
         When the doctor creates an encounter
         Then patient A can see the encounter but patient B cannnot see the encounter
+        Then patient A can see encounter by appointment id

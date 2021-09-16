@@ -11,11 +11,34 @@ from integtest.blueprints.characters import (
     Patient,
     Practitioner,
 )
-from integtest.blueprints.helper import get_encounter
 from integtest.conftest import Client
 from integtest.utils import create_patient, create_practitioner, get_token
 
 scenarios("../features/create_encounter.feature")
+
+
+def get_encounter_data(
+    patient_id: str, practitioner_id: str, appointment_id: str
+) -> dict:
+    encounter = {
+        "resourceType": "Encounter",
+        "status": "in-progress",
+        "appointment": [{"reference": f"Appointment/{appointment_id}"}],
+        "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "HH",
+            "display": "home health",
+        },
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "participant": [
+            {
+                "individual": {
+                    "reference": f"Practitioner/{practitioner_id}",
+                },
+            }
+        ],
+    }
+    return encounter
 
 
 @given("a doctor", target_fixture="doctor")
@@ -70,7 +93,7 @@ def create_encounter(
     resp = client.post(
         f"/patients/{patientA.fhir_data['id']}/encounters",
         data=json.dumps(
-            get_encounter(
+            get_encounter_data(
                 patientA.fhir_data["id"],
                 doctor.fhir_practitioner_data["id"],
                 appointment["id"],
@@ -106,7 +129,7 @@ def start_encounter(
     )
 
     assert resp.status_code == 200
-    assert json.loads(resp.data)["data"]["status"] == "in-progress"
+    assert json.loads(resp.data)["data"][0]["status"] == "in-progress"
 
 
 @then("the doctor can finish the encounter")
@@ -129,11 +152,14 @@ def finish_encounter(
     )
 
     assert get_resp.status_code == 200
-    assert json.loads(get_resp.data)["data"]["status"] == "finished"
+
+    assert json.loads(get_resp.data)["data"][0]["status"] == "finished"
 
 
 @then("patient A can see the encounter but patient B cannnot see the encounter")
-def permission_for_patient(client: Client, patientA: Patient, patientB: Patient):
+def permission_for_patient(
+    client: Client, patientA: Patient, patientB: Patient, encounter: Encounter
+):
     token_a = auth.create_custom_token(patientA.uid)
     token_a = get_token(patientA.uid)
 
@@ -147,6 +173,7 @@ def permission_for_patient(client: Client, patientA: Patient, patientB: Patient)
     )
 
     assert resp_a.status_code == 200
+    assert json.loads(resp_a.data)["data"][0]["id"] == encounter["id"]
 
     resp_b = client.get(
         f"/patients/{patientA.fhir_data['id']}/encounters",
@@ -167,3 +194,18 @@ def cannot_update_status(client: Client, patientA: Patient, encounter: Encounter
     )
 
     assert resp.status_code == 401
+
+
+@then("patient A can see encounter by appointment id")
+def get_encounter_by_appointment_id(
+    client: Client, patientA: Patient, appointment: Appointment, encounter: Encounter
+):
+    token = auth.create_custom_token(patientA.uid)
+    token = get_token(patientA.uid)
+    resp = client.get(
+        f"/patients/{patientA.fhir_data['id']}/encounters?appointment_id={appointment['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200
+    assert json.loads(resp.data)["data"][0]["id"] == encounter["id"]
