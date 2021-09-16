@@ -1,12 +1,13 @@
 import logging
 import re
-from firebase_admin import auth as firebase_auth
 from functools import wraps
 from typing import Any, Callable
-from utils import role_auth
 
 import firebase_admin
+from firebase_admin import auth as firebase_auth
 from flask import Response, request
+
+from utils import role_auth
 
 default_app = firebase_admin.initialize_app()
 log = logging.getLogger(__name__)

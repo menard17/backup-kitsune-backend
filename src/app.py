@@ -5,6 +5,7 @@ from flask import Flask, Response, request
 from flask_cors import CORS
 
 from blueprints.appointments import appointment_blueprint
+from blueprints.diagnostic_reports import diagnostic_reports_blueprint
 from blueprints.encounters import encounters_blueprint
 from blueprints.organizations import organization_blueprint
 from blueprints.patients import patients_blueprint
@@ -28,6 +29,7 @@ app.register_blueprint(payments_blueprint)
 app.register_blueprint(practitioners_blueprint)
 app.register_blueprint(practitioner_roles_blueprint)
 app.register_blueprint(messaging_blueprint)
+app.register_blueprint(diagnostic_reports_blueprint)
 
 if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])

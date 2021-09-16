@@ -160,7 +160,7 @@ def check_appointment_status_no_show(appointment):
 def frees_the_slot(client: Client, doctor: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
-    start = (now - timedelta(hours=1)).isoformat()
+    start = (now - timedelta(hours=2)).isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
     url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'

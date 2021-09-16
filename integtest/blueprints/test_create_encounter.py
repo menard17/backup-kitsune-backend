@@ -1,7 +1,5 @@
 import json
-from datetime import datetime, timedelta
 
-import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
@@ -12,33 +10,15 @@ from integtest.blueprints.characters import (
     Practitioner,
 )
 from integtest.conftest import Client
-from integtest.utils import create_patient, create_practitioner, get_token
+from integtest.utils import (
+    create_appointment,
+    create_encounter,
+    create_patient,
+    create_practitioner,
+    get_token,
+)
 
 scenarios("../features/create_encounter.feature")
-
-
-def get_encounter_data(
-    patient_id: str, practitioner_id: str, appointment_id: str
-) -> dict:
-    encounter = {
-        "resourceType": "Encounter",
-        "status": "in-progress",
-        "appointment": [{"reference": f"Appointment/{appointment_id}"}],
-        "class": {
-            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-            "code": "HH",
-            "display": "home health",
-        },
-        "subject": {"reference": f"Patient/{patient_id}"},
-        "participant": [
-            {
-                "individual": {
-                    "reference": f"Practitioner/{practitioner_id}",
-                },
-            }
-        ],
-    }
-    return encounter
 
 
 @given("a doctor", target_fixture="doctor")
@@ -58,55 +38,14 @@ def get_patient_b(client: Client):
 
 @when("patient A makes an appointment", target_fixture="appointment")
 def book_appointment(client: Client, doctor: Practitioner, patientA: Patient):
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    now = tokyo_timezone.localize(datetime.now())
-    start = now.isoformat()
-    end = (now + timedelta(hours=1)).isoformat()
-
-    appointment_data = {
-        "practitioner_role_id": doctor.fhir_data["id"],
-        "patient_id": patientA.fhir_data["id"],
-        "start": start,
-        "end": end,
-    }
-
-    token = get_token(patientA.uid)
-    resp = client.post(
-        "/appointments",
-        data=json.dumps(appointment_data),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert resp.status_code == 202
-
-    appointment = json.loads(resp.data)
-    return appointment
+    return create_appointment(client, doctor, patientA)
 
 
 @when("the doctor creates an encounter", target_fixture="encounter")
-def create_encounter(
+def get_encounter(
     client: Client, doctor: Practitioner, patientA: Patient, appointment: Appointment
 ):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
-
-    resp = client.post(
-        f"/patients/{patientA.fhir_data['id']}/encounters",
-        data=json.dumps(
-            get_encounter_data(
-                patientA.fhir_data["id"],
-                doctor.fhir_practitioner_data["id"],
-                appointment["id"],
-            )
-        ),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-
-    assert resp.status_code == 200
-
-    encounter = json.loads(resp.data)
-    return encounter
+    return create_encounter(client, doctor, patientA, appointment)
 
 
 @when("the doctor starts the encounter")

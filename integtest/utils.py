@@ -1,13 +1,15 @@
 import json
 import os
 import uuid
+from datetime import datetime, timedelta
 
+import pytz
 import requests
 from firebase_admin import auth
 
-from integtest.blueprints.characters import Patient, Practitioner
+from integtest.blueprints.characters import Appointment, Patient, Practitioner
 from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
-from integtest.blueprints.helper import get_role
+from integtest.blueprints.helper import get_encounter_data, get_role
 from integtest.conftest import Client
 
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -84,3 +86,54 @@ def create_patient(client: Client):
 
     assert resp.status_code == 202
     return Patient(patient.uid, json.loads(resp.data))
+
+
+def create_appointment(client: Client, doctor: Practitioner, patientA: Patient):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    start = now.isoformat()
+    end = (now + timedelta(hours=1)).isoformat()
+
+    appointment_data = {
+        "practitioner_role_id": doctor.fhir_data["id"],
+        "patient_id": patientA.fhir_data["id"],
+        "start": start,
+        "end": end,
+    }
+
+    token = get_token(patientA.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 202
+
+    appointment = json.loads(resp.data)
+    return appointment
+
+
+def create_encounter(
+    client: Client, doctor: Practitioner, patient: Patient, appointment: Appointment
+):
+    token = auth.create_custom_token(doctor.uid)
+    token = get_token(doctor.uid)
+
+    resp = client.post(
+        f"/patients/{patient.fhir_data['id']}/encounters",
+        data=json.dumps(
+            get_encounter_data(
+                patient.fhir_data["id"],
+                doctor.fhir_practitioner_data["id"],
+                appointment["id"],
+            )
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+
+    encounter = json.loads(resp.data)
+    return encounter

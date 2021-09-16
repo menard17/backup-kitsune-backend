@@ -26,5 +26,56 @@ def get_role(id: str) -> dict:
             }
         ],
         "availabilityExceptions": "Adam is generally unavailable on public holidays and during the Christmas/New Year break",
+        "extension": [
+            {"url": "zoom-id", "valueString": "zoom-id"},
+            {"url": "zoom-passccode", "valueString": "zoom-passcode"},
+        ],
     }
     return role
+
+
+def get_diagnostic_report_data(
+    patient_id: str, practitioner_id: str, encounter_id: str
+) -> dict:
+    diagnostic_report = {
+        "resourceType": "DiagnosticReport",
+        "status": "final",
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "encounter": {"reference": f"Encounter/{encounter_id}"},
+        "performer": [{"reference": f"Practitioner/{practitioner_id}"}],
+        "conclusion": "conclusion",
+        "code": {
+            "coding": [
+                {
+                    "system": "http://snomed.info/sct",
+                    "code": "448337001",
+                    "display": "Telemedicine",
+                }
+            ],
+        },
+    }
+    return diagnostic_report
+
+
+def get_encounter_data(
+    patient_id: str, practitioner_id: str, appointment_id: str
+) -> dict:
+    encounter = {
+        "resourceType": "Encounter",
+        "status": "in-progress",
+        "appointment": [{"reference": f"Appointment/{appointment_id}"}],
+        "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "HH",
+            "display": "home health",
+        },
+        "subject": {"reference": f"Patient/{patient_id}"},
+        "participant": [
+            {
+                "individual": {
+                    "reference": f"Practitioner/{practitioner_id}",
+                },
+            }
+        ],
+    }
+    return encounter

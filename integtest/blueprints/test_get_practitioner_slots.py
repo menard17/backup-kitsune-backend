@@ -7,8 +7,6 @@ from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.blueprints.characters import Practitioner, Slot
-from integtest.blueprints.fhir_input_constants import PRACTITIONER_DATA
-from integtest.blueprints.helper import get_role
 from integtest.conftest import Client
 from integtest.utils import create_practitioner, get_token
 
