@@ -1,5 +1,7 @@
 import json
+from datetime import datetime, timedelta
 
+import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
@@ -160,5 +162,5 @@ def get_appointment_status(client: Client, patientA: Patient, appointment: Appoi
     url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patientA.fhir_data["id"]}'
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
-    appointments = json.loads(resp.data)["entry"]
-    assert appointments[0]["resource"]["status"] == "fulfilled"
+    appointments = json.loads(resp.data)["data"]
+    assert appointments[0]["status"] == "fulfilled"
