@@ -148,3 +148,17 @@ def get_encounter_by_appointment_id(
 
     assert resp.status_code == 200
     assert json.loads(resp.data)["data"][0]["id"] == encounter["id"]
+
+
+@then("appointment status is changed to fulfilled")
+def get_appointment_status(client: Client, patientA: Patient, appointment: Appointment):
+    token = auth.create_custom_token(patientA.uid)
+    token = get_token(patientA.uid)
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
+
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patientA.fhir_data["id"]}'
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+
+    appointments = json.loads(resp.data)["entry"]
+    assert appointments[0]["resource"]["status"] == "fulfilled"

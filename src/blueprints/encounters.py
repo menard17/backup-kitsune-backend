@@ -123,6 +123,8 @@ class EncountersController:
         from the frontend client(by patient) since everything assumes to use Firebase for
         authentication/authorization. Diagnosis should be created after encounter is created
 
+        When encounter is created, appointment status is updated to fulfilled automaticaclly.
+
         Body should contain appointment, practitionerRole, and patient
 
         :param data: FHIR data for practitioner
@@ -132,7 +134,12 @@ class EncountersController:
         """
         encounter = Encounter.parse_obj(data)
         encounter = self.resource_client.create_resource(encounter)
-
+        if (appointment := encounter.dict().get("appointment")) and len(
+            appointment
+        ) > 0:
+            appointment_id = appointment[0]["reference"].split("/")[1]
+            value = [{"op": "add", "path": "/status", "value": "fulfilled"}]
+            self.resource_client.patch_resource(appointment_id, "Appointment", value)
         return Response(status=200, response=encounter.json())
 
     def update_encounter(self, encounter_id: str, status: str) -> Response:
