@@ -37,10 +37,10 @@ def get_token(uid):
 
 def create_practitioner(client: Client):
     practitioner = auth.create_user(
-        email=f"doctor-{uuid.uuid4()}@fake.umed.jp",
+        email=f"practitioner-{uuid.uuid4()}@fake.umed.jp",
         email_verified=True,
         password=f"password-{uuid.uuid4()}",
-        display_name="Test User",
+        display_name="Test Practitioner",
         disabled=False,
     )
     token = auth.create_custom_token(practitioner.uid)

@@ -1,12 +1,16 @@
+import json
 from datetime import datetime
 
 import pytz
-from fhir.resources import construct_fhir_element
+from fhir.resources.appointment import Appointment
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
+from blueprints.service_requests import ServiceRequestController
+from json_serialize import json_serial
 from services.slots_service import SlotService
 from utils import role_auth
+from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
 
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
@@ -27,6 +31,7 @@ class AppointmentController:
         patient_id = request_body.get("patient_id")
         start = request_body.get("start")
         end = request_body.get("end")
+        service_request_id = request_body.get("service_request_id")
 
         if role_id is None:
             return Response(status=400, response="missing param: practitioner_role_id")
@@ -96,7 +101,16 @@ class AppointmentController:
                 },
             ],
         }
-        appointment = construct_fhir_element("Appointment", appointment_data)
+        if service_request_id is not None:
+            appointment_data["basedOn"] = [
+                {
+                    "reference": f"ServiceRequest/{service_request_id}",
+                    "display": "Instruction",
+                }
+            ]
+            print(appointment_data)
+
+        appointment = Appointment.parse_obj(appointment_data)
         appointment = self.resource_client.create_resource(appointment)
         return Response(status=202, response=appointment.json())
 
@@ -125,7 +139,7 @@ class AppointmentController:
 
         return Response(status=200, response=resp.json())
 
-    def search_appointments(self, request):
+    def search_appointments(self, request, service_request_id: str = None):
         date = request.args.get("date")
         actor_id = request.args.get("actor_id")
 
@@ -139,19 +153,37 @@ class AppointmentController:
                 response="patient can only search appointment for him/herself",
             )
 
-        if date is None:
-            tokyo_timezone = pytz.timezone("Asia/Tokyo")
-            now = tokyo_timezone.localize(datetime.now())
-            date = now.date().isoformat()
+        if service_request_id:
+            result = self.resource_client.search(
+                "Appointment",
+                search=[
+                    ("basedOn", service_request_id),
+                ],
+            )
+        else:
+            if date is None:
+                tokyo_timezone = pytz.timezone("Asia/Tokyo")
+                now = tokyo_timezone.localize(datetime.now())
+                date = now.date().isoformat()
 
-        result = self.resource_client.search(
-            "Appointment",
-            search=[
-                ("date", "ge" + date),
-                ("actor", actor_id),
-            ],
+            result = self.resource_client.search(
+                "Appointment",
+                search=[
+                    ("date", "ge" + date),
+                    ("actor", actor_id),
+                ],
+            )
+        if result.entry is None:
+            return Response(
+                status=200, response=json.dumps({"data": []}, default=json_serial)
+            )
+        return Response(
+            status=200,
+            response=json.dumps(
+                {"data": [datetime_encoder(e.resource.dict()) for e in result.entry]},
+                default=json_serial,
+            ),
         )
-        return Response(status=200, response=result.json())
 
 
 @appointment_blueprint.route("/", methods=["POST"])
@@ -159,6 +191,7 @@ class AppointmentController:
 def book_appointment():
     """
     The endpoint to book an appointment
+    service_request_id is optional argument
 
     Sample request body:
     {
@@ -166,6 +199,7 @@ def book_appointment():
         'patient_id': 'd67e4a18-f386-4721-a2e7-fa6526494228',
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00'
+        'service_request_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171'
     }
     """
     return AppointmentController().book_appointment()
@@ -190,10 +224,21 @@ def update_appointment(appointment_id: str):
 def search():
     """
     The endpoint to search and get a list of appointments, could search with url args.
+    if encounter id is provided, appointment that is associated to service request
+    that's associated to encounter will be returned.
 
     Args:
     * date: optional, default to current date.
             Will filter appointment with its start date to be greater or equal to the given date.
     * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
+
     """
-    return AppointmentController().search_appointments(request)
+    encounter_id = request.args.get("encounter_id")
+    patient_id = request.args.get("actor_id")
+    data = json.loads(
+        ServiceRequestController().get_service_requests(patient_id, encounter_id).data
+    )
+    service_request_id = None
+    if len(data["data"]) > 0:
+        service_request_id = data["data"][0]["id"]
+    return AppointmentController().search_appointments(request, service_request_id)

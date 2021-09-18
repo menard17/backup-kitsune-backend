@@ -96,9 +96,10 @@ class EncountersController:
 
     def get_encounters(self, patient_id: str, appointment_id: str = None) -> Response:
         """
-        Returns details of all encounters.
-        Access to this function should be limited.
-        Have to get FHIR's UUID from UID bypass for test.
+        Helper function to return resources based on search clauses
+
+        :param search_clause: search parameters
+        :type search_clause: list(tuple(str, str))
 
         Optionally resource can be fileted by appointment id
 

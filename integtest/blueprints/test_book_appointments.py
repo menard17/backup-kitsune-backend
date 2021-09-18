@@ -99,11 +99,10 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
     url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patient.fhir_data["id"]}'
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
-
-    appointments = json.loads(resp.data)["entry"]
+    appointments = json.loads(resp.data)["data"]
 
     found_patient = False
-    for participant in appointments[0]["resource"]["participant"]:
+    for participant in appointments[0]["participant"]:
         if participant["actor"]["reference"] == f"Patient/{patient.fhir_data['id']}":
             found_patient = True
             break
@@ -119,10 +118,10 @@ def doctor_can_see_appointment_being_booked(client, doctor: Practitioner):
     token = get_token(doctor.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
-    appointments = json.loads(resp.data)["entry"]
+    appointments = json.loads(resp.data)["data"]
 
     found_patient = False
-    for participant in appointments[0]["resource"]["participant"]:
+    for participant in appointments[0]["participant"]:
         if (
             participant["actor"]["reference"]
             == f"PractitionerRole/{doctor.fhir_data['id']}"

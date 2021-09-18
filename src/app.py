@@ -12,8 +12,9 @@ from blueprints.patients import patients_blueprint
 from blueprints.payments import payments_blueprint
 from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
-from services.messaging_service import messaging_blueprint
+from blueprints.service_requests import service_requests_blueprint
 from get_zoom_jwt import get_zoom_jwt
+from services.messaging_service import messaging_blueprint
 from utils.middleware import jwt_authenticated
 from utils.stripe_setup import StripeSingleton
 
@@ -30,6 +31,7 @@ app.register_blueprint(practitioners_blueprint)
 app.register_blueprint(practitioner_roles_blueprint)
 app.register_blueprint(messaging_blueprint)
 app.register_blueprint(diagnostic_reports_blueprint)
+app.register_blueprint(service_requests_blueprint)
 
 if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])

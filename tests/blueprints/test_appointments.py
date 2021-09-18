@@ -202,7 +202,7 @@ def test_search_appointment():
     resource_client.search = mock_search
 
     request = FakeRequest(
-        args={"actor_id": patient_id},
+        args={"actor_id": patient_id, "date": expected_search_date},
         claims={
             "roles": {
                 "Patient": {
@@ -216,7 +216,10 @@ def test_search_appointment():
     resp_data = resp.data.decode("utf-8")
 
     assert resp.status_code == 200
-    assert resp_data == json.dumps(APPOINTMENT_SEARCH_DATA)
+    assert (
+        json.loads(resp_data)["data"][0]["id"]
+        == APPOINTMENT_SEARCH_DATA["entry"][0]["resource"]["id"]
+    )
 
 
 def test_search_appointment_with_date_provided():
@@ -248,7 +251,10 @@ def test_search_appointment_with_date_provided():
     resp_data = resp.data.decode("utf-8")
 
     assert resp.status_code == 200
-    assert resp_data == json.dumps(APPOINTMENT_SEARCH_DATA)
+    assert (
+        json.loads(resp_data)["data"][0]["id"]
+        == APPOINTMENT_SEARCH_DATA["entry"][0]["resource"]["id"]
+    )
 
 
 def test_search_appointment_patient_cannot_see_other_people_data():

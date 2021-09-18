@@ -24,3 +24,11 @@ class Encounter(TypedDict):
 
 class Slot(TypedDict):
     ...
+
+
+class DiagnosticReport(TypedDict):
+    ...
+
+
+class ServiceRequest(TypedDict):
+    ...
