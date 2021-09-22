@@ -159,7 +159,7 @@ class DiagnosticReportController:
         diagnostic_report = DiagnosticReport.parse_obj(data)
         diagnostic_report = self.resource_client.create_resource(diagnostic_report)
 
-        return Response(status=200, response=datetime_encoder(diagnostic_report.json()))
+        return Response(status=201, response=datetime_encoder(diagnostic_report.json()))
 
     def update_diagnostic_report(
         self, diagnostic_report_id: str, data: Json

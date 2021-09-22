@@ -61,7 +61,7 @@ def start_encounter(
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert resp_patch.status_code == 202
+    assert resp_patch.status_code == 200
 
     resp = client.get(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}",
@@ -84,7 +84,7 @@ def finish_encounter(
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert resp.status_code == 202
+    assert resp.status_code == 200
 
     get_resp = client.get(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}",

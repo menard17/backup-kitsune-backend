@@ -1,12 +1,12 @@
 from firebase_admin import messaging
-from utils.middleware import jwt_authenticated
 from flask import Blueprint, Response, request
+
+from utils.middleware import jwt_authenticated
 
 messaging_blueprint = Blueprint("messaging", __name__, url_prefix="/messaging")
 
 
 class MessagingController:
-
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 

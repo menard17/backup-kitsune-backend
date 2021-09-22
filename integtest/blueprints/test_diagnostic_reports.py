@@ -70,7 +70,7 @@ def create_diagnostic_report(
 
     data = json.loads(diagnostic_report_resp.data)
     assert data["conclusion"] == "conclusion"
-    assert diagnostic_report_resp.status_code == 200
+    assert diagnostic_report_resp.status_code == 201
     return json.loads(diagnostic_report_resp.data)["id"]
 
 

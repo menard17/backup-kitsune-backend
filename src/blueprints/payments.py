@@ -15,7 +15,7 @@ def create_customer():
     body = json.loads(request.data)
     email = body["email"]
     account = stripe.Customer.create(email=email)
-    return account
+    return account, 201
 
 
 @payments_blueprint.route("/customer/<customer_id>", methods=["GET"])
@@ -26,10 +26,10 @@ def get_customer(customer_id: str):
     :param customer_id: uid for customer
     :type customer_id: str
 
-    :rtype: Object
+    :rtype: (dict, int)
     """
     customer = stripe.Customer.retrieve(customer_id)
-    return customer
+    return customer, 200
 
 
 @payments_blueprint.route("/payment-intent", methods=["POST"])
@@ -52,7 +52,7 @@ def create_payment_intent():
             confirm=True,
         )
 
-        return payment_intent
+        return payment_intent, 201
     except stripe.error.CardError as e:
         err = e.error
         # Error code will be authentication_required
@@ -60,7 +60,7 @@ def create_payment_intent():
         print("Code is: %s" % err.code)
         payment_intent_id = err.payment_intent["id"]
         error_payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        return error_payment_intent
+        return error_payment_intent, 500
 
 
 @payments_blueprint.route("/setup-intent", methods=["POST"])
@@ -69,7 +69,7 @@ def create_setup_intent():
     body = json.loads(request.data)
     customer_id = body["customerId"]
     intent = stripe.SetupIntent.create(customer=customer_id)
-    return intent
+    return intent, 201
 
 
 @payments_blueprint.route("/<customer_id>/payment-methods", methods=["GET"])
@@ -80,14 +80,14 @@ def get_payment_methods(customer_id: str):
     :param customer_id: uid for customer
     :type customer_id: str
 
-    :rtype: array
+    :rtype: (dict, int)
     """
     payment_methods = stripe.PaymentMethod.list(
         customer=customer_id,
         type="card",
     )
 
-    return payment_methods
+    return payment_methods, 200
 
 
 @payments_blueprint.route("/payment-methods/<payment_method_id>", methods=["GET"])
@@ -98,11 +98,11 @@ def get_payment_method(payment_method_id: str):
     :param payment_method_id: uid for payment method
     :type payment_method_id: str
 
-    :rtype: Object
+    :rtype: (dict, int)
     """
     payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
-    return payment_method
+    return payment_method, 200
 
 
 @payments_blueprint.route("/payment-methods/<payment_method_id>", methods=["DELETE"])
@@ -113,11 +113,11 @@ def detach_payment_method(payment_method_id: str):
     :param payment_method_id: uid for payment method
     :type payment_method_id: str
 
-    :rtype: Object
+    :rtype: (dict, int)
     """
     payment_method = stripe.PaymentMethod.detach(payment_method_id)
 
-    return payment_method
+    return payment_method, 200
 
 
 @payments_blueprint.route("/<customer_id>/payment-intents", methods=["GET"])
@@ -128,7 +128,7 @@ def get_payment_intents(customer_id: str):
     :param customer_id: uid for customer
     :type customer_id: str
 
-    :rtype: array
+    :rtype: (str, int) or (dict, int)
     """
 
     try:
@@ -139,7 +139,7 @@ def get_payment_intents(customer_id: str):
             500,
         )
 
-    return payment_intents
+    return payment_intents, 200
 
 
 @payments_blueprint.route("/payment-intent/<payment_intent_id>", methods=["GET"])
@@ -150,7 +150,7 @@ def get_payment_intent(payment_intent_id: str):
     :param payment_intent_id: uid for payment intent
     :type payment_intent_id: str
 
-    :rtype: Object
+    :rtype: (str, int) or (dict, int)
     """
     try:
         payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -160,4 +160,4 @@ def get_payment_intent(payment_intent_id: str):
             500,
         )
 
-    return payment_intent
+    return payment_intent, 200

@@ -108,11 +108,10 @@ class AppointmentController:
                     "display": "Instruction",
                 }
             ]
-            print(appointment_data)
 
         appointment = Appointment.parse_obj(appointment_data)
         appointment = self.resource_client.create_resource(appointment)
-        return Response(status=202, response=appointment.json())
+        return Response(status=201, response=appointment.json())
 
     def update_appointment(self, request, appointment_id: str):
         request_body = request.get_json()

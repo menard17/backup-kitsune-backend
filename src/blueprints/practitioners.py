@@ -98,8 +98,8 @@ def get_practitioner_slots(practitioner_id: str) -> dict:
         practitioner_id, start, end, status
     )
     if slots is None:
-        return {"data": []}
-    return {"data": [datetime_encoder(e.resource.dict()) for e in slots]}
+        return {"data": []}, 200
+    return {"data": [datetime_encoder(e.resource.dict()) for e in slots]}, 200
 
 
 @practitioners_blueprint.route("/", methods=["POST"])
@@ -111,9 +111,9 @@ def create_practitioner():
     result = PractitionerController().create_practitioner(request)
 
     if result is None:
-        return Response(status=401, response="No Response")
+        return Response(status=500, response="No Response")
 
-    return result.dict(), 202
+    return result.dict(), 201
 
 
 def get_today_time(hours: int):

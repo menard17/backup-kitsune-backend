@@ -55,7 +55,7 @@ def test_update_encounter_status_in_list(firebase_auth):
     mock_resource = MockEncounterClient()
     encounter_controller = EncountersController(mock_resource, firebase_auth)
     response = encounter_controller.update_encounter("id1", "arrived")
-    assert response.status_code == 202
+    assert response.status_code == 200
     assert mock_resource.get_resource("id1", "Encounter").status == "arrived"
 
 

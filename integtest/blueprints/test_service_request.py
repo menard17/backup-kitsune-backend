@@ -76,7 +76,7 @@ def create_service_request(
         content_type="application/json",
     )
 
-    assert diagnostic_report_resp.status_code == 200
+    assert diagnostic_report_resp.status_code == 201
     servie_request_resp = client.post(
         "service_requests",
         data=json.dumps(
@@ -90,7 +90,7 @@ def create_service_request(
         content_type="application/json",
     )
 
-    assert servie_request_resp.status_code == 200
+    assert servie_request_resp.status_code == 201
     return json.loads(servie_request_resp.data)
 
 
@@ -126,7 +126,7 @@ def create_appointment_for_nurse(
         content_type="application/json",
     )
 
-    assert resp.status_code == 202
+    assert resp.status_code == 201
 
     appointment = json.loads(resp.data)
     return appointment

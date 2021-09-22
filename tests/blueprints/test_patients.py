@@ -41,7 +41,7 @@ def test_create_patient_happy_path(mocker, resource_client, test_patient_data):
 
         result = controller.create_patient(request)
 
-        assert result == (test_patient_data, 202)
+        assert result == (test_patient_data, 201)
         resource_client.create_resource.assert_called_once_with(patient_input)
         mock_role_auth.grant_role.assert_called_once_with(
             {"uid": "test-uid", "email_verified": True}, "Patient", "test-patient-id"
@@ -90,7 +90,7 @@ def test_patch_patient(mocker, resource_client, test_patient_data):
 
     result = controller.patch_patient(request, "test-patient-id")
 
-    assert result == (test_patient_data, 202)
+    assert result == (test_patient_data, 200)
     resource_client.patch_resource.assert_called_once_with(
         "test-patient-id", "Patient", patient_input
     )

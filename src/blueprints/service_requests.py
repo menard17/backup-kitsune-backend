@@ -77,4 +77,4 @@ class ServiceRequestController:
         """
         service_request = ServiceRequest.parse_obj(request)
         service_request = self.resource_client.create_resource(service_request)
-        return Response(status=200, response=service_request.json())
+        return Response(status=201, response=service_request.json())

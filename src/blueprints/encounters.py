@@ -140,7 +140,7 @@ class EncountersController:
             appointment_id = appointment[0]["reference"].split("/")[1]
             value = [{"op": "add", "path": "/status", "value": "fulfilled"}]
             self.resource_client.patch_resource(appointment_id, "Appointment", value)
-        return Response(status=200, response=encounter.json())
+        return Response(status=201, response=encounter.json())
 
     def update_encounter(self, encounter_id: str, status: str) -> Response:
         status_set = set(
@@ -163,4 +163,4 @@ class EncountersController:
             encounter_id, "Encounter", value
         )
 
-        return Response(status=202, response=new_encounter.json())
+        return Response(status=200, response=new_encounter.json())

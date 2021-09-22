@@ -44,7 +44,7 @@ def book_appointment(client: Client, doctor: Practitioner, patient: Patient):
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
-    assert resp.status_code == 202
+    assert resp.status_code == 201
 
     appointment = json.loads(resp.data)
     return appointment

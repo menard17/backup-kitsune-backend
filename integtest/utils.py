@@ -52,7 +52,7 @@ def create_practitioner(client: Client):
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
-    assert practitioner_resp.status_code == 202
+    assert practitioner_resp.status_code == 201
     practitioner_output = json.loads(practitioner_resp.data.decode("utf-8"))
     practitioner_roles_resp = client.post(
         "/practitioner_roles",
@@ -61,7 +61,7 @@ def create_practitioner(client: Client):
         content_type="application/json",
     )
 
-    assert practitioner_roles_resp.status_code == 202
+    assert practitioner_roles_resp.status_code == 201
 
     doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
     return Practitioner(practitioner.uid, doctor_role, practitioner_output)
@@ -84,7 +84,7 @@ def create_patient(client: Client):
         content_type="application/json",
     )
 
-    assert resp.status_code == 202
+    assert resp.status_code == 201
     return Patient(patient.uid, json.loads(resp.data))
 
 
@@ -108,7 +108,7 @@ def create_appointment(client: Client, doctor: Practitioner, patientA: Patient):
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
-    assert resp.status_code == 202
+    assert resp.status_code == 201
 
     appointment = json.loads(resp.data)
     return appointment
@@ -133,7 +133,7 @@ def create_encounter(
         content_type="application/json",
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 201
 
     encounter = json.loads(resp.data)
     return encounter

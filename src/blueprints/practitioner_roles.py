@@ -30,7 +30,7 @@ def get_practitioner_roles():
         [r.resource.dict() for r in roles.entry],
         default=json_serial,
     )
-    return resp
+    return resp, 200
 
 
 @practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
@@ -71,7 +71,7 @@ def create_practitioner_role():
 
     data = {"practitioner_role": role.dict(), "schedule": schedule.dict()}
 
-    return Response(status=202, response=json.dumps(data, default=json_serial))
+    return Response(status=201, response=json.dumps(data, default=json_serial))
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["POST"])
@@ -101,7 +101,7 @@ def create_practitioner_role_slots(role_id: str):
     if err is not None:
         return Response(status=400, response=err.args[0])
 
-    return Response(status=200, response=slot.json())
+    return Response(status=201, response=slot.json())
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["GET"])
@@ -143,7 +143,7 @@ def get_role_slots(role_id: str) -> dict:
     )
 
     if schedule_search.entry is None:
-        return {"data": []}
+        return {"data": []}, 200
 
     schedule = schedule_search.entry[0].resource
 
@@ -157,5 +157,7 @@ def get_role_slots(role_id: str) -> dict:
         ],
     )
     if slot_search.entry is None:
-        return {"data": []}
-    return {"data": [datetime_encoder(e.resource.dict()) for e in slot_search.entry]}
+        return {"data": []}, 200
+    return {
+        "data": [datetime_encoder(e.resource.dict()) for e in slot_search.entry]
+    }, 200
