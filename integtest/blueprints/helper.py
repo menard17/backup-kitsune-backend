@@ -28,7 +28,7 @@ def get_role(id: str) -> dict:
         "availabilityExceptions": "Adam is generally unavailable on public holidays and during the Christmas/New Year break",
         "extension": [
             {"url": "zoom-id", "valueString": "zoom-id"},
-            {"url": "zoom-passccode", "valueString": "zoom-passcode"},
+            {"url": "zoom-passcode", "valueString": "zoom-passcode"},
         ],
     }
     return role

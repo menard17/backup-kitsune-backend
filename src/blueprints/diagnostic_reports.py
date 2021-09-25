@@ -8,7 +8,7 @@ from pydantic.types import Json
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
-from src.utils.datetime_encoder import datetime_encoder
+from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
 
 diagnostic_reports_blueprint = Blueprint("diagnostic_reports", __name__, url_prefix="/")
