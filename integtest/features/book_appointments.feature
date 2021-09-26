@@ -15,3 +15,9 @@ Feature: Book Appointment
         When the patients end up not showing up so doctor set the appointment status as no show
         Then the appointment status is updated as no show
         Then frees the slot
+
+    Scenario: Yesterday's appointment should not show up
+        Given a doctor
+        Given a patient
+        When yesterday appointment is created
+        Then no appointment should show up

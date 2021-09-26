@@ -152,26 +152,21 @@ class AppointmentController:
                 response="patient can only search appointment for him/herself",
             )
 
-        if service_request_id:
-            result = self.resource_client.search(
-                "Appointment",
-                search=[
-                    ("basedOn", service_request_id),
-                ],
-            )
-        else:
-            if date is None:
-                tokyo_timezone = pytz.timezone("Asia/Tokyo")
-                now = tokyo_timezone.localize(datetime.now())
-                date = now.date().isoformat()
+        search_clause = []
 
-            result = self.resource_client.search(
-                "Appointment",
-                search=[
-                    ("date", "ge" + date),
-                    ("actor", actor_id),
-                ],
-            )
+        if service_request_id:
+            search_clause.append(("basedOn", service_request_id))
+        if date is None:
+            tokyo_timezone = pytz.timezone("Asia/Tokyo")
+            now = tokyo_timezone.localize(datetime.now())
+            date = now.date().isoformat()
+        search_clause.append(("date", "ge" + date))
+        search_clause.append(("actor", actor_id))
+
+        result = self.resource_client.search(
+            "Appointment",
+            search=search_clause,
+        )
         if result.entry is None:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)

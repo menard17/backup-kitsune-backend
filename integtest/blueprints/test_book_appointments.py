@@ -50,6 +50,35 @@ def book_appointment(client: Client, doctor: Practitioner, patient: Patient):
     return appointment
 
 
+@when("yesterday appointment is created", target_fixture="appointment_yesterday")
+def create_yesterday_appointment(
+    client: Client, doctor: Practitioner, patient: Patient
+):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    start = (now - timedelta(days=1)).isoformat()
+    end = (now - timedelta(days=1) + timedelta(hours=1)).isoformat()
+
+    appointment_data = {
+        "practitioner_role_id": doctor.fhir_data["id"],
+        "patient_id": patient.fhir_data["id"],
+        "start": start,
+        "end": end,
+    }
+
+    token = get_token(patient.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    appointment = json.loads(resp.data)
+    return appointment
+
+
 @then("an appointment is created")
 def check_appointment(doctor: Practitioner, patient: Patient, appointment: Appointment):
     assert appointment["description"] == "Booking practitioner role"
@@ -71,6 +100,23 @@ def check_appointment(doctor: Practitioner, patient: Patient, appointment: Appoi
     )
     assert appointment["serviceType"][0]["coding"][0]["code"] == "540"
     assert appointment["serviceType"][0]["coding"][0]["display"] == "Online Service"
+
+
+@then("no appointment should show up")
+def should_return_no_appointment(
+    client: Client, patient: Patient, appointment_yesterday: Appointment
+):
+
+    url = f'/appointments?actor_id={patient.fhir_data["id"]}'
+    token = get_token(patient.uid)
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    appointments = json.loads(resp.data)["data"]
+
+    found_appointment = False
+    for appointment in appointments:
+        if appointment["id"] == appointment_yesterday["id"]:
+            found_appointment = True
+    assert not found_appointment
 
 
 @then("the period would be set as busy slots")
