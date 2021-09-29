@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -5,6 +6,7 @@ from fhir.resources.practitioner import Practitioner
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
+from json_serialize import json_serial
 from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.email_verification import is_email_in_allowed_list, is_email_verified
@@ -18,6 +20,29 @@ practitioners_blueprint = Blueprint(
 class PractitionerController:
     def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
+
+    def search_practitioners(self, request):
+        if (email := request.args.get("email")) is None:
+            return Response(status=400, response="missing param: email")
+
+        search_clause = []
+        search_clause.append(("email", email))
+
+        result = self.resource_client.search(
+            "Practitioner",
+            search=search_clause,
+        )
+        if result.entry is None:
+            return Response(
+                status=200, response=json.dumps({"data": []}, default=json_serial)
+            )
+        return Response(
+            status=200,
+            response=json.dumps(
+                {"data": [datetime_encoder(e.resource.dict()) for e in result.entry]},
+                default=json_serial,
+            ),
+        )
 
     def get_practitioner_slots(
         self, practitioner_id: str, start: str, end: str, status: str
@@ -121,3 +146,9 @@ def get_today_time(hours: int):
     today_min = datetime.combine(datetime.now(), time.min)
     today_min = tokyo_timezone.localize(today_min)
     return today_min + timedelta(hours=hours)
+
+
+@practitioners_blueprint.route("/", methods=["GET"])
+@jwt_authenticated()
+def search():
+    return PractitionerController().search_practitioners(request)
