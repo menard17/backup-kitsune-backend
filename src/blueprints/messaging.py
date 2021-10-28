@@ -6,8 +6,14 @@ from utils.middleware import jwt_authenticated
 messaging_blueprint = Blueprint("messaging", __name__, url_prefix="/messaging")
 
 
+class Massanger:
+    def send(self, message: messaging.Message, dry_run: bool):
+        messaging.send(message, dry_run)
+
+
 class MessagingController:
-    def __init__(self, dry_run=False):
+    def __init__(self, messanger: Massanger, dry_run=False):
+        self.messanger = messanger
         self.dry_run = dry_run
 
     def send_push_notification(self, request_body):
@@ -26,14 +32,15 @@ class MessagingController:
         )
 
         try:
-            response = messaging.send(message, self.dry_run)
+            response = self.messanger.send(message, self.dry_run)
             return Response(status=200, response=response)
         except Exception as error:
-            return Response(status=500, response=error)
+            return Response(status=500, response=str(error))
 
 
 @messaging_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def send_push_notification():
     request_body = request.get_json()
-    return MessagingController().send_push_notification(request_body)
+    controller = MessagingController(messager=Massanger())
+    return controller.send_push_notification(request_body)

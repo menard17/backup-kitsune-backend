@@ -7,6 +7,7 @@ from flask_cors import CORS
 from blueprints.appointments import appointment_blueprint
 from blueprints.diagnostic_reports import diagnostic_reports_blueprint
 from blueprints.encounters import encounters_blueprint
+from blueprints.messaging import messaging_blueprint
 from blueprints.organizations import organization_blueprint
 from blueprints.patients import patients_blueprint
 from blueprints.payments import payments_blueprint
@@ -14,7 +15,6 @@ from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.zoom import zoom_blueprint
-from services.messaging_service import messaging_blueprint
 from utils.stripe_setup import StripeSingleton
 
 app = Flask(__name__)
