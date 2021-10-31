@@ -33,6 +33,9 @@ def jwt_authenticated():
             else:
                 return Response(status=401)
 
+            if not decoded_token.get("email_verified"):
+                return Response(status=401)
+
             request.claims = decoded_token
             return func(*args, **kwargs)
 
