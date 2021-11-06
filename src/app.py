@@ -1,7 +1,7 @@
 import os
 
 import stripe
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 
 from blueprints.appointments import appointment_blueprint
@@ -15,6 +15,11 @@ from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.zoom import zoom_blueprint
+from utils.metric import (
+    after_request_log_endpoint_metric,
+    before_request_add_start_time,
+    teardown_request_log_endpoint_metric,
+)
 from utils.stripe_setup import StripeSingleton
 
 app = Flask(__name__)
@@ -32,6 +37,22 @@ app.register_blueprint(messaging_blueprint)
 app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(zoom_blueprint)
+
+
+@app.before_request
+def before_request():
+    return before_request_add_start_time(request)
+
+
+@app.after_request
+def after_request(response):
+    return after_request_log_endpoint_metric(request, response)
+
+
+@app.teardown_request
+def teardown_request(err=None):
+    teardown_request_log_endpoint_metric(request, err)
+
 
 if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])
