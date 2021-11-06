@@ -1,4 +1,5 @@
 import os
+from logging.config import dictConfig
 
 import stripe
 from flask import Flask, request
@@ -22,7 +23,27 @@ from utils.metric import (
 )
 from utils.stripe_setup import StripeSingleton
 
+dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "default": {
+                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+            }
+        },
+        "handlers": {
+            "wsgi": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://flask.logging.wsgi_errors_stream",
+                "formatter": "default",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["wsgi"]},
+    }
+)
+
 app = Flask(__name__)
+
 origins = os.environ.get("ORIGINS")
 cors = CORS(app, resources={r"*": {"origins": origins}})
 app.url_map.strict_slashes = False
@@ -46,12 +67,12 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    return after_request_log_endpoint_metric(request, response)
+    return after_request_log_endpoint_metric(app.logger, request, response)
 
 
 @app.teardown_request
 def teardown_request(err=None):
-    teardown_request_log_endpoint_metric(request, err)
+    teardown_request_log_endpoint_metric(app.logger, request, err)
 
 
 if (base_path := "SECRETS_PATH") in os.environ:
