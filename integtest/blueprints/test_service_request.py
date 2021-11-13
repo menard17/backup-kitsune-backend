@@ -44,11 +44,17 @@ def get_patient(client: Client) -> Patient:
     return create_patient(client)
 
 
+@given("an appointment", target_fixture="appointment")
+def get_appointment(
+    client: Client, doctor: Practitioner, patient: Patient
+) -> Appointment:
+    return create_appointment(client, doctor, patient)
+
+
 @when("the doctor creates an encounter", target_fixture="encounter")
 def create_first_encounter(
-    client: Client, doctor: Practitioner, patient: Patient
+    client: Client, doctor: Practitioner, patient: Patient, appointment: Appointment
 ) -> Encounter:
-    appointment = create_appointment(client, doctor, patient)
     encounter = create_encounter(client, doctor, patient, appointment)
     return encounter
 
@@ -96,7 +102,7 @@ def create_service_request(
 
 @when(
     "the doctor creates appointment for nurse with service request",
-    target_fixture="appointment",
+    target_fixture="nurse_appointment",
 )
 def create_appointment_for_nurse(
     client: Client,
@@ -134,7 +140,10 @@ def create_appointment_for_nurse(
 
 @then("patient can fetch next appointment from doctor encounter")
 def get_next_appointment(
-    client: Client, patient: Patient, encounter: Encounter, appointment: Appointment
+    client: Client,
+    patient: Patient,
+    encounter: Encounter,
+    nurse_appointment: Appointment,
 ):
     token = auth.create_custom_token(patient.uid)
     token = get_token(patient.uid)
@@ -145,7 +154,7 @@ def get_next_appointment(
 
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
-    assert json.loads(resp.data)["data"][0]["id"] == appointment["id"]
+    assert json.loads(resp.data)["data"][0]["id"] == nurse_appointment["id"]
 
 
 @then("the nurse can fethc service request with given id")

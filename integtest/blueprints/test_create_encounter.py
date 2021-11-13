@@ -23,7 +23,7 @@ from integtest.utils import (
 scenarios("../features/create_encounter.feature")
 
 
-@given("a doctor", target_fixture="doctor")
+@given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     return create_practitioner(client)
 
@@ -39,23 +39,26 @@ def get_patient_b(client: Client):
 
 
 @when("patient A makes an appointment", target_fixture="appointment")
-def book_appointment(client: Client, doctor: Practitioner, patientA: Patient):
-    return create_appointment(client, doctor, patientA)
+def book_appointment(client: Client, practitioner: Practitioner, patientA: Patient):
+    return create_appointment(client, practitioner, patientA)
 
 
 @when("the doctor creates an encounter", target_fixture="encounter")
 def get_encounter(
-    client: Client, doctor: Practitioner, patientA: Patient, appointment: Appointment
+    client: Client,
+    practitioner: Practitioner,
+    patientA: Patient,
+    appointment: Appointment,
 ):
-    return create_encounter(client, doctor, patientA, appointment)
+    return create_encounter(client, practitioner, patientA, appointment)
 
 
 @when("the doctor starts the encounter")
 def start_encounter(
-    client, doctor: Practitioner, patientA: Patient, encounter: Encounter
+    client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
 ):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
     resp_patch = client.patch(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}?status=in-progress",
         headers={"Authorization": f"Bearer {token}"},
@@ -75,10 +78,10 @@ def start_encounter(
 
 @then("the doctor can finish the encounter")
 def finish_encounter(
-    client: Client, doctor: Practitioner, patientA: Patient, encounter: Encounter
+    client: Client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
 ):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
     resp = client.patch(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}?status=finished",
         headers={"Authorization": f"Bearer {token}"},
@@ -153,7 +156,7 @@ def get_encounter_by_appointment_id(
 
 
 @then("appointment status is changed to fulfilled")
-def get_appointment_status(client: Client, patientA: Patient, appointment: Appointment):
+def get_appointment_status(client: Client, patientA: Patient):
     token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
     tokyo_timezone = pytz.timezone("Asia/Tokyo")

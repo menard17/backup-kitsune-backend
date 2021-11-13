@@ -1,6 +1,7 @@
 import json
 import os
 from urllib.parse import quote
+from uuid import UUID
 
 import google.auth
 from fhir.resources import construct_fhir_element
@@ -39,7 +40,7 @@ class ResourceClient:
 
     def get_resource(
         self,
-        resource_uid: str,
+        resource_uid: UUID,
         resource_type: str,
     ) -> DomainResource:
         """Retrieve a resource from FHIR store.
@@ -145,7 +146,7 @@ class ResourceClient:
         return construct_fhir_element("Bundle", response.json())
 
     def patch_resource(
-        self, resource_uid: str, resource_type: str, resource: list
+        self, resource_uid: UUID, resource_type: str, resource: list
     ) -> DomainResource:
         """Updates a resource with patch. Returns updated resource
         in DomainResource Python object.
@@ -178,3 +179,28 @@ class ResourceClient:
         )
         response.raise_for_status()
         return construct_fhir_element(resource.resource_type, response.json())
+
+    def delete_resources(self, requests: list):
+        """Delete bundle of resources with post request
+        This is not meant to be used in API endpoint but for the clean up
+
+        :param requests: list of entry, [{'request': {'method': 'DELETE', 'url': 'Patient/d5151e19-3c05-4273-ac48-91820f8c288d'}}]
+        :type resource: list
+        :rtype: DomainResource
+        """
+        resource_path = f"{self._url}"
+        # Need separate header for patch call
+        body = {
+            "resourceType": "Bundle",
+            "id": "bundle-transaction",
+            "type": "transaction",
+            "entry": requests,
+        }
+        bundle_body = construct_fhir_element("Bundle", body)
+
+        response = self._session.post(
+            resource_path, headers=self._headers, data=bundle_body.json(indent=True)
+        )
+        response.raise_for_status()
+
+        return response.json()

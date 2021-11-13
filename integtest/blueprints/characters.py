@@ -8,10 +8,13 @@ class Patient:
 
 
 class Practitioner:
-    def __init__(self, firebase_uid, practitioner_role=None, practitioner=None):
+    def __init__(
+        self, firebase_uid, practitioner_role=None, practitioner=None, schedule=None
+    ):
         self.uid = firebase_uid
         self.fhir_data = practitioner_role
         self.fhir_practitioner_data = practitioner
+        self.fhir_schedule = schedule
 
 
 class Appointment(TypedDict):

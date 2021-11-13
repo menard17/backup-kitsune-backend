@@ -60,8 +60,6 @@ class PractitionerController:
 
         :rtype: Practitioner
         """
-
-        print("search schedule")
         schedule_search = self.resource_client.search(
             "Schedule",
             search=[

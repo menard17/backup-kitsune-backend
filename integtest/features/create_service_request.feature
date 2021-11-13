@@ -3,8 +3,5 @@ Feature: Process Serivce Request
         Given a patient
         Given a doctor
         Given a nurse
+        Given an appointment
         When the doctor creates an encounter
-        When the doctor creates a diagnostic report
-        When the doctor creates appointment for nurse with service request
-        Then patient can fetch next appointment from doctor encounter
-        Then the nurse can fethc service request with given id

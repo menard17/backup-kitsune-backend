@@ -32,6 +32,7 @@ def get_token(uid):
     resp = requests.post(
         url, data=json.dumps(data), headers={"Content-Type": "application/json"}
     )
+
     return resp.json()["idToken"]
 
 
@@ -63,8 +64,10 @@ def create_practitioner(client: Client):
 
     assert practitioner_roles_resp.status_code == 201
 
-    doctor_role = json.loads(practitioner_roles_resp.data)["practitioner_role"]
-    return Practitioner(practitioner.uid, doctor_role, practitioner_output)
+    data = json.loads(practitioner_roles_resp.data)
+    doctor_role = data["practitioner_role"]
+    scheudle = data["schedule"]
+    return Practitioner(practitioner.uid, doctor_role, practitioner_output, scheudle)
 
 
 def create_patient(client: Client):
@@ -88,14 +91,14 @@ def create_patient(client: Client):
     return Patient(patient.uid, json.loads(resp.data))
 
 
-def create_appointment(client: Client, doctor: Practitioner, patientA: Patient):
+def create_appointment(client: Client, practitioner: Practitioner, patientA: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
     appointment_data = {
-        "practitioner_role_id": doctor.fhir_data["id"],
+        "practitioner_role_id": practitioner.fhir_data["id"],
         "patient_id": patientA.fhir_data["id"],
         "start": start,
         "end": end,
@@ -115,17 +118,20 @@ def create_appointment(client: Client, doctor: Practitioner, patientA: Patient):
 
 
 def create_encounter(
-    client: Client, doctor: Practitioner, patient: Patient, appointment: Appointment
+    client: Client,
+    practitioner: Practitioner,
+    patient: Patient,
+    appointment: Appointment,
 ):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
 
     resp = client.post(
         f"/patients/{patient.fhir_data['id']}/encounters",
         data=json.dumps(
             get_encounter_data(
                 patient.fhir_data["id"],
-                doctor.fhir_practitioner_data["id"],
+                practitioner.fhir_practitioner_data["id"],
                 appointment["id"],
             )
         ),

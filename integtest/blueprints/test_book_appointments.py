@@ -13,7 +13,7 @@ from integtest.utils import create_patient, create_practitioner, get_token
 scenarios("../features/book_appointments.feature")
 
 
-@given("a doctor", target_fixture="doctor")
+@given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     return create_practitioner(client)
 
@@ -24,14 +24,14 @@ def get_patient(client: Client):
 
 
 @when("the patient books a free time of the doctor", target_fixture="appointment")
-def book_appointment(client: Client, doctor: Practitioner, patient: Patient):
+def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = now.isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
     appointment_data = {
-        "practitioner_role_id": doctor.fhir_data["id"],
+        "practitioner_role_id": practitioner.fhir_data["id"],
         "patient_id": patient.fhir_data["id"],
         "start": start,
         "end": end,
@@ -52,7 +52,7 @@ def book_appointment(client: Client, doctor: Practitioner, patient: Patient):
 
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")
 def create_yesterday_appointment(
-    client: Client, doctor: Practitioner, patient: Patient
+    client: Client, practitioner: Practitioner, patient: Patient
 ):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
@@ -60,7 +60,7 @@ def create_yesterday_appointment(
     end = (now - timedelta(days=1) + timedelta(hours=1)).isoformat()
 
     appointment_data = {
-        "practitioner_role_id": doctor.fhir_data["id"],
+        "practitioner_role_id": practitioner.fhir_data["id"],
         "patient_id": patient.fhir_data["id"],
         "start": start,
         "end": end,
@@ -80,7 +80,9 @@ def create_yesterday_appointment(
 
 
 @then("an appointment is created")
-def check_appointment(doctor: Practitioner, patient: Patient, appointment: Appointment):
+def check_appointment(
+    practitioner: Practitioner, patient: Patient, appointment: Appointment
+):
     assert appointment["description"] == "Booking practitioner role"
 
     participants = appointment["participant"]
@@ -90,7 +92,7 @@ def check_appointment(doctor: Practitioner, patient: Patient, appointment: Appoi
     assert id_set == set(
         [
             f"Patient/{patient.fhir_data['id']}",
-            f"PractitionerRole/{doctor.fhir_data['id']}",
+            f"PractitionerRole/{practitioner.fhir_data['id']}",
         ]
     )
 
@@ -120,13 +122,13 @@ def should_return_no_appointment(
 
 
 @then("the period would be set as busy slots")
-def available_slots(client: Client, doctor: Practitioner, patient: Patient):
+def available_slots(client: Client, practitioner: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
-    url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
 
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
@@ -156,12 +158,12 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
 
 
 @then("the doctor can see the appointment being booked")
-def doctor_can_see_appointment_being_booked(client, doctor: Practitioner):
+def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={doctor.fhir_data["id"]}'
-    token = get_token(doctor.uid)
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={practitioner.fhir_data["id"]}'
+    token = get_token(practitioner.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
     appointments = json.loads(resp.data)["data"]
@@ -170,7 +172,7 @@ def doctor_can_see_appointment_being_booked(client, doctor: Practitioner):
     for participant in appointments[0]["participant"]:
         if (
             participant["actor"]["reference"]
-            == f"PractitionerRole/{doctor.fhir_data['id']}"
+            == f"PractitionerRole/{practitioner.fhir_data['id']}"
         ):
             found_patient = True
             break
@@ -182,9 +184,9 @@ def doctor_can_see_appointment_being_booked(client, doctor: Practitioner):
     target_fixture="appointment",
 )
 def set_appointment_no_show(
-    client: Client, doctor: Practitioner, appointment: Appointment
+    client: Client, practitioner: Practitioner, appointment: Appointment
 ):
-    token = get_token(doctor.uid)
+    token = get_token(practitioner.uid)
     resp = client.put(
         f"/appointments/{appointment['id']}/status",
         data=json.dumps({"status": "noshow"}),
@@ -202,13 +204,13 @@ def check_appointment_status_no_show(appointment):
 
 
 @then("frees the slot")
-def frees_the_slot(client: Client, doctor: Practitioner, patient: Patient):
+def frees_the_slot(client: Client, practitioner: Practitioner, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=2)).isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
-    url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
 
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})

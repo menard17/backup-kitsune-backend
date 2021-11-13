@@ -42,7 +42,7 @@ def create_user(client: Client) -> User:
     return User(practitioner.uid, email, token)
 
 
-@when("a doctor is created", target_fixture="doctor")
+@when("a doctor is created", target_fixture="practitioner")
 def create_doctor(client: Client, user: User) -> str:
     resp = client.post(
         "/practitioners",
@@ -55,7 +55,7 @@ def create_doctor(client: Client, user: User) -> str:
 
 
 @then("the doctor can be searched by email")
-def get_doctor(client: Client, user: User, doctor: Practitioner) -> str:
+def get_doctor(client: Client, user: User, practitioner: Practitioner) -> str:
     resp = client.get(
         f"/practitioners?email={user.email}",
         headers={"Authorization": f"Bearer {user.token}"},
@@ -63,4 +63,4 @@ def get_doctor(client: Client, user: User, doctor: Practitioner) -> str:
     )
     assert resp.status_code == 200
     data = json.loads(resp.data)
-    assert data["data"][0]["id"] == doctor.fhir_practitioner_data["id"]
+    assert data["data"][0]["id"] == practitioner.fhir_practitioner_data["id"]

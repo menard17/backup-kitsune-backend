@@ -13,15 +13,15 @@ from integtest.utils import create_practitioner, get_token
 scenarios("../features/get_practitioner_slots.feature")
 
 
-@given("a practitioner", target_fixture="doctor")
+@given("a practitioner", target_fixture="practitioner")
 def get_doctor(client: Client):
     return create_practitioner(client)
 
 
 @when("the practitioner role set the period to busy", target_fixture="slot")
-def set_busy_slots(client: Client, doctor: Practitioner):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+def set_busy_slots(client: Client, practitioner: Practitioner):
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
@@ -33,7 +33,7 @@ def set_busy_slots(client: Client, doctor: Practitioner):
         "end": end,
         "status": "busy",
     }
-    url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots'
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots'
 
     resp = client.post(
         url,
@@ -50,16 +50,16 @@ def set_busy_slots(client: Client, doctor: Practitioner):
 
 
 @then("the user can fetch those busy slots")
-def available_slots(client: Client, doctor: Practitioner, slot: Slot):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+def available_slots(client: Client, practitioner: Practitioner, slot: Slot):
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
-    url = f'/practitioner_roles/{doctor.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
 
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]

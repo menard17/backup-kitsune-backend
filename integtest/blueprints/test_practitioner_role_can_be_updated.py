@@ -17,18 +17,18 @@ ALWAYS_WORKING_HOUR = [
 ]
 
 
-@given("a doctor", target_fixture="doctor")
+@given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     return create_practitioner(client)
 
 
 @when("the doctor updates the working hour")
-def doctor_update_working_schedule(client: Client, doctor: Practitioner):
-    role = doctor.fhir_data
+def doctor_update_working_schedule(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
 
     role["availableTime"] = ALWAYS_WORKING_HOUR
 
-    token = get_token(doctor.uid)
+    token = get_token(practitioner.uid)
     resp = client.put(
         f"/practitioner_roles/{role['id']}",
         data=json.dumps(role),
@@ -39,10 +39,10 @@ def doctor_update_working_schedule(client: Client, doctor: Practitioner):
 
 
 @then("the working hour is updated")
-def check_working_hour(client: Client, doctor: Practitioner):
-    token = get_token(doctor.uid)
+def check_working_hour(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
     resp = client.get(
-        f"/practitioner_roles/{doctor.fhir_data['id']}",
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
         headers={"Authorization": f"Bearer {token}"},
     )
     role = json.loads(resp.data)
