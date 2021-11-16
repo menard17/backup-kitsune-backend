@@ -35,3 +35,6 @@ class DiagnosticReport(TypedDict):
 
 class ServiceRequest(TypedDict):
     ...
+
+class DocumentReference(TypedDict):
+    ...

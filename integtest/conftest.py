@@ -35,6 +35,7 @@ def pytest_bdd_after_scenario(request, feature, scenario):
         Fixture("Practitioner", "nurse"),
         Fixture("Patient", "patientA"),
         Fixture("Patient", "patientB"),
+        Fixture("DocumentReference", "document_reference"),
     ]
 
     requests = []

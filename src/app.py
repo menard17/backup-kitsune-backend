@@ -7,6 +7,7 @@ from flask_cors import CORS
 
 from blueprints.appointments import appointment_blueprint
 from blueprints.diagnostic_reports import diagnostic_reports_blueprint
+from blueprints.document_references import document_references_blueprint
 from blueprints.encounters import encounters_blueprint
 from blueprints.messaging import messaging_blueprint
 from blueprints.organizations import organization_blueprint
@@ -48,6 +49,7 @@ origins = os.environ.get("ORIGINS")
 cors = CORS(app, resources={r"*": {"origins": origins}})
 app.url_map.strict_slashes = False
 app.register_blueprint(appointment_blueprint)
+app.register_blueprint(document_references_blueprint)
 app.register_blueprint(encounters_blueprint)
 app.register_blueprint(organization_blueprint)
 app.register_blueprint(patients_blueprint)

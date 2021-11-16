@@ -5,10 +5,15 @@ from datetime import datetime, timedelta
 
 import pytz
 import requests
+from fhir.resources import documentreference
 from firebase_admin import auth
 
 from integtest.blueprints.characters import Appointment, Patient, Practitioner
-from integtest.blueprints.fhir_input_constants import PATIENT_DATA, PRACTITIONER_DATA
+from integtest.blueprints.fhir_input_constants import (
+    DOCUMENT_REFERENCE_DATA,
+    PATIENT_DATA,
+    PRACTITIONER_DATA,
+)
 from integtest.blueprints.helper import get_encounter_data, get_role
 from integtest.conftest import Client
 
@@ -143,3 +148,21 @@ def create_encounter(
 
     encounter = json.loads(resp.data)
     return encounter
+
+
+def create_document_reference(client: Client, patient: Patient):
+    token = get_token(patient.uid)
+
+    patient_id = patient.fhir_data["id"]
+    DOCUMENT_REFERENCE_DATA["subject"] = {"reference": f"Patient/{patient_id}"}
+    resp = client.post(
+        f"/document_references",
+        data=json.dumps(DOCUMENT_REFERENCE_DATA),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201
+
+    documentreference = json.loads(resp.data)
+    return documentreference
