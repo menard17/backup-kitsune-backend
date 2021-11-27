@@ -53,7 +53,7 @@ jobs:
       codeCoverageTool: Cobertura
       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
 - job: Docker
-  dependsOn: Validation
+  dependsOn: CleanUp
   steps:
   - task: Docker@2
     displayName: 'Login to Container Registry'

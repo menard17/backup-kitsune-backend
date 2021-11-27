@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 import pytz
 import requests
-from fhir.resources import documentreference
 from firebase_admin import auth
 
 from integtest.blueprints.characters import Appointment, Patient, Practitioner
@@ -156,7 +155,7 @@ def create_document_reference(client: Client, patient: Patient):
     patient_id = patient.fhir_data["id"]
     DOCUMENT_REFERENCE_DATA["subject"] = {"reference": f"Patient/{patient_id}"}
     resp = client.post(
-        f"/document_references",
+        "/document_references",
         data=json.dumps(DOCUMENT_REFERENCE_DATA),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
@@ -164,5 +163,5 @@ def create_document_reference(client: Client, patient: Patient):
 
     assert resp.status_code == 201
 
-    documentreference = json.loads(resp.data)
-    return documentreference
+    document_reference = json.loads(resp.data)
+    return document_reference
