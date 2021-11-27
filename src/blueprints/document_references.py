@@ -33,7 +33,7 @@ class DocumentReferenceController:
         self.resource_client = resource_client or ResourceClient()
 
     def create_document_reference(self, request):
-        """ the function to create a new document reference.
+        """the function to create a new document reference.
             "subject" in the request body is required and will be used to check authorization.
             It must refer to an existing patient or practitioner or will an data conflict error will be thrown by fhir.
 
@@ -101,13 +101,13 @@ class DocumentReferenceController:
                 self.resource_client.patch_resource(
                     e.resource.id,
                     "DocumentReference",
-                    [{"op": "add", "path": "/status", "value": "superseded"}]
+                    [{"op": "add", "path": "/status", "value": "superseded"}],
                 )
 
         return Response(status=201, response=document_reference.json())
 
     def search_document_reference(self, request):
-        """ the function to search document references.
+        """the function to search document references.
             "subject" in the request body is required and will be used to check authorization.
             It must refer to an existing patient or practitioner or will an data conflict error will be thrown by fhir.
 

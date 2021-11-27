@@ -55,8 +55,10 @@ DOCUMENT_REFERENCE_SEARCH_DATA = {
 def test_create_document_reference_for_oneself():
     def mock_create_resource(uid, resource):
         return resource
+
     def mock_search_resource(resource_type, search):
         return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+
     def mock_patch_resource(uid, type, valuset):
         return BOOKED_APPOINTMENT_DATA
 
@@ -74,17 +76,23 @@ def test_create_document_reference_for_oneself():
 
     assert resp.status_code == 201
 
+
 def test_create_document_reference_for_oneself_no_old_documents():
     def mock_create_resource(uid, resource):
         return resource
+
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", {
+        return construct_fhir_element(
+            "Bundle",
+            {
                 "entry": [],
                 "link": [],
                 "total": 1,
                 "type": "searchset",
                 "resourceType": "Bundle",
-        })
+            },
+        )
+
     def mock_patch_resource(uid, type, valuset):
         return BOOKED_APPOINTMENT_DATA
 
@@ -102,11 +110,14 @@ def test_create_document_reference_for_oneself_no_old_documents():
 
     assert resp.status_code == 201
 
+
 def test_create_document_reference_for_someoneelse():
     def mock_create_resource(uid, resource):
         return resource
+
     def mock_search_resource(resource_type, search):
         return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+
     def mock_patch_resource(uid, type, valuset):
         return BOOKED_APPOINTMENT_DATA
 
@@ -114,7 +125,7 @@ def test_create_document_reference_for_someoneelse():
     resource_client.create_source = mock_create_resource
     resource_client.search = mock_search_resource
     resource_client.patch_resource = mock_patch_resource
-    
+
     controller = DocumentReferenceController(resource_client)
     req = FakeRequest(
         data=DOCUMENT_REFERENCE_DATA,

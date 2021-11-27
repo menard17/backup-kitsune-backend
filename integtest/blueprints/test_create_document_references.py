@@ -3,7 +3,7 @@ import json
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Patient, Practitioner, DocumentReference
+from integtest.blueprints.characters import DocumentReference, Patient, Practitioner
 from integtest.conftest import Client
 from integtest.utils import (
     create_document_reference,
@@ -59,7 +59,9 @@ def check_access_of_self(client: Client, patientA: Patient):
 
 
 @then("doctor can access the document reference")
-def check_access_of_doctor(client: Client, patientA: Patient, practitioner: Practitioner):
+def check_access_of_doctor(
+    client: Client, patientA: Patient, practitioner: Practitioner
+):
     token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
 
