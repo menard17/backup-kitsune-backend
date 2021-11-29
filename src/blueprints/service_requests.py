@@ -1,7 +1,6 @@
 import json
 
-from fhir.resources.servicerequest import ServiceRequest
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
@@ -18,13 +17,6 @@ service_requests_blueprint = Blueprint(
 @jwt_authorized("/Patient/*")
 def get_service_request(service_request_id: str) -> dict:
     return ServiceRequestController().get_service_request(service_request_id)
-
-
-@service_requests_blueprint.route("", methods=["POST"])
-@jwt_authenticated()
-@jwt_authorized("/Patient/*")
-def create_service_request() -> dict:
-    return ServiceRequestController().create_service_request(request.get_json())
 
 
 class ServiceRequestController:
@@ -67,14 +59,3 @@ class ServiceRequestController:
             status=200,
             response=json.dumps({"data": [datetime_encoder(service_request.dict())]}),
         )
-
-    def create_service_request(self, request):
-        """Returns the details of a service request created.
-
-        :param request: the request for this operation
-
-        :rtype: DomainResource
-        """
-        service_request = ServiceRequest.parse_obj(request)
-        service_request = self.resource_client.create_resource(service_request)
-        return Response(status=201, response=service_request.json())

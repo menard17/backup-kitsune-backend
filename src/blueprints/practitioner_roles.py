@@ -1,13 +1,17 @@
 import json
+import uuid
 from datetime import datetime, time, timedelta
 
 import pytz
-from fhir.resources import construct_fhir_element
 from fhir.resources.practitionerrole import PractitionerRole
 from flask import Blueprint, Response, request
+from flask.wrappers import Request
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
+from services.practitioner_role_service import PractitionerRoleService
+from services.practitioner_service import PractitionerService
+from services.schedule_service import ScheduleService
 from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, role_auth
@@ -18,10 +22,37 @@ practitioner_roles_blueprint = Blueprint(
 
 
 class PractitionerRoleController:
-    def __init__(self, resource_client) -> None:
-        self.resource_client = resource_client
+    def __init__(
+        self,
+        resource_client=None,
+        schedule_service=None,
+        practitioner_service=None,
+        practitioner_role_service=None,
+    ):
+        self.resource_client = resource_client or ResourceClient()
+        self.schdule_service = schedule_service or ScheduleService(self.resource_client)
+        self.practitioner_service = practitioner_service or PractitionerService(
+            self.resource_client
+        )
+        self.practitioner_role_service = (
+            practitioner_role_service or PractitionerRoleService(self.resource_client)
+        )
 
-    def get_practitioner_roles(self, request):
+    def get_practitioner_roles(self) -> Response:
+        """Returns roles of practitioner.
+        If `role` is provided in query param, corresponding role of practitioner roles will be returned.
+        If `role` is not provided in query param, all the practitioner roles are returned.
+
+        :return: all practitioner roles are returns in JSON object
+        :rtype: Response
+        """
+        role_type = request.args.get("role_type")
+        if role_type and role_type in {"nurse", "doctor"}:
+            roles = self.resource_client.search(
+                "PractitionerRole", [("role", role_type)]
+            )
+        else:
+            roles = self.resource_client.get_resources("PractitionerRole")
         roles = self.resource_client.get_resources("PractitionerRole")
 
         if roles.entry is None:
@@ -33,37 +64,100 @@ class PractitionerRoleController:
         )
         return Response(status=200, response=resp)
 
-    def get_practitioner_role(self, request, role_id: str):
+    def get_practitioner_role(self, role_id: uuid) -> Response:
+        """Returns practitioner role with given role_id
+
+        :param role_id: practitioner role id
+        :type role_id: uuid
+        :return: practitioner role in JSON object
+        :rtype: Response
+        """
         role = self.resource_client.get_resource(role_id, "PractitionerRole")
         return Response(status=200, response=role.json())
 
-    def create_practitioner_role(self, request):
-        role = PractitionerRole.parse_obj(request.get_json())
-        role = self.resource_client.create_resource(role)
+    def create_practitioner_role(self, request: Request):
+        """Returns created practitioner role
+        In order to create 'practitioner role', 'practitioner' and 'schedule' are created.
+        This is done in transaction so that it's either all resources are created succeessfully
+        or nothing is created. parameter is provided to unittest purpose.
 
-        schedule_jsondict = {
-            "resourceType": "Schedule",
-            "active": True,
-            "actor": [
-                {
-                    "reference": "PractitionerRole/" + role.id,
-                    "display": "PractitionerRole: " + role.id,
-                }
-            ],
-            "planningHorizon": {
-                "start": role.period.start,
-                "end": role.period.end,
-            },
-            "comment": "auto generated schedule on practitioner role creation",
-        }
-        schedule = construct_fhir_element("Schedule", schedule_jsondict)
-        schedule = self.resource_client.create_resource(schedule)
+        :param request: request containing body from http request
+        :type request: Request
+        :returns: practitioner role in JSON object
+        :rtype: Response
+        """
 
-        data = {"practitioner_role": role.dict(), "schedule": schedule.dict()}
+        request_body = request.get_json()
+        if not (
+            (given_name := request_body.get("given_name"))
+            and (family_name := request_body.get("family_name"))
+            and (start := request_body.get("start"))
+            and (end := request_body.get("end"))
+            and (email := request_body.get("email"))
+            and (photo_url := request_body.get("photo_url"))
+            and (is_doctor := request_body.get("is_doctor"))
+            and (zoom_id := request_body.get("zoom_id"))
+            and (zoom_password := request_body.get("zoom_password"))
+            and (available_time := request_body.get("available_time"))
+        ):
+            return Response(status=400, response="Body is insufficient")
 
-        return Response(status=201, response=json.dumps(data, default=json_serial))
+        name = given_name + " " + family_name
+        role_id = f"urn:uuid:{uuid.uuid1()}"
+        pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
+        resources = []
 
-    def update_practitioner_role(self, request, role_id):
+        # Create a practitioner
+        err, pracititioner = self.practitioner_service.create_practitioner(
+            pracititioner_id, email, family_name, given_name, photo_url
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        resources.append(pracititioner)
+
+        # Create a practitioner role
+        (
+            err,
+            practitioner_role,
+        ) = self.practitioner_role_service.create_practitioner_role(
+            role_id,
+            is_doctor,
+            start,
+            end,
+            pracititioner_id,
+            name,
+            zoom_id,
+            zoom_password,
+            available_time,
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        resources.append(practitioner_role)
+
+        # Create a schedule
+        err, schedule = self.schdule_service.create_schedule(role_id, name, start, end)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        resources.append(schedule)
+
+        resp = self.resource_client.create_resources(resources)
+
+        # Then grant the custom claim for the caller in Firebase
+        practitioner = list(
+            filter(lambda x: x.resource.resource_type == "Practitioner", resp.entry)
+        )[0].resource
+        role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
+
+        resp = list(
+            filter(lambda x: x.resource.resource_type == "PractitionerRole", resp.entry)
+        )[0].resource
+        return Response(status=201, response=resp.json())
+
+    def update_practitioner_role(self, request, role_id: uuid):
+        """
+        This is not atomic process atm & requires multiple resources (schedule and practitionerRole).
+        Also input is pure FHIR json which is not ideal
+        """
         role = PractitionerRole.parse_obj(request.get_json())
 
         if role.id != role_id:
@@ -117,6 +211,11 @@ class PractitionerRoleController:
         """
         1. find role_id -> active schedule
         2. create slots for that active schedule
+
+        :param request: request containing body from http request
+        :type request: Request
+        :param role_id: practitioner role id
+        :type role_id: uuid
         """
         request_body = request.get_json()
         start = request_body.get("start")
@@ -185,42 +284,46 @@ class PractitionerRoleController:
 @practitioner_roles_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
 def get_practitioner_roles():
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).get_practitioner_roles(request)
+    return PractitionerRoleController().get_practitioner_roles()
 
 
-@practitioner_roles_blueprint.route("/<role_id>", methods=["Get"])
+@practitioner_roles_blueprint.route("/<role_id>", methods=["GET"])
 @jwt_authenticated()
 def get_practitioner_role_json(role_id: str):
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).get_practitioner_role(
-        request, role_id
-    )
+    return PractitionerRoleController().get_practitioner_role(role_id)
 
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def create_practitioner_role():
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).create_practitioner_role(request)
+    """
+    Sample request body:
+    {
+        'is_doctor': true,
+        'start': '2021-08-15T13:55:57.967345+09:00',
+        'end': '2021-08-15T14:55:57.967345+09:00',
+        'family_name': 'Last name',
+        'given_name': 'Given name',
+        'zoom_id': 'zoom id',
+        'zoom_password': 'zoom password',
+        'available_time':  {},
+        'email': 'test@umed.jp',
+        'photo_url': 'https://example.com'
+    }
+    """
+    return PractitionerRoleController().create_practitioner_role(request)
 
 
 @practitioner_roles_blueprint.route("/<role_id>/", methods=["PUT"])
 @jwt_authenticated()
 def update_practitioner_role(role_id: str):
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).update_practitioner_role(
-        request, role_id
-    )
+    return PractitionerRoleController().update_practitioner_role(request, role_id)
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["POST"])
 @jwt_authenticated()
 def create_practitioner_role_slots(role_id: str):
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).create_practitioner_role_slots(
-        request, role_id
-    )
+    return PractitionerRoleController().create_practitioner_role_slots(request, role_id)
 
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["GET"])
@@ -238,5 +341,4 @@ def get_role_slots(role_id: str) -> dict:
 
     :rtype: dict
     """
-    resource_client = ResourceClient()
-    return PractitionerRoleController(resource_client).get_role_slots(request, role_id)
+    return PractitionerRoleController().get_role_slots(request, role_id)

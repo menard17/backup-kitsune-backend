@@ -1,13 +1,15 @@
 import json
+import uuid
 from datetime import datetime
 
 import pytz
-from fhir.resources.appointment import Appointment
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from blueprints.service_requests import ServiceRequestController
 from json_serialize import json_serial
+from services.appointment_service import AppointmentService
+from services.service_request_service import ServiceRequestService
 from services.slots_service import SlotService
 from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
@@ -21,99 +23,123 @@ class AppointmentController:
     Controller is the class that holds the functions for the calls of appointments blueprint.
     """
 
-    def __init__(self, resource_client=None, slot_service=None):
+    def __init__(
+        self,
+        resource_client=None,
+        slot_service=None,
+        appointment_service=None,
+        service_request_service=None,
+    ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
+        self.appointment_service = appointment_service or AppointmentService(
+            self.resource_client
+        )
+        self.service_request_service = service_request_service or ServiceRequestService(
+            self.resource_client
+        )
 
-    def book_appointment(self):
+    def book_appointment(self) -> Response:
+        """Creates appointment and busy slot with given practitioner role and patient
+        This method is supporting transactional call
+
+        :returns: created appointment in JSON object
+        :rtype: Response
+        """
         request_body = request.get_json()
-        role_id = request_body.get("practitioner_role_id")
-        patient_id = request_body.get("patient_id")
-        start = request_body.get("start")
-        end = request_body.get("end")
-        service_request_id = request_body.get("service_request_id")
+        encounter_id = request_body.get("prev_encounter_id")
+        requester_id = request_body.get("requester_id")
 
-        if role_id is None:
-            return Response(status=400, response="missing param: practitioner_role_id")
+        if (
+            (role_id := request_body.get("practitioner_role_id")) is None
+            or (patient_id := request_body.get("patient_id")) is None
+            or (start := request_body.get("start")) is None
+            or (end := request_body.get("end")) is None
+            or (service_type := request_body.get("service_type")) is None
+        ):
+            return Response(
+                status=400,
+                response="missing param: practitioner_role_id, patient_id, start, end, or service_type",
+            )
+
         claims_roles = role_auth.extract_roles(request.claims)
         if "Patient" in claims_roles and claims_roles["Patient"]["id"] != patient_id:
             return Response(
                 status=401, response="could only book appointment for the patient"
             )
-        if start is None:
-            return Response(status=400, response="missing param: start")
-        if end is None:
-            return Response(status=400, response="missing param: end")
 
-        err, slot = self.slot_service.create_slot_for_practitioner_role(
-            role_id,
+        if (start is None) or (end is None):
+            return Response(status=400, response="missing param: start or end")
+
+        resources = []
+
+        # Create Slot Bundle
+        slot_uuid = f"urn:uuid:{uuid.uuid1()}"
+        patient_rid = f"Patient/{patient_id}"
+        role_rid = f"PractitionerRole/{role_id}"
+        err, slot = self.slot_service.create_slot_bundle(
+            role_rid,
             start,
             end,
+            slot_uuid,
             "busy",
         )
 
         if err is not None:
             return Response(status=400, response=err.args[0])
+        resources.append(slot)
 
-        appointment_data = {
-            "resourceType": "Appointment",
-            "status": "booked",
-            "description": "Booking practitioner role",
-            "start": start,
-            "end": end,
-            "serviceType": [
-                {
-                    "coding": [
-                        {
-                            "system": "http://hl7.org/fhir/valueset-service-type.html",
-                            "code": "540",
-                            "display": "Online Service",
-                        }
-                    ]
-                }
-            ],
-            "serviceCategory": [
-                {
-                    "coding": [
-                        {
-                            "system": "http://hl7.org/fhir/valueset-service-category.html",
-                            "code": "17",
-                            "display": "General Practice",
-                        }
-                    ]
-                }
-            ],
-            "slot": [{"reference": f"Slot/{slot.id}"}],
-            "participant": [
-                {
-                    "actor": {
-                        "reference": f"Patient/{patient_id}",
-                    },
-                    "required": "required",
-                    "status": "accepted",
-                },
-                {
-                    "actor": {
-                        "reference": f"PractitionerRole/{role_id}",
-                    },
-                    "required": "required",
-                    "status": "accepted",
-                },
-            ],
-        }
-        if service_request_id is not None:
-            appointment_data["basedOn"] = [
-                {
-                    "reference": f"ServiceRequest/{service_request_id}",
-                    "display": "Instruction",
-                }
-            ]
+        # Creeate Request Service Bundle
+        service_request_uuid = None
+        if requester_id is not None or encounter_id is not None:
+            service_request_uuid = f"urn:uuid:{uuid.uuid1()}"
+            encounter_rid = f"Encounter/{encounter_id}"
+            requester_rid = f"PractitionerRole/{requester_id}"
+            err, service_request = self.service_request_service.create_service_request(
+                service_request_uuid,
+                patient_rid,
+                role_rid,
+                requester_rid,
+                encounter_rid,
+            )
 
-        appointment = Appointment.parse_obj(appointment_data)
-        appointment = self.resource_client.create_resource(appointment)
-        return Response(status=201, response=appointment.json())
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+            resources.append(service_request)
 
-    def update_appointment(self, request, appointment_id: str):
+        # Create Appointment Bundle
+        appointment_uuid = f"urn:uuid:{uuid.uuid1()}"
+        (
+            err,
+            appointment,
+        ) = self.appointment_service.create_appointment_for_practitioner_role(
+            role_rid,
+            start,
+            end,
+            slot_uuid,
+            patient_rid,
+            service_type,
+            service_request_uuid,
+            appointment_uuid,
+        )
+
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        resources.append(appointment)
+
+        resp = self.resource_client.create_resources(resources)
+        resp = list(
+            filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
+        )[0].resource
+        return Response(status=201, response=resp.json())
+
+    def update_appointment(self, request, appointment_id: str) -> Response:
+        """Updates status of appointment and frees dependent slot
+        This method is supporting transactional call
+
+        :returns: updated appointment in JSON object
+        :rtype: Response
+        """
         request_body = request.get_json()
         status = request_body.get("status")
 
@@ -121,24 +147,34 @@ class AppointmentController:
             return Response(
                 status=400, response="not supporting status update aside from noshow"
             )
+        resources = []
 
-        appointment = self.resource_client.get_resource(appointment_id, "Appointment")
-        appointment.status = status
+        err, appointment = self.appointment_service.update_appointment_status(
+            appointment_id, status
+        )
+        resources.append(appointment)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
 
-        resp = self.resource_client.put_resource(appointment_id, appointment)
+        appointment_json = json.loads(appointment["resource"].json())
+        slot_id = appointment_json["slot"][0]["reference"].split("/")[1]
+        err, slot = self.slot_service.free_slot(slot_id)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
 
-        # data: "slot": [{"reference": "Slot/bf929953-f4df-4b54-a928-2a1ab8d5d550"}]
-        # we always created one slot only on appointment. so we can hardcode to index 0.
-        # and split with "/" to get the slot id.
-        slot_id = appointment.slot[0].reference.split("/")[1]
-
-        slot = self.resource_client.get_resource(slot_id, "Slot")
-        slot.status = "free"
-        self.resource_client.put_resource(slot_id, slot)
-
+        resources.append(slot)
+        resp = self.resource_client.create_resources(resources)
+        resp = list(
+            filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
+        )[0].resource
         return Response(status=200, response=resp.json())
 
-    def search_appointments(self, request, service_request_id: str = None):
+    def search_appointments(self, request, service_request_id: str = None) -> Response:
+        """ "Returns list of appointments matching searching query
+
+        :returns: Json list of appointments
+        :rtype: Response
+        """
         date = request.args.get("date")
         actor_id = request.args.get("actor_id")
 
@@ -192,8 +228,11 @@ def book_appointment():
         'practitioner_role_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d170',
         'patient_id': 'd67e4a18-f386-4721-a2e7-fa6526494228',
         'start': '2021-08-15T13:55:57.967345+09:00',
-        'end': '2021-08-15T14:55:57.967345+09:00'
-        'service_request_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171'
+        'end': '2021-08-15T14:55:57.967345+09:00',
+        'service_request_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171',
+        'service_type': 'FOLLOWUP',
+        'prev_encounter_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d172',
+        'requester_id':  '0d49bb25-97f7-4f6d-8459-2b6a18d4d173'
     }
     """
     return AppointmentController().book_appointment()

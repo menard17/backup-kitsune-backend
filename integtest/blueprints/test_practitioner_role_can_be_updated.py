@@ -2,9 +2,9 @@ import json
 
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Practitioner
+from integtest.characters import Practitioner
 from integtest.conftest import Client
-from integtest.utils import create_practitioner, get_token
+from integtest.utils import create_practitioner, create_user, get_token
 
 scenarios("../features/practitioner_role_can_be_updated.feature")
 
@@ -19,7 +19,8 @@ ALWAYS_WORKING_HOUR = [
 
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @when("the doctor updates the working hour")

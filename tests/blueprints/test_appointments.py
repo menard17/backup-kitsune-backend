@@ -1,3 +1,4 @@
+import copy
 import json
 from datetime import datetime
 
@@ -153,14 +154,28 @@ def test_update_appointment():
         if type == "Slot":
             return Slot.parse_obj(SLOT_DATA)
 
-    def mock_put_resource(uid, resource):
-        if type == "Appointment":
-            assert uid == test_appointment_id
-        return resource
+    def mock_put_resource(resource, uid):
+        return {
+            "resource": resource,
+            "request": {"method": "PUT", "url": f"https://example.com/{uid}"},
+        }
+
+    def mock_create_resources(bundles):
+        class MockResource:
+            resource_type = "Appointment"
+            no_show_appointment = copy.deepcopy(BOOKED_APPOINTMENT_DATA)
+            no_show_appointment["status"] = "noshow"
+            resource = Appointment.parse_obj(no_show_appointment)
+
+        class MockBundle:
+            entry = [MockResource]
+
+        return MockBundle()
 
     resource_client = MockResourceClient()
+    resource_client.get_put_bundle = mock_put_resource
     resource_client.get_resource = mock_get_resource
-    resource_client.put_resource = mock_put_resource
+    resource_client.create_resources = mock_create_resources
 
     controller = AppointmentController(resource_client)
     req = FakeRequest(data={"status": "noshow"})

@@ -21,7 +21,7 @@ class PractitionerController:
     def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
 
-    def search_practitioners(self, request):
+    def search_practitioners(self, request) -> Response:
         if (email := request.args.get("email")) is None:
             return Response(status=400, response="missing param: email")
 
@@ -58,7 +58,7 @@ class PractitionerController:
         :param status: free or busy
         :type status: str
 
-        :rtype: Practitioner
+        :rtype: Practitioner(DomainResource)
         """
         schedule_search = self.resource_client.search(
             "Schedule",
@@ -86,7 +86,7 @@ class PractitionerController:
         )
         return slot_search.entry
 
-    def create_practitioner(self, request):
+    def create_practitioner(self, request) -> Practitioner:
         """Returns the details of a doctor created.
         This creates a practitioner in FHIR, as well as create a custom claims with it
         Note that this function should only be called
@@ -97,7 +97,7 @@ class PractitionerController:
 
         :param request: the request for this operation
 
-        :rtype: DomainResource
+        :rtype: Practitioner(DomainResource)
         """
         practitioner = Practitioner.parse_obj(request.get_json())
         practitioner = self.resource_client.create_resource(practitioner)

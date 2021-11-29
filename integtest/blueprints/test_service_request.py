@@ -5,7 +5,11 @@ import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import (
+from integtest.blueprints.helper import (
+    get_diagnostic_report_data,
+    get_service_request_data,
+)
+from integtest.characters import (
     Appointment,
     DiagnosticReport,
     Encounter,
@@ -13,16 +17,13 @@ from integtest.blueprints.characters import (
     Practitioner,
     ServiceRequest,
 )
-from integtest.blueprints.helper import (
-    get_diagnostic_report_data,
-    get_service_request_data,
-)
 from integtest.conftest import Client
 from integtest.utils import (
     create_appointment,
     create_encounter,
     create_patient,
     create_practitioner,
+    create_user,
     get_token,
 )
 
@@ -30,18 +31,21 @@ scenarios("../features/create_service_request.feature")
 
 
 @given("a doctor", target_fixture="doctor")
-def get_doctor(client: Client) -> Practitioner:
-    return create_practitioner(client)
+def get_doctor(client: Client):
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @given("a nurse", target_fixture="nurse")
 def get_nurse(client: Client) -> Practitioner:
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @given("a patient", target_fixture="patient")
 def get_patient(client: Client) -> Patient:
-    return create_patient(client)
+    user = create_user()
+    return create_patient(client, user)
 
 
 @given("an appointment", target_fixture="appointment")

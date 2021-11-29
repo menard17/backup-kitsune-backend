@@ -1,27 +1,29 @@
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then
 
-from integtest.blueprints.characters import Patient, Practitioner
+from integtest.characters import Patient, Practitioner
 from integtest.conftest import Client
-from integtest.utils import create_patient, create_practitioner, get_token
+from integtest.utils import create_patient, create_practitioner, create_user, get_token
 
 scenarios("../features/claims.feature")
 
 
-@given("a doctor", target_fixture="doctor")
+@given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @given("a patient", target_fixture="patient")
 def get_patient(client: Client):
-    return create_patient(client)
+    user = create_user()
+    return create_patient(client, user)
 
 
 @then("all patients can be access by the practitioner")
-def access_all_patients(client: Client, doctor: Practitioner):
-    token = auth.create_custom_token(doctor.uid)
-    token = get_token(doctor.uid)
+def access_all_patients(client: Client, practitioner: Practitioner):
+    token = auth.create_custom_token(practitioner.uid)
+    token = get_token(practitioner.uid)
 
     resp = client.get(
         "/patients",

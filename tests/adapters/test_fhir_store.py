@@ -75,23 +75,6 @@ def test_create_resource(mocker, session, url, test_patient_data):
     response.raise_for_status.assert_called_once()
 
 
-def test_get_resources_by_key(mocker, session, url, test_bundle_data):
-    response = mocker.Mock()
-    mocker.patch.object(response, "json", return_value=test_bundle_data.json())
-    mocker.patch.object(session, "get", return_value=response)
-    resource_client = ResourceClient(session=session, url=url)
-
-    result = resource_client.get_resources_by_key("name", "test-name", "Patient")
-
-    assert result.resource_type == "Bundle"
-    assert result.id == "bundle-id"
-    session.get.assert_called_once_with(
-        "testurl/Patient?name:exact=test-name",
-        headers={"Content-Type": "application/fhir+json;charset=utf-8"},
-    )
-    response.raise_for_status.assert_called_once()
-
-
 def test_patch_resource(mocker, session, url, test_patient_data):
     response = mocker.Mock()
     mocker.patch.object(response, "json", return_value=test_patient_data.json())

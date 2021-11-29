@@ -2,16 +2,17 @@ import json
 
 from pytest_bdd import scenarios, then, when
 
-from integtest.blueprints.characters import Practitioner
+from integtest.characters import Practitioner
 from integtest.conftest import Client
-from integtest.utils import create_practitioner, get_token
+from integtest.utils import create_practitioner, create_user, get_token
 
 scenarios("../features/create_and_get_practitioner_roles.feature")
 
 
 @when("a practitioner role is created", target_fixture="practitioner")
 def get_practitioner(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @then("the practitioner role can be found in all practitioners")

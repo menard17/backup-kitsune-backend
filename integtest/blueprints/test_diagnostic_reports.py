@@ -3,20 +3,21 @@ import json
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import (
+from integtest.blueprints.helper import get_diagnostic_report_data
+from integtest.characters import (
     Appointment,
     DiagnosticReport,
     Encounter,
     Patient,
     Practitioner,
 )
-from integtest.blueprints.helper import get_diagnostic_report_data
 from integtest.conftest import Client
 from integtest.utils import (
     create_appointment,
     create_encounter,
     create_patient,
     create_practitioner,
+    create_user,
     get_token,
 )
 
@@ -25,17 +26,20 @@ scenarios("../features/create_diagnostic_reports.feature")
 
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @given("patient A", target_fixture="patientA")
-def get_patient_a(client: Client):
-    return create_patient(client)
+def get_patient_a(client: Client) -> Patient:
+    user = create_user()
+    return create_patient(client, user)
 
 
 @given("patient B", target_fixture="patientB")
-def get_patient_b(client: Client):
-    return create_patient(client)
+def get_patient_b(client: Client) -> Patient:
+    user = create_user()
+    return create_patient(client, user)
 
 
 @when("patient A makes an appointment", target_fixture="appointment")
@@ -64,7 +68,7 @@ def create_diagnostic_report(
         data=json.dumps(
             get_diagnostic_report_data(
                 patientA.fhir_data["id"],
-                practitioner.fhir_practitioner_data["id"],
+                practitioner.practitioner_id,
                 encounter["id"],
             )
         ),
@@ -118,7 +122,7 @@ def check_diagnostic_report_access(
     assert resp.status_code == 200
 
     resp_all = client.get(
-        f"/practitioners/{practitioner.fhir_practitioner_data['id']}/diagnostic_reports",
+        f"/practitioners/{practitioner.practitioner_id}/diagnostic_reports",
         headers={"Authorization": f"Bearer {doctor_token}"},
         content_type="application/json",
     )

@@ -6,77 +6,41 @@ import pytz
 from pytest_bdd import scenarios, then, when
 from pytest_bdd.steps import given
 
-from integtest.blueprints.characters import Appointment, Patient, Practitioner
+from integtest.characters import Appointment, Patient, Practitioner
 from integtest.conftest import Client
-from integtest.utils import create_patient, create_practitioner, get_token
+from integtest.utils import (
+    create_appointment,
+    create_patient,
+    create_practitioner,
+    create_user,
+    get_token,
+)
 
 scenarios("../features/book_appointments.feature")
 
 
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @given("a patient", target_fixture="patient")
 def get_patient(client: Client):
-    return create_patient(client)
+    user = create_user()
+    return create_patient(client, user)
 
 
 @when("the patient books a free time of the doctor", target_fixture="appointment")
 def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    now = tokyo_timezone.localize(datetime.now())
-    start = now.isoformat()
-    end = (now + timedelta(hours=1)).isoformat()
-
-    appointment_data = {
-        "practitioner_role_id": practitioner.fhir_data["id"],
-        "patient_id": patient.fhir_data["id"],
-        "start": start,
-        "end": end,
-    }
-
-    token = get_token(patient.uid)
-    resp = client.post(
-        "/appointments",
-        data=json.dumps(appointment_data),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert resp.status_code == 201
-
-    appointment = json.loads(resp.data)
-    return appointment
+    return create_appointment(client, practitioner, patient)
 
 
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")
 def create_yesterday_appointment(
     client: Client, practitioner: Practitioner, patient: Patient
 ):
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    now = tokyo_timezone.localize(datetime.now())
-    start = (now - timedelta(days=1)).isoformat()
-    end = (now - timedelta(days=1) + timedelta(hours=1)).isoformat()
-
-    appointment_data = {
-        "practitioner_role_id": practitioner.fhir_data["id"],
-        "patient_id": patient.fhir_data["id"],
-        "start": start,
-        "end": end,
-    }
-
-    token = get_token(patient.uid)
-    resp = client.post(
-        "/appointments",
-        data=json.dumps(appointment_data),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert resp.status_code == 201
-
-    appointment = json.loads(resp.data)
-    return appointment
+    return create_appointment(client, practitioner, patient, 1)
 
 
 @then("an appointment is created")
@@ -84,7 +48,6 @@ def check_appointment(
     practitioner: Practitioner, patient: Patient, appointment: Appointment
 ):
     assert appointment["description"] == "Booking practitioner role"
-
     participants = appointment["participant"]
     id_set = set()
     for p in participants:

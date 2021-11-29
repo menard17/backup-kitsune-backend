@@ -6,16 +6,17 @@ import pytz
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.characters import Practitioner, Slot
+from integtest.characters import Practitioner, Slot
 from integtest.conftest import Client
-from integtest.utils import create_practitioner, get_token
+from integtest.utils import create_practitioner, create_user, get_token
 
 scenarios("../features/get_practitioner_slots.feature")
 
 
-@given("a practitioner", target_fixture="practitioner")
+@given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
-    return create_practitioner(client)
+    user = create_user()
+    return create_practitioner(client, user)
 
 
 @when("the practitioner role set the period to busy", target_fixture="slot")

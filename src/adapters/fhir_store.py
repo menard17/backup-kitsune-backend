@@ -1,12 +1,13 @@
 import json
 import os
+from typing import List, Tuple, TypedDict
 from urllib.parse import quote
 from uuid import UUID
 
 import google.auth
 from fhir.resources import construct_fhir_element
-from fhir.resources.bundle import Bundle
 from fhir.resources.domainresource import DomainResource
+from fhir.resources.fhirtypes import BundleType
 from google.auth.transport import requests
 
 
@@ -29,7 +30,13 @@ def _get_session():
     return requests.AuthorizedSession(credentials)
 
 
-ResourceSearchArgs = list[tuple[str, str]]
+ResourceSearchArgs = List[Tuple[str, str]]
+
+
+class ResourceBundle(TypedDict):
+    resource: DomainResource
+    request: str
+    fullUrl: str or None
 
 
 class ResourceClient:
@@ -37,6 +44,62 @@ class ResourceClient:
         self._session = session or _get_session()
         self._url = url or _get_url()
         self._headers = {"Content-Type": "application/fhir+json;charset=utf-8"}
+
+    def get_post_bundle(
+        self, resource: DomainResource, fullurl: str = None
+    ) -> ResourceBundle:
+        """Returns dictionary of bundle for post ready to process with `create_resources`"""
+        return self._get_bundle(resource, None, fullurl, "POST")
+
+    def get_put_bundle(
+        self, resource: DomainResource, uid: str, fullurl: str = None
+    ) -> ResourceBundle:
+        """Returns dictionary of bundle for put ready to process with `create_resources`"""
+        return self._get_bundle(resource, uid, fullurl, "PUT")
+
+    def _get_bundle(
+        self, resource: DomainResource, uid: str, fullurl: str, method: str
+    ) -> ResourceBundle:
+        url = resource.resource_type
+        if uid:
+            url = f"{resource.resource_type}/{uid}"
+
+        bundle = {
+            "resource": resource,
+            "request": {"method": method, "url": url},
+        }
+
+        if fullurl:
+            bundle["fullUrl"] = fullurl
+        return bundle
+
+    def create_resources(self, bundles: List[ResourceBundle]) -> BundleType:
+        """Creates resources in FHIR in transaction manner
+
+        :param bundles: list of bundle resources
+        :type bundles: List[ResourceBundle]
+        :return: Created resources in JSON object
+        :rtype: Response
+        """
+        body = {
+            "resourceType": "Bundle",
+            "id": "bundle-transaction",
+            "type": "transaction",
+            "entry": bundles,
+        }
+
+        header = {
+            "Content-Type": "application/fhir+json;charset=utf-8",
+            "Prefer": "return=representation",
+        }
+
+        result = construct_fhir_element(body["resourceType"], body)
+
+        response = self._session.post(
+            f"{self._url}", headers=header, data=result.json(indent=True)
+        )
+        response.raise_for_status()
+        return construct_fhir_element(body["resourceType"], response.json())
 
     def get_resource(
         self,
@@ -125,25 +188,6 @@ class ResourceClient:
         response.raise_for_status()
 
         return construct_fhir_element(resource.resource_type, response.json())
-
-    def get_resources_by_key(self, key: str, value: str, resource_type: str) -> Bundle:
-        """Returns object containing key value pair in FHIR
-
-        :param key: Key you want to search in FHIR. E.g. name
-        :type key: str
-        :param value: Value you want to search. E.g. UMed Inc,
-        :type value: str
-        :param resource_type: type of resource, e.g. Organization
-        :type resource_type: str
-
-        rtype: Bundle
-        """
-        resource_path = f"{self._url}/{resource_type}?{key}:exact={value}"
-
-        response = self._session.get(resource_path, headers=self._headers)
-        response.raise_for_status()
-
-        return construct_fhir_element("Bundle", response.json())
 
     def patch_resource(
         self, resource_uid: UUID, resource_type: str, resource: list

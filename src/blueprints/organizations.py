@@ -40,9 +40,7 @@ def get_organizations() -> Response:
     """
     resourse_client = ResourceClient()
     if name := request.args.get("name"):
-        response = resourse_client.get_resources_by_key(
-            "name", name, "Organization"
-        ).dict()
+        response = resourse_client.search("Organization", [("name", name)]).dict()
         if response.get("total") > 0:
             return Response(
                 status=200,
@@ -71,9 +69,7 @@ def create_organization() -> Response:
     resourse_client = ResourceClient()
     body = request.get_json()
     if name := body.get("name"):
-        org_list = resourse_client.get_resources_by_key(
-            "name", name, "Organization"
-        ).dict()
+        org_list = resourse_client.search("Organization", [("name", name)]).dict()
         if org_list.get("total") > 0:
             return Response(status=400, response="Organization already exists")
         address = Address.construct()

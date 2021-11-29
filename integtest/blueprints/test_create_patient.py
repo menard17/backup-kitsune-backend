@@ -3,16 +3,17 @@ import json
 from firebase_admin import auth
 from pytest_bdd import given, scenarios, then
 
-from integtest.blueprints.characters import Patient
+from integtest.characters import Patient
 from integtest.conftest import Client
-from integtest.utils import create_patient, get_token
+from integtest.utils import create_patient, create_user, get_token
 
 scenarios("../features/create_patient.feature")
 
 
 @given("a patient", target_fixture="patient")
 def get_patient(client: Client) -> Patient:
-    return create_patient(client)
+    user = create_user()
+    return create_patient(client, user)
 
 
 @then("patient returns correct birthday format")

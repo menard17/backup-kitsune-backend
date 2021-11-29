@@ -7,13 +7,12 @@ import pytz
 import requests
 from firebase_admin import auth
 
-from integtest.blueprints.characters import Appointment, Patient, Practitioner
 from integtest.blueprints.fhir_input_constants import (
     DOCUMENT_REFERENCE_DATA,
     PATIENT_DATA,
-    PRACTITIONER_DATA,
 )
-from integtest.blueprints.helper import get_encounter_data, get_role
+from integtest.blueprints.helper import get_encounter_data
+from integtest.characters import Appointment, Patient, Practitioner, User
 from integtest.conftest import Client
 
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -40,75 +39,80 @@ def get_token(uid):
     return resp.json()["idToken"]
 
 
-def create_practitioner(client: Client):
-    practitioner = auth.create_user(
-        email=f"practitioner-{uuid.uuid4()}@fake.umed.jp",
+def create_user() -> User:
+    email = f"user-{uuid.uuid4()}@fake.umed.jp"
+    user = auth.create_user(
+        email=email,
         email_verified=True,
         password=f"password-{uuid.uuid4()}",
-        display_name="Test Practitioner",
+        display_name="Test User",
         disabled=False,
     )
-    token = auth.create_custom_token(practitioner.uid)
-    token = get_token(practitioner.uid)
+    token = get_token(user.uid)
+    return User(user.uid, email, token)
 
-    practitioner_resp = client.post(
-        "/practitioners",
-        data=json.dumps(PRACTITIONER_DATA),
-        headers={"Authorization": f"Bearer {token}"},
-        content_type="application/json",
-    )
-    assert practitioner_resp.status_code == 201
-    practitioner_output = json.loads(practitioner_resp.data.decode("utf-8"))
-    practitioner_roles_resp = client.post(
+
+def create_practitioner(client: Client, user: User):
+    resp = client.post(
         "/practitioner_roles",
-        data=json.dumps(get_role(practitioner_output["id"])),
-        headers={"Authorization": f"Bearer {token}"},
+        data=json.dumps(
+            {
+                "is_doctor": "true",
+                "start": "2021-08-15T13:55:57.967345+09:00",
+                "end": "2021-08-15T14:55:57.967345+09:00",
+                "family_name": "Last name",
+                "given_name": "Given name",
+                "zoom_id": "zoom id",
+                "zoom_password": "zoom password",
+                "available_time": [
+                    {
+                        "daysOfWeek": ["mon", "tue", "wed"],
+                        "availableStartTime": "09:00:00",
+                        "availableEndTime": "16:30:00",
+                    },
+                ],
+                "email": user.email,
+                "photo_url": "https://example.com",
+            }
+        ),
+        headers={"Authorization": f"Bearer {user.token}"},
         content_type="application/json",
     )
+    assert resp.status_code == 201
+    practitioner_id = json.loads(resp.data)["practitioner"]["reference"].split("/")[1]
 
-    assert practitioner_roles_resp.status_code == 201
-
-    data = json.loads(practitioner_roles_resp.data)
-    doctor_role = data["practitioner_role"]
-    scheudle = data["schedule"]
-    return Practitioner(practitioner.uid, doctor_role, practitioner_output, scheudle)
+    return Practitioner(user.uid, json.loads(resp.data), practitioner_id)
 
 
-def create_patient(client: Client):
-    patient = auth.create_user(
-        email=f"patient-{uuid.uuid4()}@fake.umed.jp",
-        email_verified=True,
-        password=f"password-{uuid.uuid4()}",
-        display_name="Patient",
-        disabled=False,
-    )
-    token = get_token(patient.uid)
-
+def create_patient(client: Client, user: User):
     resp = client.post(
         "/patients",
         data=json.dumps(PATIENT_DATA),
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {user.token}"},
         content_type="application/json",
     )
 
     assert resp.status_code == 201
-    return Patient(patient.uid, json.loads(resp.data))
+    return Patient(user.uid, json.loads(resp.data))
 
 
-def create_appointment(client: Client, practitioner: Practitioner, patientA: Patient):
+def create_appointment(
+    client: Client, practitioner: Practitioner, patient: Patient, days=0
+):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
-    start = now.isoformat()
-    end = (now + timedelta(hours=1)).isoformat()
+    start = (now - timedelta(days=days)).isoformat()
+    end = (now - timedelta(days=days) + timedelta(hours=1)).isoformat()
 
     appointment_data = {
         "practitioner_role_id": practitioner.fhir_data["id"],
-        "patient_id": patientA.fhir_data["id"],
+        "patient_id": patient.fhir_data["id"],
         "start": start,
         "end": end,
+        "service_type": "WALKIN",
     }
 
-    token = get_token(patientA.uid)
+    token = get_token(patient.uid)
     resp = client.post(
         "/appointments",
         data=json.dumps(appointment_data),
@@ -135,7 +139,7 @@ def create_encounter(
         data=json.dumps(
             get_encounter_data(
                 patient.fhir_data["id"],
-                practitioner.fhir_practitioner_data["id"],
+                practitioner.practitioner_id,
                 appointment["id"],
             )
         ),

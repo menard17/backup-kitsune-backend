@@ -1,5 +1,5 @@
 Feature: Practitioners
-    Scenario: Practitioner Id can be fetched by Email
+    Scenario: Practitioner can be created correctly
         Given a user
         When a doctor is created
         Then the doctor can be searched by email
