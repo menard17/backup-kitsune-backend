@@ -1,0 +1,77 @@
+{
+  "category": "CUSTOM",
+  "displayName": "Kitsune Dashboard - {{ blueprint.name }} (script generated, DO NOT EDIT BY HAND)",
+  "gridLayout": {
+    "columns": 2,
+    "widgets": [{% for metric in metrics %}
+      {
+        "title": "Error [{{ metric.methods }}  {{ metric.rule }}] [SUM]",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "minAlignmentPeriod": "60s",
+              "plotType": "LINE",
+              "targetAxis": "Y1",
+              "timeSeriesQuery": {
+                "apiSource": "DEFAULT_CLOUD",
+                "timeSeriesFilter": {
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "crossSeriesReducer": "REDUCE_NONE",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  },
+                  "filter": "metric.type=\"logging.googleapis.com/user/endpoint.{{ metric.endpoint }}.error\"",
+                  "secondaryAggregation": {
+                    "alignmentPeriod": "60s",
+                    "crossSeriesReducer": "REDUCE_NONE",
+                    "perSeriesAligner": "ALIGN_SUM"
+                  }
+                }
+              }
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "y1Axis",
+            "scale": "LINEAR"
+          }
+        }
+      },
+      {
+        "title": "Latency [{{ metric.methods }}  {{ metric.rule }}] [99TH PERCENTILE]",
+        "xyChart": {
+          "chartOptions": {
+            "mode": "COLOR"
+          },
+          "dataSets": [
+            {
+              "minAlignmentPeriod": "60s",
+              "plotType": "LINE",
+              "targetAxis": "Y1",
+              "timeSeriesQuery": {
+                "apiSource": "DEFAULT_CLOUD",
+                "timeSeriesFilter": {
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_99",
+                    "perSeriesAligner": "ALIGN_DELTA"
+                  },
+                  "filter": "metric.type=\"logging.googleapis.com/user/endpoint.{{ metric.endpoint }}.latency\""
+                }
+              }
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": {
+            "label": "y1Axis",
+            "scale": "LINEAR"
+          }
+        }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+}
