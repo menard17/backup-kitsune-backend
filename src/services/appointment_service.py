@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fhir.resources import construct_fhir_element
 
@@ -75,3 +76,13 @@ class AppointmentService:
         appointment = self.resource_client.get_put_bundle(appointment, appointment_id)
 
         return None, appointment
+
+    def check_appointment_ontime(self, appointment_id: uuid):
+        appointment = self.resource_client.get_resource(appointment_id, "Appointment")
+        if datetime.now(timezone.utc) < appointment.start - timedelta(minutes=5):
+            return False, "meeting is not started yet", appointment
+
+        if datetime.now(timezone.utc) > appointment.end:
+            return False, "meeting is already finished", appointment
+
+        return True, None, appointment

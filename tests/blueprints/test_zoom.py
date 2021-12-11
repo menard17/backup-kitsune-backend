@@ -1,5 +1,5 @@
-from datetime import datetime, timezone, timedelta
 import json
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from fhir.resources.appointment import Appointment
@@ -18,9 +18,7 @@ class MockZoomObject:
 def test_zoom_before_meeting():
     """Set the USER env var to assert the behavior."""
     BOOKED_APPOINTMENT_DATA["start"] = datetime.now(timezone.utc) + timedelta(hours=1)
-    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(
-        timezone.utc
-    ) + timedelta(hours=2)
+    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(timezone.utc) + timedelta(hours=2)
 
     def mock_get_resource(id, resource_type):
         return Appointment.parse_obj(BOOKED_APPOINTMENT_DATA)
@@ -40,12 +38,11 @@ def test_zoom_before_meeting():
     assert resp.status == "400 BAD REQUEST"
     assert resp.data.decode("utf-8") == "meeting is not started yet"
 
+
 def test_zoom_after_meeting():
     """Set the USER env var to assert the behavior."""
     BOOKED_APPOINTMENT_DATA["start"] = datetime.now(timezone.utc) - timedelta(hours=2)
-    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(
-        timezone.utc
-    ) - timedelta(hours=1)
+    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(timezone.utc) - timedelta(hours=1)
 
     def mock_get_resource(id, resource_type):
         return Appointment.parse_obj(BOOKED_APPOINTMENT_DATA)
@@ -65,12 +62,11 @@ def test_zoom_after_meeting():
     assert resp.status == "400 BAD REQUEST"
     assert resp.data.decode("utf-8") == "meeting is already finished"
 
+
 def test_zoom_on_time():
     """Set the USER env var to assert the behavior."""
     BOOKED_APPOINTMENT_DATA["start"] = datetime.now(timezone.utc)
-    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(
-        timezone.utc
-    ) + timedelta(hours=1)
+    BOOKED_APPOINTMENT_DATA["end"] = datetime.now(timezone.utc) + timedelta(hours=1)
 
     def mock_get_resource(id, resource_type):
         return Appointment.parse_obj(BOOKED_APPOINTMENT_DATA)

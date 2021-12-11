@@ -1,12 +1,13 @@
 import json
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 import jwt
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
+from services.appointment_service import AppointmentService
 from utils.middleware import jwt_authenticated
 from utils.zoom_setup import ZoomObject
 
@@ -20,8 +21,15 @@ def zoom_jwt() -> Response:
 
 
 class ZoomController:
-    def __init__(self, resource_client=None):
+    def __init__(
+        self,
+        resource_client=None,
+        appointment_service=None,
+    ):
         self.resource_client = resource_client or ResourceClient()
+        self.appointment_service = appointment_service or AppointmentService(
+            self.resource_client
+        )
 
     def get_zoom_jwt(self, request, zoom_object=None) -> str:
         """Get jwt from api key and sec. It should be authenticated with token from firebase.
@@ -30,14 +38,11 @@ class ZoomController:
         if not (appointment_id := request.args.get("appointment_id")):
             return Response(status=400, response="missing param: appointment_id")
 
-        appointment = self.resource_client.get_resource(appointment_id, "Appointment")
-        if datetime.now(timezone.utc) < appointment.start - timedelta(
-            minutes=5
-        ):
-            return Response(status=400, response="meeting is not started yet")
-
-        if datetime.now(timezone.utc) > appointment.end:
-            return Response(status=400, response="meeting is already finished")
+        ontime, detail, appointment = self.appointment_service.check_appointment_ontime(
+            appointment_id
+        )
+        if not ontime:
+            return Response(status=400, response=detail)
 
         if not zoom_object:
             zoom_object = ZoomObject()
