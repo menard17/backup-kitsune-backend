@@ -157,7 +157,7 @@ def create_document_reference(client: Client, patient: Patient):
     token = get_token(patient.uid)
 
     patient_id = patient.fhir_data["id"]
-    DOCUMENT_REFERENCE_DATA["subject"] = {"reference": f"Patient/{patient_id}"}
+    DOCUMENT_REFERENCE_DATA["subject"] = f"Patient/{patient_id}"
     resp = client.post(
         "/document_references",
         data=json.dumps(DOCUMENT_REFERENCE_DATA),

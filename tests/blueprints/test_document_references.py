@@ -1,16 +1,37 @@
-import json
 import uuid
 from datetime import datetime
 
 import pytz
 from fhir.resources import construct_fhir_element
-from fhir.resources.documentreference import DocumentReference
 from helper import FakeRequest, MockResourceClient
 
 from blueprints.document_references import DocumentReferenceController
 from tests.blueprints.test_appointments import BOOKED_APPOINTMENT_DATA
 
 TEST_PATIENT_ID = "ec39753c-0f63-4c8b-b654-011ec5c0295f"
+DOCUMENT_REFERENCE_POST_REQUEST = {
+    "subject": f"Patient/{TEST_PATIENT_ID}",
+    "document_type": "medical_record",
+    "pages": [
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 1",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 2",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 3",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 4",
+        },
+    ],
+}
+
 DOCUMENT_REFERENCE_DATA = {
     "resourceType": "DocumentReference",
     "status": "current",
@@ -69,7 +90,7 @@ def test_create_document_reference_for_oneself():
 
     controller = DocumentReferenceController(resource_client)
     req = FakeRequest(
-        data=DOCUMENT_REFERENCE_DATA,
+        data=DOCUMENT_REFERENCE_POST_REQUEST,
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
     resp = controller.create_document_reference(req)
@@ -103,7 +124,7 @@ def test_create_document_reference_for_oneself_no_old_documents():
 
     controller = DocumentReferenceController(resource_client)
     req = FakeRequest(
-        data=DOCUMENT_REFERENCE_DATA,
+        data=DOCUMENT_REFERENCE_POST_REQUEST,
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
     resp = controller.create_document_reference(req)
@@ -128,7 +149,7 @@ def test_create_document_reference_for_someoneelse():
 
     controller = DocumentReferenceController(resource_client)
     req = FakeRequest(
-        data=DOCUMENT_REFERENCE_DATA,
+        data=DOCUMENT_REFERENCE_POST_REQUEST,
         claims={"roles": {"Patient": {"id": str(uuid.uuid4())}}},
     )
     resp = controller.create_document_reference(req)
@@ -154,7 +175,7 @@ def test_search_document_reference_for_oneself():
         args={
             "date": f"le{expected_search_date}",
             "subject": f"Patient/{TEST_PATIENT_ID}",
-            "documentation_type": "34108-1",
+            "documentation_type": "insurance_card",
         },
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
@@ -180,7 +201,7 @@ def test_search_document_reference_for_someoneelese():
         args={
             "date": f"le{expected_search_date}",
             "subject": f"Patient/{str(uuid.uuid4())}",
-            "documentation_type": "34108-1",
+            "documentation_type": "insurance_card",
         },
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
@@ -207,7 +228,7 @@ def test_search_document_reference_without_subject():
         args={
             "date": f"le{expected_search_date}",
             "subject": "XXXXXX",
-            "documentation_type": "34108-1",
+            "documentation_type": "insurance_card",
         },
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
@@ -230,7 +251,10 @@ def test_search_document_reference_with_invalid_subject():
 
     controller = DocumentReferenceController(resource_client)
     req = FakeRequest(
-        args={"date": f"le{expected_search_date}", "documentation_type": "34108-1"},
+        args={
+            "date": f"le{expected_search_date}",
+            "documentation_type": "insurance_card",
+        },
         claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
     )
     resp = controller.search_document_reference(req)

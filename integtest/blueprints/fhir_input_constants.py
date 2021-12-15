@@ -28,26 +28,24 @@ PATIENT_DATA = {
 }
 
 DOCUMENT_REFERENCE_DATA = {
-    "resourceType": "DocumentReference",
-    "status": "current",
-    "date": "2018-12-24T09:43:41+11:00",
-    "type": {"coding": [{"code": "34108-1", "display": "Outpatient Note"}]},
-    "content": [
+    "subject": "Patient/c696cd08-babf-4ec2-8b40-73ffd422d571",
+    "document_type": "medical_record",
+    "pages": [
         {
-            "attachment": {
-                "contentType": "application/hl7-v3+xml",
-                "language": "en-US",
-                "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
-                "size": 3654,
-                "hash": "2jmj7l5rSw0yVb/vlWAYkK/YBwk=",
-                "title": "Physical",
-                "creation": "2005-12-24T09:35:00+11:00",
-            },
-            "format": {
-                "system": "urn:oid:1.3.6.1.4.1.19376.1.2.3",
-                "code": "urn:ihe:pcc:handp:2008",
-                "display": "History and Physical Specification",
-            },
-        }
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 1",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 2",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 3",
+        },
+        {
+            "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
+            "title": "Page 4",
+        },
     ],
 }
