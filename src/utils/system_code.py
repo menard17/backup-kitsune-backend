@@ -7,6 +7,7 @@ class ServiceURL:
     appointment_type = "http://terminology.hl7.org/CodeSystem/v2-0276"
     service_request_code = "http://snomed.info/sct"
     practition_type = "http://terminology.hl7.org/CodeSystem/practitioner-role"
+    document_type = "http://loinc.org"
 
 
 class Code(TypedDict):
@@ -23,6 +24,10 @@ def create_coding_clause(url: ServiceURL, code: str, display: str = None) -> Cod
     if display:
         result["display"] = display
     return result
+
+
+def create_token(url: ServiceURL, code: str):
+    return f"{url}|{code}"
 
 
 class ServiceType:
@@ -64,6 +69,28 @@ class SystemCode:
                 "FOLLOWUP",
                 "A follow up visit from a previous appointment",
             )
+
+    @staticmethod
+    def document_type_code(document_type: str):
+        if document_type == "insurance_card":
+            return create_coding_clause(
+                ServiceURL.document_type, "64290-0", "Insurance Card"
+            )
+        elif document_type == "medical_record":
+            return create_coding_clause(
+                ServiceURL.document_type, "34117-2", "Medical Record"
+            )
+        else:
+            return document_type
+
+    @staticmethod
+    def document_type_token(document_type: str):
+        if document_type == "insurance_card":
+            return create_token(ServiceURL.document_type, "64290-0")
+        elif document_type == "medical_record":
+            return create_token(ServiceURL.document_type, "34117-2")
+        else:
+            return document_type
 
     @staticmethod
     def service_request_code():
