@@ -31,7 +31,7 @@ def after_request_log_endpoint_metric(
     """
     log_latency(logger, request)
 
-    if 500 <= response.status_code <= 599:
+    if 400 <= response.status_code <= 599:
         logger.error(
             f"endpoint.{request.endpoint}.error: status_code: [{response.status_code}], data: [{response.data}]]"
         )
