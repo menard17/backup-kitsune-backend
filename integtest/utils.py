@@ -53,6 +53,10 @@ def create_user() -> User:
 
 
 def create_practitioner(client: Client, user: User, language=["en"]):
+    base64_prefix = "data:image/png;base64,"
+    with open("./artifact/image_base64") as f:
+        photo_base64 = f.readlines()[0]
+    assert photo_base64.startswith(base64_prefix)
     param_data = {
         "is_doctor": "true",
         "start": "2021-08-15T13:55:57.967345+09:00",
@@ -71,12 +75,13 @@ def create_practitioner(client: Client, user: User, language=["en"]):
             },
         ],
         "email": user.email,
-        "photo_url": "https://example.com",
+        "photo": photo_base64,
     }
     if "ja" in language:
         param_data["family_name_ja"]
         param_data["given_name_ja"]
         param_data["bio_ja"]
+
     resp = client.post(
         "/practitioner_roles",
         data=json.dumps(param_data),

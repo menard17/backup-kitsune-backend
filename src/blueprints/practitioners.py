@@ -27,7 +27,6 @@ class PractitionerController:
 
         search_clause = []
         search_clause.append(("email", email))
-
         result = self.resource_client.search(
             "Practitioner",
             search=search_clause,
@@ -36,6 +35,7 @@ class PractitionerController:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
+        print((result.entry))
         return Response(
             status=200,
             response=json.dumps(

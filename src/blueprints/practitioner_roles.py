@@ -15,6 +15,7 @@ from services.practitioner_service import Biography, HumanName, PractitionerServ
 from services.schedule_service import ScheduleService
 from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
+from utils.file_size import size_from_base64
 from utils.middleware import jwt_authenticated, role_auth
 
 practitioner_roles_blueprint = Blueprint(
@@ -93,14 +94,23 @@ class PractitionerRoleController:
             (start := request_body.get("start"))
             and (end := request_body.get("end"))
             and (email := request_body.get("email"))
-            and (photo_url := request_body.get("photo_url"))
+            and (photo := request_body.get("photo"))
             and (is_doctor := request_body.get("is_doctor"))
             and (zoom_id := request_body.get("zoom_id"))
             and (zoom_password := request_body.get("zoom_password"))
             and (available_time := request_body.get("available_time"))
             and (gender := request_body.get("gender"))
         ):
+
             return Response(status=400, response="Body is insufficient")
+
+        PIXEL_SIZE = 104  # Max size of image in pixel
+        byte_size = (PIXEL_SIZE ** 2) * 3
+        if (image_size := size_from_base64(photo)) > byte_size:
+            return Response(
+                status=400,
+                response=f"photo is: {image_size} and expected to be less than {byte_size}",
+            )
 
         role_id = f"urn:uuid:{uuid.uuid1()}"
         pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
@@ -113,7 +123,7 @@ class PractitionerRoleController:
         names = get_names_ext(request_body, language_options)
         biographies = get_biographies_ext(request_body, language_options)
         err, pracititioner = self.practitioner_service.create_practitioner(
-            pracititioner_id, email, photo_url, gender, biographies, names
+            pracititioner_id, email, photo, gender, biographies, names
         )
         if err is not None:
             return Response(status=400, response=err.args[0])
@@ -311,11 +321,11 @@ def create_practitioner_role():
         'zoom_password': 'zoom password',
         'available_time':  {},
         'email': 'test@umed.jp',
-        'photo_url': 'https://example.com',
         'gender': 'male',
         'family_name_en': 'Last name',
         'given_name_en': 'Given name',
         'bio_en': 'My background is ...',
+        'photo': '/9j/4AAQSkZJRgABAQAAAQ...'
     }
     """
     return PractitionerRoleController().create_practitioner_role(request)

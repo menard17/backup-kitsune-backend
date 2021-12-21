@@ -54,7 +54,7 @@ class SystemCode:
 
     @staticmethod
     def appointment_service_type(service_type: ServiceType is None):
-        if service_type == "walkin":
+        if service_type == "":
             return create_coding_clause(
                 ServiceURL.appointment_type,
                 "WALKIN",

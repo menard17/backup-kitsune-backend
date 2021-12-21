@@ -56,16 +56,18 @@ class PractitionerService:
         self,
         identity: str,
         email: str,
-        photo_url: str,
+        photo: str,
         gender: str,
         biographies: List[Biography],
         names: List[HumanName],
     ):
         communication = SystemCode.communication("ja")
+        base64_prefix = "data:image/png;base64,"
+        if not photo.startswith(base64_prefix):
+            return Exception("Wrong photo format"), None
 
         bio_extensions = [bio.get_bio_with_lang() for bio in biographies]
         names = [name.get_name_with_lang() for name in names]
-
         practitioner_jsondict = {
             "resourceType": "Practitioner",
             "active": True,
@@ -74,6 +76,9 @@ class PractitionerService:
             "gender": gender,
             "communication": [{"coding": [communication]}],
             "extension": bio_extensions,
+            "photo": [
+                {"contentType": "image/png", "data": photo[len(base64_prefix) :]}
+            ],
         }
 
         practitioner = construct_fhir_element("Practitioner", practitioner_jsondict)
