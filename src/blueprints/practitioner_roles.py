@@ -1,6 +1,7 @@
 import json
 import uuid
 from datetime import datetime, time, timedelta
+from typing import List
 
 import pytz
 from fhir.resources.practitionerrole import PractitionerRole
@@ -10,7 +11,7 @@ from flask.wrappers import Request
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
 from services.practitioner_role_service import PractitionerRoleService
-from services.practitioner_service import PractitionerService
+from services.practitioner_service import Biography, HumanName, PractitionerService
 from services.schedule_service import ScheduleService
 from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
@@ -89,9 +90,7 @@ class PractitionerRoleController:
 
         request_body = request.get_json()
         if not (
-            (given_name := request_body.get("given_name"))
-            and (family_name := request_body.get("family_name"))
-            and (start := request_body.get("start"))
+            (start := request_body.get("start"))
             and (end := request_body.get("end"))
             and (email := request_body.get("email"))
             and (photo_url := request_body.get("photo_url"))
@@ -99,23 +98,29 @@ class PractitionerRoleController:
             and (zoom_id := request_body.get("zoom_id"))
             and (zoom_password := request_body.get("zoom_password"))
             and (available_time := request_body.get("available_time"))
+            and (gender := request_body.get("gender"))
         ):
             return Response(status=400, response="Body is insufficient")
 
-        name = given_name + " " + family_name
         role_id = f"urn:uuid:{uuid.uuid1()}"
         pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
+
         resources = []
 
         # Create a practitioner
+        language_options = ["en", "ja"]
+        biographies = []
+        names = get_names_ext(request_body, language_options)
+        biographies = get_biographies_ext(request_body, language_options)
         err, pracititioner = self.practitioner_service.create_practitioner(
-            pracititioner_id, email, family_name, given_name, photo_url
+            pracititioner_id, email, photo_url, gender, biographies, names
         )
         if err is not None:
             return Response(status=400, response=err.args[0])
         resources.append(pracititioner)
 
         # Create a practitioner role
+        name = names[0].given_name + " " + names[0].family_name
         (
             err,
             practitioner_role,
@@ -302,13 +307,15 @@ def create_practitioner_role():
         'is_doctor': true,
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
-        'family_name': 'Last name',
-        'given_name': 'Given name',
         'zoom_id': 'zoom id',
         'zoom_password': 'zoom password',
         'available_time':  {},
         'email': 'test@umed.jp',
-        'photo_url': 'https://example.com'
+        'photo_url': 'https://example.com',
+        'gender': 'male',
+        'family_name_en': 'Last name',
+        'given_name_en': 'Given name',
+        'bio_en': 'My background is ...',
     }
     """
     return PractitionerRoleController().create_practitioner_role(request)
@@ -342,3 +349,45 @@ def get_role_slots(role_id: str) -> dict:
     :rtype: dict
     """
     return PractitionerRoleController().get_role_slots(request, role_id)
+
+
+def get_biographies_ext(
+    request_body: dict, language_options: List[str]
+) -> List[Biography]:
+    """
+    Returns list of Biography. bio param is comparised of prefix(bio) and suffix connected with _.
+    prefix is bio and suffix is language code
+
+    :param request_body: request body from http request
+    :type request_body: dict
+    :param language_options: list of language that are supported
+    :type language_options: List[str]
+
+    :rtype: List[Biography]
+    """
+    biographies = []
+    for language in language_options:
+        if bio := request_body.get("bio_" + language):
+            biographies.append(Biography(bio, language))
+    return biographies
+
+
+def get_names_ext(request_body: dict, language_options: list) -> List[HumanName]:
+    """
+    Returns list of HumanName. request param is comparised of prefix(given_name or family_name) and suffix connected with _.
+    suffix is language code
+
+    :param request_body: request body from http request
+    :type request_body: dict
+    :param language_options: list of language that are supported
+    :type language_options: List[str]
+
+    :rtype: List[HumanName]
+    """
+    names = []
+    for language in language_options:
+        if (given_name := request_body.get("given_name_" + language)) and (
+            family_name := request_body.get("family_name_" + language)
+        ):
+            names.append(HumanName(given_name, family_name, language))
+    return names

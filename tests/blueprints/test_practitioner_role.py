@@ -3,7 +3,10 @@ import json
 from fhir.resources import construct_fhir_element
 from helper import FakeRequest, MockResourceClient
 
-from blueprints.practitioner_roles import PractitionerRoleController
+from blueprints.practitioner_roles import (
+    PractitionerRoleController,
+    get_biographies_ext,
+)
 
 TEST_PRACTITIONER_ID = "dummy-practitioner-id"
 TEST_PRACTITIONER_ROLE_ID = "dummy-role-id"
@@ -173,3 +176,40 @@ def test_update_practitioner_role_returns_500_if_there_is_no_active_schedule_for
     resp = controller.update_practitioner_role(request, role["id"])
     assert resp.status_code == 500
     assert resp.data == b"(unexpected) the practitioner role is missing active schedule"
+
+
+def test_bio_just_english_content():
+    content = "biography contents"
+    language_url = "http://hl7.org/fhir/StructureDefinition/translation"
+    request_body = {
+        "bio_en": content,
+    }
+    biography = get_biographies_ext(request_body, ["en"])
+    expected = {
+        "url": "bio",
+        "valueString": content,
+        "extension": [{"url": language_url, "valueString": "en"}],
+    }
+    assert biography[0].get_bio_with_lang() == expected
+
+
+def test_bio_just_english_and_japanese_content():
+    content = "biography contents"
+    language_url = "http://hl7.org/fhir/StructureDefinition/translation"
+    request_body = {"bio_en": content, "bio_ja": content}
+    biography = get_biographies_ext(request_body, ["en", "ja"])
+    actual_en_bio, actual_ja_bio = biography
+    expected_en = {
+        "url": "bio",
+        "valueString": content,
+        "extension": [{"url": language_url, "valueString": "en"}],
+    }
+    expected_ja = {
+        "url": "bio",
+        "valueString": content,
+        "extension": [{"url": language_url, "valueString": "ja"}],
+    }
+    assert [actual_en_bio.get_bio_with_lang(), actual_ja_bio.get_bio_with_lang()] == [
+        expected_en,
+        expected_ja,
+    ]

@@ -7,6 +7,7 @@ class ServiceURL:
     appointment_type = "http://terminology.hl7.org/CodeSystem/v2-0276"
     service_request_code = "http://snomed.info/sct"
     practition_type = "http://terminology.hl7.org/CodeSystem/practitioner-role"
+    communication_code = "urn:ietf:bcp:47"
     document_type = "http://loinc.org"
 
 
@@ -106,4 +107,16 @@ class SystemCode:
             return create_coding_clause(ServiceURL.practition_type, "doctor")
         elif practition == "nurse":
             return create_coding_clause(ServiceURL.practition_type, "nurse")
+        raise TypeError()
+
+    @staticmethod
+    def communication(language: str):
+        if language == "ja":
+            return create_coding_clause(
+                ServiceURL.communication_code, language, "Japanese"
+            )
+        elif language == "en":
+            return create_coding_clause(
+                ServiceURL.communication_code, language, "English"
+            )
         raise TypeError()

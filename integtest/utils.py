@@ -52,29 +52,34 @@ def create_user() -> User:
     return User(user.uid, email, token)
 
 
-def create_practitioner(client: Client, user: User):
+def create_practitioner(client: Client, user: User, language=["en"]):
+    param_data = {
+        "is_doctor": "true",
+        "start": "2021-08-15T13:55:57.967345+09:00",
+        "end": "2021-08-15T14:55:57.967345+09:00",
+        "family_name_en": "Last name",
+        "given_name_en": "Given name",
+        "bio_en": "My background ...",
+        "zoom_id": "zoom id",
+        "gender": "male",
+        "zoom_password": "zoom password",
+        "available_time": [
+            {
+                "daysOfWeek": ["mon", "tue", "wed"],
+                "availableStartTime": "09:00:00",
+                "availableEndTime": "16:30:00",
+            },
+        ],
+        "email": user.email,
+        "photo_url": "https://example.com",
+    }
+    if "ja" in language:
+        param_data["family_name_ja"]
+        param_data["given_name_ja"]
+        param_data["bio_ja"]
     resp = client.post(
         "/practitioner_roles",
-        data=json.dumps(
-            {
-                "is_doctor": "true",
-                "start": "2021-08-15T13:55:57.967345+09:00",
-                "end": "2021-08-15T14:55:57.967345+09:00",
-                "family_name": "Last name",
-                "given_name": "Given name",
-                "zoom_id": "zoom id",
-                "zoom_password": "zoom password",
-                "available_time": [
-                    {
-                        "daysOfWeek": ["mon", "tue", "wed"],
-                        "availableStartTime": "09:00:00",
-                        "availableEndTime": "16:30:00",
-                    },
-                ],
-                "email": user.email,
-                "photo_url": "https://example.com",
-            }
-        ),
+        data=json.dumps(param_data),
         headers={"Authorization": f"Bearer {user.token}"},
         content_type="application/json",
     )

@@ -30,8 +30,7 @@ All the tutorials below are based on running the application inside a container.
 But in case you want to skip the container part, simply run:
 
 ```shell
-poetry install
-poetry run python src/app.py
+poetry install && poetry run python src/app.py
 ```
 
 #### Running development environment
