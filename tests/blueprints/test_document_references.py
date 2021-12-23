@@ -78,7 +78,16 @@ def test_create_document_reference_for_oneself():
         return resource
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     def mock_patch_resource(uid, type, valuset):
         return BOOKED_APPOINTMENT_DATA
@@ -137,7 +146,16 @@ def test_create_document_reference_for_someoneelse():
         return resource
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     def mock_patch_resource(uid, type, valuset):
         return BOOKED_APPOINTMENT_DATA
@@ -165,7 +183,16 @@ def test_search_document_reference_for_oneself():
     expected_search_date = now.date().isoformat()  # defaults to current date
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     resource_client = MockResourceClient()
     resource_client.search = mock_search_resource
@@ -191,7 +218,16 @@ def test_search_document_reference_for_someoneelese():
     expected_search_date = now.date().isoformat()  # defaults to current date
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     resource_client = MockResourceClient()
     resource_client.search = mock_search_resource
@@ -218,7 +254,16 @@ def test_search_document_reference_without_subject():
     expected_search_date = now.date().isoformat()  # defaults to current date
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     resource_client = MockResourceClient()
     resource_client.search = mock_search_resource
@@ -244,7 +289,16 @@ def test_search_document_reference_with_invalid_subject():
     expected_search_date = now.date().isoformat()  # defaults to current date
 
     def mock_search_resource(resource_type, search):
-        return construct_fhir_element("Bundle", DOCUMENT_REFERENCE_SEARCH_DATA)
+        return construct_fhir_element(
+            "Bundle",
+            {
+                "entry": [],
+                "link": [],
+                "total": 1,
+                "type": "searchset",
+                "resourceType": "Bundle",
+            },
+        )
 
     resource_client = MockResourceClient()
     resource_client.search = mock_search_resource

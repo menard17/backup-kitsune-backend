@@ -174,10 +174,7 @@ class DocumentReferenceController:
         return Response(
             status=200,
             response=json.dumps(
-                {
-                    "data": [datetime_encoder(e.resource.json()) for e in result.entry],
-                    "links": [datetime_encoder(link.json()) for link in result.link],
-                },
+                {"data": [datetime_encoder(e.resource.dict()) for e in result.entry]},
                 default=json_serial,
             ),
         )

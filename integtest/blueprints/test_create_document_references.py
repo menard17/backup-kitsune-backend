@@ -56,7 +56,7 @@ def check_access_of_self(client: Client, patientA: Patient):
     data = json.loads(resp_a.data)
     assert len(data["data"]) == 1
 
-    data = json.loads(data["data"][0])
+    data = data["data"][0]
     assert data["subject"]["reference"] == f"Patient/{patient_id}"
 
 
@@ -79,7 +79,7 @@ def check_access_of_doctor(
     data = json.loads(resp_a.data)
     assert len(data["data"]) == 1
 
-    data = json.loads(data["data"][0])
+    data = data["data"][0]
     assert data["subject"]["reference"] == f"Patient/{patient_id}"
 
 
