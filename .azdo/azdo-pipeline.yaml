@@ -25,6 +25,7 @@ stages:
       containerRegistry: $(containerRegistry)
       repository: $(repository)
   - job: CleanUp
+    condition: false # Disabled cleanup for FHIR for now
     steps:
     - task: TerraformInstaller@0
       inputs:

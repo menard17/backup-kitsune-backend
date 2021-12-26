@@ -5,12 +5,8 @@ from datetime import date, datetime
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, z):
         if isinstance(z, datetime):
-            print("date")
-            print(z)
             return str(z)
         if isinstance(z, date):
-            print("date2")
-            print(z)
             return z.strftime("%Y-%m-%d")
         if isinstance(z, bytes):
             return z.decode("utf-8")

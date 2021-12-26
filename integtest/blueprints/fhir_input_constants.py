@@ -23,6 +23,7 @@ PATIENT_DATA = {
             "state": "Vic",
             "postalCode": "3999",
             "period": {"start": "1974-12-25"},
+            "country": "US",
         }
     ],
 }
