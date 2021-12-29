@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -24,18 +25,18 @@ class PractitionerController:
     def search_practitioners(self, request) -> Response:
         if (email := request.args.get("email")) is None:
             return Response(status=400, response="missing param: email")
-
         search_clause = []
         search_clause.append(("email", email))
+
         result = self.resource_client.search(
             "Practitioner",
             search=search_clause,
         )
+
         if result.entry is None:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
-        print((result.entry))
         return Response(
             status=200,
             response=json.dumps(
@@ -107,6 +108,17 @@ class PractitionerController:
             role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
         return practitioner
 
+    def get_practitioner(self, practitioner_id: uuid) -> Response:
+        """Returns practitioner with given practitioner_id
+
+        :param practitioner_id: practitioner id
+        :type practitioner_id: uuid
+        :return: practitioner in JSON object
+        :rtype: Response
+        """
+        role = self.resource_client.get_resource(practitioner_id, "Practitioner")
+        return Response(status=200, response=datetime_encoder(role.json()))
+
 
 @practitioners_blueprint.route("/<practitioner_id>/slots", methods=["GET"])
 @jwt_authenticated()
@@ -150,3 +162,9 @@ def get_today_time(hours: int):
 @jwt_authenticated()
 def search():
     return PractitionerController().search_practitioners(request)
+
+
+@practitioners_blueprint.route("/<practitioner_id>", methods=["GET"])
+@jwt_authenticated()
+def get_practitioner(practitioner_id: str):
+    return PractitionerController().get_practitioner(practitioner_id)

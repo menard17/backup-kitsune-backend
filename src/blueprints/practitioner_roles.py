@@ -4,7 +4,6 @@ from datetime import datetime, time, timedelta
 from typing import List
 
 import pytz
-from fhir.resources.practitionerrole import PractitionerRole
 from flask import Blueprint, Response, request
 from flask.wrappers import Request
 
@@ -48,11 +47,20 @@ class PractitionerRoleController:
         :return: all practitioner roles are returns in JSON object
         :rtype: Response
         """
-        role_type = request.args.get("role_type")
-        if role_type and role_type in {"nurse", "doctor"}:
-            roles = self.resource_client.search(
-                "PractitionerRole", [("role", role_type)]
-            )
+        search_clause = []
+
+        if (role_type := request.args.get("role_type")) and role_type in {
+            "nurse",
+            "doctor",
+        }:
+            search_clause.append(("role", role_type))
+
+        if practitoner_id := request.args.get("practitoner_id"):
+            search_clause.append(("practitioner", practitoner_id))
+
+        if search_clause:
+            roles = self.resource_client.search("PractitionerRole", search_clause)
+
         else:
             roles = self.resource_client.get_resources("PractitionerRole")
         roles = self.resource_client.get_resources("PractitionerRole")
@@ -88,7 +96,6 @@ class PractitionerRoleController:
         :returns: practitioner role in JSON object
         :rtype: Response
         """
-
         request_body = request.get_json()
         if not (
             (start := request_body.get("start"))
@@ -101,8 +108,10 @@ class PractitionerRoleController:
             and (available_time := request_body.get("available_time"))
             and (gender := request_body.get("gender"))
         ):
-
             return Response(status=400, response="Body is insufficient")
+        language_options = ["en", "ja"]
+        names = get_names_ext(request_body, language_options)
+        biographies = get_biographies_ext(request_body, language_options)
 
         PIXEL_SIZE = 104  # Max size of image in pixel
         byte_size = (PIXEL_SIZE ** 2) * 3
@@ -118,10 +127,6 @@ class PractitionerRoleController:
         resources = []
 
         # Create a practitioner
-        language_options = ["en", "ja"]
-        biographies = []
-        names = get_names_ext(request_body, language_options)
-        biographies = get_biographies_ext(request_body, language_options)
         err, pracititioner = self.practitioner_service.create_practitioner(
             pracititioner_id, email, photo, gender, biographies, names
         )
@@ -169,58 +174,89 @@ class PractitionerRoleController:
         return Response(status=201, response=resp.json())
 
     def update_practitioner_role(self, request, role_id: uuid):
-        """
-        This is not atomic process atm & requires multiple resources (schedule and practitionerRole).
-        Also input is pure FHIR json which is not ideal
-        """
-        role = PractitionerRole.parse_obj(request.get_json())
+        """Returns modified practitioner role
 
-        if role.id != role_id:
-            return Response(status=400, response="role_id mismatch")
+        Modifies practitioner or/and practitioner role.
+        This is done in transaction so that it's either all resources are modified succeessfully
+        or nothing is modified.
 
+        :param request: request containing body from http request
+        :type request: Request
+        :returns: practitioner role in JSON object
+        :rtype: Response
+        """
+        request_body = request.get_json()
+        start = request_body.get("start")
+        end = request_body.get("end")
+        photo = request_body.get("photo")
+        zoom_id = request_body.get("zoom_id")
+        zoom_password = request_body.get("zoom_password")
+        available_time = request_body.get("available_time")
+        gender = request_body.get("gender")
+        language_options = ["en", "ja"]
+        names = get_names_ext(request_body, language_options)
+        biographies = get_biographies_ext(request_body, language_options)
+
+        PIXEL_SIZE = 104  # Max size of image in pixel
+        byte_size = (PIXEL_SIZE ** 2) * 3
+        if photo and (image_size := size_from_base64(photo)) > byte_size:
+            return Response(
+                status=400,
+                response=f"photo is: {image_size} and expected to be less than {byte_size}",
+            )
+
+        resources = []
+
+        # Get PractitionerRole and Practitioner
+        role = self.resource_client.get_resource(role_id, "PractitionerRole")
+        practitioner_id = role.practitioner.reference
+        practitioner_id_raw = practitioner_id.split("/")[1]
+        practitioner = self.resource_client.get_resource(
+            practitioner_id_raw, "Practitioner"
+        )
         claims_roles = role_auth.extract_roles(request.claims)
-        if claims_roles["Practitioner"].get("id") is None:
-            return Response(status=401, response="only practitioner can call the API")
-        if (
-            role.practitioner.reference
-            != f'Practitioner/{claims_roles["Practitioner"]["id"]}'
+        if ("Patient" in claims_roles) or (
+            "Practitioner" in claims_roles
+            and claims_roles["Practitioner"]["id"] != practitioner_id_raw
         ):
             return Response(
                 status=401,
-                response="can only change practitioner role referencing to the practitioner",
+                response="practitioners can only update their themselves",
             )
 
-        # update the planning horizon of the schedule
-        schedule_search = self.resource_client.search(
-            "Schedule",
-            search=[
-                ("actor", role.id),
-                (
-                    "active",
-                    str(True),
-                ),  # assumes we only have one active schedule at the period
-            ],
+        # Modify practitioner role
+        (
+            err,
+            pracititioner_role_bundle,
+        ) = self.practitioner_role_service.update_practitioner_role(
+            role,
+            start,
+            end,
+            zoom_id,
+            zoom_password,
+            available_time,
         )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
 
-        if schedule_search.entry is None:
-            return Response(
-                status=500,
-                response="(unexpected) the practitioner role is missing active schedule",
-            )
+        if pracititioner_role_bundle:
+            resources.append(pracititioner_role_bundle)
 
-        schedule = schedule_search.entry[0].resource
-        schedule.planningHorizon = {
-            "start": role.period.start,
-            "end": role.period.end,
-        }
-        schedule = self.resource_client.put_resource(schedule.id, schedule)
+        # Modify practitioner
 
-        # update the role
-        role = PractitionerRole.parse_obj(request.get_json())
-        role = self.resource_client.put_resource(role.id, role)
+        err, pracititioner_bundle = self.practitioner_service.update_practitioner(
+            practitioner, biographies, names, photo, gender
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        if pracititioner_bundle:
+            resources.append(pracititioner_bundle)
 
-        data = {"practitioner_role": role.dict(), "schedule": schedule.dict()}
-        return Response(status=200, response=json.dumps(data, default=json_serial))
+        # Call bulk process
+        if resources:
+            resp = self.resource_client.create_resources(resources)
+            return Response(status=200, response=resp.json())
+        return Response(status=200, response={})
 
     def create_practitioner_role_slots(self, request, role_id):
         """
@@ -319,7 +355,7 @@ def create_practitioner_role():
         'end': '2021-08-15T14:55:57.967345+09:00',
         'zoom_id': 'zoom id',
         'zoom_password': 'zoom password',
-        'available_time':  {},
+        'available_time':  [],
         'email': 'test@umed.jp',
         'gender': 'male',
         'family_name_en': 'Last name',
@@ -334,6 +370,21 @@ def create_practitioner_role():
 @practitioner_roles_blueprint.route("/<role_id>/", methods=["PUT"])
 @jwt_authenticated()
 def update_practitioner_role(role_id: str):
+    """
+    Sample request body:
+    {
+        'start': '2021-08-15T13:55:57.967345+09:00',
+        'end': '2021-08-15T14:55:57.967345+09:00',
+        'zoom_id': 'zoom id',
+        'zoom_password': 'zoom password',
+        'available_time':  [],
+        'gender': 'male',
+        'family_name_en': 'Last name',
+        'given_name_en': 'Given name',
+        'bio_en': 'My background is ...',
+        'photo': '/9j/4AAQSkZJRgABAQAAAQ...'
+    }
+    """
     return PractitionerRoleController().update_practitioner_role(request, role_id)
 
 
@@ -371,7 +422,7 @@ def get_biographies_ext(
     :param request_body: request body from http request
     :type request_body: dict
     :param language_options: list of language that are supported
-    :type language_options: List[str]
+    :type languagepractitioner_roles_options: List[str]
 
     :rtype: List[Biography]
     """

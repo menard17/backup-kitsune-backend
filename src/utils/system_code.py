@@ -54,13 +54,13 @@ class SystemCode:
 
     @staticmethod
     def appointment_service_type(service_type: ServiceType is None):
-        if service_type == "":
+        if service_type == "walkin":
             return create_coding_clause(
                 ServiceURL.appointment_type,
                 "WALKIN",
                 "A previously unscheduled walk-in visit",
             )
-        elif service_type == "followup":
+        elif service_type == "routine":
             return create_coding_clause(
                 ServiceURL.appointment_type, "ROUTINE", "Routine appointment"
             )

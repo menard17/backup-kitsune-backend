@@ -1,9 +1,3 @@
-PRACTITIONER_DATA = {
-    "resourceType": "Practitioner",
-    "active": True,
-    "name": [{"family": "Test", "given": ["Cool"], "prefix": ["Dr"]}],
-}
-
 PATIENT_DATA = {
     "resourceType": "Patient",
     "id": "example",

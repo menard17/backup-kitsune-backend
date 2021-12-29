@@ -54,7 +54,7 @@ def create_user() -> User:
 
 def create_practitioner(client: Client, user: User, language=["en"]):
     base64_prefix = "data:image/png;base64,"
-    with open("./artifact/image_base64") as f:
+    with open("artifact/image_base64") as f:
         photo_base64 = f.readlines()[0]
     assert photo_base64.startswith(base64_prefix)
     param_data = {
@@ -156,9 +156,7 @@ def create_encounter(
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
-
     assert resp.status_code == 201
-
     encounter = json.loads(resp.data)
     return encounter
 
