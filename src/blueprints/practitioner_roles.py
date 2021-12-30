@@ -102,7 +102,7 @@ class PractitionerRoleController:
             and (end := request_body.get("end"))
             and (email := request_body.get("email"))
             and (photo := request_body.get("photo"))
-            and (is_doctor := request_body.get("is_doctor"))
+            and (role_type := request_body.get("role_type"))
             and (zoom_id := request_body.get("zoom_id"))
             and (zoom_password := request_body.get("zoom_password"))
             and (available_time := request_body.get("available_time"))
@@ -141,7 +141,7 @@ class PractitionerRoleController:
             practitioner_role,
         ) = self.practitioner_role_service.create_practitioner_role(
             role_id,
-            is_doctor,
+            role_type,
             start,
             end,
             pracititioner_id,
@@ -350,7 +350,7 @@ def create_practitioner_role():
     """
     Sample request body:
     {
-        'is_doctor': true,
+        'role_type': 'doctor,
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
         'zoom_id': 'zoom id',

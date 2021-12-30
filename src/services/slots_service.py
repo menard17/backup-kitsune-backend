@@ -1,4 +1,5 @@
 import uuid
+from typing import Tuple
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
@@ -106,15 +107,31 @@ class SlotService:
         slot = self.resource_client.get_post_bundle(slot, slot_id)
         return None, slot
 
-    def free_slot(self, slot_id: uuid):
+    def update_slot(
+        self, slot_id: uuid, status: str
+    ) -> Tuple[Exception, DomainResource]:
         """
-        data: "slot": [{"reference": "Slot/bf929953-f4df-4b54-a928-2a1ab8d5d550"}]
-        we always created one slot only on appointment. so we can hardcode to index 0.
-        and split with "/" to get the slot id.
+        Update slot status. this method is idempotent.
+
+        :param slot_id: id of slot
+        :type slot_id: uuid
+        :param status: status you want to update to. status can be either free or busy
+        :type status: str
+
+        :rtype: Exception
+        :rtype: Slot
         """
 
+        if not (status == "free" or status == "busy"):
+            return Exception(f"Status can only be free or busy for now: {status}"), None
+
         slot_response = self.resource_client.get_resource(slot_id, "Slot")
-        slot_response.status = "free"
+        slot_response.status = status
         slot = construct_fhir_element(slot_response.resource_type, slot_response)
         slot = self.resource_client.get_put_bundle(slot, slot_id)
         return None, slot
+
+    def get_slot(self, schedule_id, start) -> Tuple[Exception, DomainResource]:
+        search_clause = [("schedule", schedule_id), ("start", start)]
+        slot_response = self.resource_client.search("Slot", search_clause)
+        return None, slot_response

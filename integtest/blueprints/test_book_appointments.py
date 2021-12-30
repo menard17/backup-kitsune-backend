@@ -25,27 +25,33 @@ def get_doctor(client: Client):
     return create_practitioner(client, user)
 
 
-@given("a patient", target_fixture="patient")
-def get_patient(client: Client):
+@given("patientA", target_fixture="patientA")
+def get_patientA(client: Client):
+    user = create_user()
+    return create_patient(client, user)
+
+
+@given("patientB", target_fixture="patientB")
+def get_patientB(client: Client):
     user = create_user()
     return create_patient(client, user)
 
 
 @when("the patient books a free time of the doctor", target_fixture="appointment")
-def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
-    return create_appointment(client, practitioner, patient)
+def book_appointment(client: Client, practitioner: Practitioner, patientA: Patient):
+    return create_appointment(client, practitioner, patientA)
 
 
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")
 def create_yesterday_appointment(
-    client: Client, practitioner: Practitioner, patient: Patient
+    client: Client, practitioner: Practitioner, patientA: Patient
 ):
-    return create_appointment(client, practitioner, patient, 1)
+    return create_appointment(client, practitioner, patientA, 1)
 
 
 @then("an appointment is created")
 def check_appointment(
-    practitioner: Practitioner, patient: Patient, appointment: Appointment
+    practitioner: Practitioner, patientA: Patient, appointment: Appointment
 ):
     assert appointment["description"] == "Booking practitioner role"
     participants = appointment["participant"]
@@ -54,7 +60,7 @@ def check_appointment(
         id_set.add(p["actor"]["reference"])
     assert id_set == set(
         [
-            f"Patient/{patient.fhir_data['id']}",
+            f"Patient/{patientA.fhir_data['id']}",
             f"PractitionerRole/{practitioner.fhir_data['id']}",
         ]
     )
@@ -69,11 +75,11 @@ def check_appointment(
 
 @then("no appointment should show up")
 def should_return_no_appointment(
-    client: Client, patient: Patient, appointment_yesterday: Appointment
+    client: Client, patientA: Patient, appointment_yesterday: Appointment
 ):
 
-    url = f'/appointments?actor_id={patient.fhir_data["id"]}'
-    token = get_token(patient.uid)
+    url = f'/appointments?actor_id={patientA.fhir_data["id"]}'
+    token = get_token(patientA.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
 
@@ -85,7 +91,7 @@ def should_return_no_appointment(
 
 
 @then("the period would be set as busy slots")
-def available_slots(client: Client, practitioner: Practitioner, patient: Patient):
+def available_slots(client: Client, practitioner: Practitioner, patientA: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=1)).isoformat()
@@ -93,7 +99,7 @@ def available_slots(client: Client, practitioner: Practitioner, patient: Patient
 
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
 
-    token = get_token(patient.uid)
+    token = get_token(patientA.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
 
@@ -103,18 +109,20 @@ def available_slots(client: Client, practitioner: Practitioner, patient: Patient
 
 
 @then("the patient can see his/her own appointment")
-def patient_can_see_appointment_with_list_appointment(client: Client, patient: Patient):
+def patient_can_see_appointment_with_list_appointment(
+    client: Client, patientA: Patient
+):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patient.fhir_data["id"]}'
-    token = get_token(patient.uid)
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patientA.fhir_data["id"]}'
+    token = get_token(patientA.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
 
     found_patient = False
     for participant in appointments[0]["participant"]:
-        if participant["actor"]["reference"] == f"Patient/{patient.fhir_data['id']}":
+        if participant["actor"]["reference"] == f"Patient/{patientA.fhir_data['id']}":
             found_patient = True
             break
     assert found_patient
@@ -157,7 +165,6 @@ def set_appointment_no_show(
         content_type="application/json",
     )
     assert resp.status_code == 200
-
     return json.loads(resp.data)
 
 
@@ -167,7 +174,7 @@ def check_appointment_status_no_show(appointment):
 
 
 @then("frees the slot")
-def frees_the_slot(client: Client, practitioner: Practitioner, patient: Patient):
+def frees_the_slot(client: Client, practitioner: Practitioner, patientA: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(hours=2)).isoformat()
@@ -175,10 +182,79 @@ def frees_the_slot(client: Client, practitioner: Practitioner, patient: Patient)
 
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
 
-    token = get_token(patient.uid)
+    token = get_token(patientA.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
 
     slots = json.loads(resp.data)["data"]
     assert len(slots) == 1
     assert slots[0]["status"] == "free"
+
+
+@then("patientB cannot book an appointment")
+def cannot_book_busy_slot(
+    client: Client,
+    patientB: Patient,
+    practitioner: Practitioner,
+    appointment: Appointment,
+):
+    appointment_data = {
+        "practitioner_role_id": practitioner.fhir_data["id"],
+        "patient_id": patientB.fhir_data["id"],
+        "start": appointment["start"],
+        "end": appointment["end"],
+        "service_type": "WALKIN",
+    }
+
+    token = get_token(patientB.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 400
+
+
+@then("patientA cancels the appointment")
+def cancel_appointment(
+    client: Client,
+    patientA: Patient,
+    appointment: Appointment,
+):
+    token = get_token(patientA.uid)
+    resp = client.put(
+        f"/appointments/{appointment['id']}/status",
+        data=json.dumps({"status": "cancelled"}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    return json.loads(resp.data)
+
+
+@then("patientB can book an appointment")
+def book_canceled_appointment(
+    client: Client,
+    patientB: Patient,
+    practitioner: Practitioner,
+    appointment: Appointment,
+):
+    appointment_data = {
+        "practitioner_role_id": practitioner.fhir_data["id"],
+        "patient_id": patientB.fhir_data["id"],
+        "start": appointment["start"],
+        "end": appointment["end"],
+        "service_type": "WALKIN",
+    }
+
+    token = get_token(patientB.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201

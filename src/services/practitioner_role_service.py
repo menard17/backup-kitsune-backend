@@ -18,7 +18,7 @@ class PractitionerRoleService:
     def create_practitioner_role(
         self,
         identity: str,
-        is_doctor: bool,
+        role_type: str,
         start: str,
         end: str,
         practitioner_id: str,
@@ -27,7 +27,7 @@ class PractitionerRoleService:
         zoom_password: str,
         available_time: dict,
     ):
-        if bool(is_doctor):
+        if role_type == "doctor":
             practitioner_code = SystemCode.practitioner_code("doctor")
         else:
             practitioner_code = SystemCode.practitioner_code("nurse")

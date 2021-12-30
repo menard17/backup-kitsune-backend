@@ -58,7 +58,7 @@ def create_practitioner(client: Client, user: User, language=["en"]):
         photo_base64 = f.readlines()[0]
     assert photo_base64.startswith(base64_prefix)
     param_data = {
-        "is_doctor": "true",
+        "role_type": "doctor",
         "start": "2021-08-15T13:55:57.967345+09:00",
         "end": "2021-08-15T14:55:57.967345+09:00",
         "family_name_en": "Last name",

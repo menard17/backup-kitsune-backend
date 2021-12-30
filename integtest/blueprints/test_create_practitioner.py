@@ -29,7 +29,7 @@ def fail_to_create_doctor(client: Client, user: User) -> str:
         "/practitioner_roles",
         data=json.dumps(
             {
-                "is_doctor": "true",
+                "role_type": "doctor",
                 "start": "2021-08-15T13:55:57.967345+09:00",
                 "end": "2021-08-15T14:55:57.967345+09:00",
                 "family_name": "Last name",

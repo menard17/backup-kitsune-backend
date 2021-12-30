@@ -67,11 +67,23 @@ class AppointmentService:
         )
         return None, appointment
 
-    def update_appointment_status(self, appointment_id: uuid, status: str):
+    def update_appointment_status(
+        self, appointment_id: uuid, status: str, cancel_reason: str = "patient"
+    ):
+        if not (status == "noshow" or status == "cancelled"):
+            return (
+                Exception(f"Status can only be noshow or cancelled. status: {status}"),
+                None,
+            )
+
         appointment_response = self.resource_client.get_resource(
             appointment_id, "Appointment"
         )
         appointment_response.status = status
+        if status == "cancelled":
+            appointment_response.cancelationReason = {
+                "coding": [SystemCode.appointment_cancel_type(cancel_reason)]
+            }
         appointment = construct_fhir_element("Appointment", appointment_response)
         appointment = self.resource_client.get_put_bundle(appointment, appointment_id)
 

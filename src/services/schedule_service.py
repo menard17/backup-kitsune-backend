@@ -23,3 +23,8 @@ class ScheduleService:
         schedule = construct_fhir_element("Schedule", schedule_jsondict)
         schedule = self.resource_client.get_post_bundle(schedule)
         return None, schedule
+
+    def get_shcedule(self, role_id):
+        search_clause = [("actor", role_id)]
+        schedule = self.resource_client.search("Schedule", search_clause)
+        return None, schedule

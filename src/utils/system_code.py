@@ -9,6 +9,9 @@ class ServiceURL:
     practition_type = "http://terminology.hl7.org/CodeSystem/practitioner-role"
     communication_code = "urn:ietf:bcp:47"
     document_type = "http://loinc.org"
+    cancel_reason_type = (
+        "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason"
+    )
 
 
 class Code(TypedDict):
@@ -35,6 +38,11 @@ class ServiceType:
     walkin: str
     routine: str
     followup: str
+
+
+class CancelType:
+    portal: str
+    patient: str
 
 
 class SystemCode:
@@ -69,6 +77,17 @@ class SystemCode:
                 ServiceURL.appointment_type,
                 "FOLLOWUP",
                 "A follow up visit from a previous appointment",
+            )
+
+    @staticmethod
+    def appointment_cancel_type(cancel_type: CancelType is None):
+        if cancel_type == "patient":
+            return create_coding_clause(ServiceURL.cancel_reason_type, "pat", "Patient")
+        elif cancel_type == "portal":
+            return create_coding_clause(
+                ServiceURL.cancel_reason_type,
+                "pat-cpp",
+                "Patient: Canceled via Patient Portal",
             )
 
     @staticmethod

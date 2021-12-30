@@ -187,19 +187,6 @@ def test_update_appointment():
     assert resp_data["status"] == "noshow"
 
 
-def test_update_appointment_return_400_if_not_updating_for_noshow():
-    resource_client = MockResourceClient()
-
-    controller = AppointmentController(resource_client)
-    req = FakeRequest(data={"status": "cancelled"})
-    resp = controller.update_appointment(req, "dummy-appointment-id")
-
-    resp_data = resp.data.decode("utf-8")
-
-    assert resp.status_code == 400
-    assert resp_data == "not supporting status update aside from noshow"
-
-
 def test_search_appointment():
     patient_id = "dummy-patient-id"
 

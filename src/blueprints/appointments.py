@@ -9,6 +9,7 @@ from adapters.fhir_store import ResourceClient
 from blueprints.service_requests import ServiceRequestController
 from json_serialize import json_serial
 from services.appointment_service import AppointmentService
+from services.schedule_service import ScheduleService
 from services.service_request_service import ServiceRequestService
 from services.slots_service import SlotService
 from utils import role_auth
@@ -29,6 +30,7 @@ class AppointmentController:
         slot_service=None,
         appointment_service=None,
         service_request_service=None,
+        schedule_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
@@ -36,6 +38,9 @@ class AppointmentController:
             self.resource_client
         )
         self.service_request_service = service_request_service or ServiceRequestService(
+            self.resource_client
+        )
+        self.schedule_service = schedule_service or ScheduleService(
             self.resource_client
         )
 
@@ -73,23 +78,43 @@ class AppointmentController:
 
         resources = []
 
-        # Create Slot Bundle
-        slot_uuid = f"urn:uuid:{uuid.uuid1()}"
-        patient_rid = f"Patient/{patient_id}"
+        # Get a schedule
+        err, schedule = self.schedule_service.get_shcedule(role_id)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        if schedule.total == 0:
+            return Response(status=400, response="No schedule is created")
+
+        # Check if the slot is busy/free or does not exists
+        err, slot = self.slot_service.get_slot(schedule.entry[0].resource.id, start)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        # Create New Slot Bundle
         role_rid = f"PractitionerRole/{role_id}"
-        err, slot = self.slot_service.create_slot_bundle(
-            role_rid,
-            start,
-            end,
-            slot_uuid,
-            "busy",
-        )
+        patient_rid = f"Patient/{patient_id}"
+        if slot.total == 0:
+            slot_uuid = f"urn:uuid:{uuid.uuid1()}"
+            err, slot = self.slot_service.create_slot_bundle(
+                role_rid,
+                start,
+                end,
+                slot_uuid,
+                "busy",
+            )
+        else:
+            slot_id = slot.entry[0].resource.id
+            slot_uuid = f"Slot/{slot_id}"
+            if slot.entry[0].resource.status != "free":
+                return Response(status=400, response=f"Slot: {slot_id} is alreay busy")
+            err, slot = self.slot_service.update_slot(slot_id, "busy")
 
         if err is not None:
             return Response(status=400, response=err.args[0])
         resources.append(slot)
 
-        # Creeate Request Service Bundle
+        # Create Request Service Bundle
         service_request_uuid = None
         if requester_id is not None or encounter_id is not None:
             service_request_uuid = f"urn:uuid:{uuid.uuid1()}"
@@ -142,13 +167,7 @@ class AppointmentController:
         """
         request_body = request.get_json()
         status = request_body.get("status")
-
-        if status != "noshow":
-            return Response(
-                status=400, response="not supporting status update aside from noshow"
-            )
         resources = []
-
         err, appointment = self.appointment_service.update_appointment_status(
             appointment_id, status
         )
@@ -158,11 +177,11 @@ class AppointmentController:
 
         appointment_json = json.loads(appointment["resource"].json())
         slot_id = appointment_json["slot"][0]["reference"].split("/")[1]
-        err, slot = self.slot_service.free_slot(slot_id)
+        err, slot = self.slot_service.update_slot(slot_id, "free")
         if err is not None:
             return Response(status=400, response=err.args[0])
-
         resources.append(slot)
+
         resp = self.resource_client.create_resources(resources)
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
@@ -230,7 +249,7 @@ def book_appointment():
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
         'service_request_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171',
-        'service_type': 'FOLLOWUP',
+        'service_type': 'followup',
         'prev_encounter_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d172',
         'requester_id':  '0d49bb25-97f7-4f6d-8459-2b6a18d4d173'
     }
@@ -242,7 +261,7 @@ def book_appointment():
 @jwt_authenticated()
 def update_appointment(appointment_id: str):
     """
-    Update appointment status. Currently only support to update to noshow.
+    Update appointment status. Currently suppports nowshow and cancelled
 
     Sample Request Body:
     {
@@ -264,7 +283,6 @@ def search():
     * date: optional, default to current date.
             Will filter appointment with its start date to be greater or equal to the given date.
     * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
-
     """
     encounter_id = request.args.get("encounter_id")
     patient_id = request.args.get("actor_id")
