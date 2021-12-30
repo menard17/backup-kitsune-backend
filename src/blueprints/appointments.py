@@ -190,12 +190,12 @@ class AppointmentController:
 
     def search_appointments(self, request, service_request_id: str = None) -> Response:
         """ "Returns list of appointments matching searching query
-
         :returns: Json list of appointments
         :rtype: Response
         """
         date = request.args.get("date")
         actor_id = request.args.get("actor_id")
+        include_practitioner = to_bool(request.args.get("include_practitioner"))
 
         if actor_id is None:
             return Response(status=400, response="missing param: actor_id")
@@ -208,6 +208,12 @@ class AppointmentController:
             )
 
         search_clause = []
+
+        if include_practitioner:
+            search_clause.append(
+                ("_include:iterate", "Appointment:actor:PractitionerRole")
+            )
+            search_clause.append(("_include:iterate", "PractitionerRole:practitioner"))
 
         if service_request_id:
             search_clause.append(("basedOn", service_request_id))
@@ -229,7 +235,12 @@ class AppointmentController:
         return Response(
             status=200,
             response=json.dumps(
-                {"data": [datetime_encoder(e.resource.dict()) for e in result.entry]},
+                {
+                    "data": [
+                        json.loads(datetime_encoder(e.resource.json()))
+                        for e in result.entry
+                    ]
+                },
                 default=json_serial,
             ),
         )
@@ -283,6 +294,7 @@ def search():
     * date: optional, default to current date.
             Will filter appointment with its start date to be greater or equal to the given date.
     * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
+    * include_practitioner: optional. With this argument, practitoner details are added to each appointment
     """
     encounter_id = request.args.get("encounter_id")
     patient_id = request.args.get("actor_id")
@@ -293,3 +305,9 @@ def search():
     if len(data["data"]) > 0:
         service_request_id = data["data"][0]["id"]
     return AppointmentController().search_appointments(request, service_request_id)
+
+
+def to_bool(item: str) -> bool:
+    if not item:
+        return False
+    return item.lower() == "true"

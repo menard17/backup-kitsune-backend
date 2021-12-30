@@ -27,3 +27,8 @@ Feature: Book Appointment
         Then patientB cannot book an appointment
         Then patientA cancels the appointment
         Then patientB can book an appointment
+    Scenario: Patient can get practitioner details
+        Given a doctor
+        Given patientA
+        When the patient books a free time of the doctor
+        Then patientA can check biography of practitioner

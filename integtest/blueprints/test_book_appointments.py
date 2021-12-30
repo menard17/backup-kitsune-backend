@@ -258,3 +258,18 @@ def book_canceled_appointment(
     )
 
     assert resp.status_code == 201
+
+
+@then("patientA can check biography of practitioner")
+def get_practitioner_bio(client: Client, patientA: Patient, practitioner: Practitioner):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
+
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patientA.fhir_data["id"]}&include_practitioner=true'
+    token = get_token(patientA.uid)
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    appointments = json.loads(resp.data)["data"]
+    practitioner = next(
+        filter(lambda item: item["resourceType"] == "Practitioner", appointments)
+    )
+    assert practitioner["extension"][0]["url"] == "bio"
