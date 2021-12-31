@@ -52,35 +52,38 @@ def create_user() -> User:
     return User(user.uid, email, token)
 
 
-def create_practitioner(client: Client, user: User, language=["en"]):
+def create_practitioner(
+    client: Client, user: User, language=["en"], role_type="doctor"
+):
     base64_prefix = "data:image/png;base64,"
     with open("artifact/image_base64") as f:
         photo_base64 = f.readlines()[0]
     assert photo_base64.startswith(base64_prefix)
     param_data = {
-        "role_type": "doctor",
+        "role_type": role_type,
         "start": "2021-08-15T13:55:57.967345+09:00",
         "end": "2021-08-15T14:55:57.967345+09:00",
         "family_name_en": "Last name",
         "given_name_en": "Given name",
         "bio_en": "My background ...",
-        "zoom_id": "zoom id",
         "gender": "male",
-        "zoom_password": "zoom password",
-        "available_time": [
+        "email": user.email,
+        "photo": photo_base64,
+    }
+    if role_type == "doctor":
+        if "ja" in language:
+            param_data["family_name_ja"]
+            param_data["given_name_ja"]
+            param_data["bio_ja"]
+        param_data["zoom_password"] = "zoom password"
+        param_data["zoom_id"] = "zoom id"
+        param_data["available_time"] = [
             {
                 "daysOfWeek": ["mon", "tue", "wed"],
                 "availableStartTime": "09:00:00",
                 "availableEndTime": "16:30:00",
             },
-        ],
-        "email": user.email,
-        "photo": photo_base64,
-    }
-    if "ja" in language:
-        param_data["family_name_ja"]
-        param_data["given_name_ja"]
-        param_data["bio_ja"]
+        ]
 
     resp = client.post(
         "/practitioner_roles",
@@ -119,7 +122,7 @@ def create_appointment(
         "patient_id": patient.fhir_data["id"],
         "start": start,
         "end": end,
-        "service_type": "WALKIN",
+        "service_type": "walkin",
     }
 
     token = get_token(patient.uid)
@@ -141,7 +144,6 @@ def create_encounter(
     patient: Patient,
     appointment: Appointment,
 ):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
 
     resp = client.post(

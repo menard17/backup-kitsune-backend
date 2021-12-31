@@ -8,6 +8,7 @@ from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
+from services.practitioner_role_service import PractitionerRoleService
 from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.email_verification import is_email_in_allowed_list, is_email_verified
@@ -19,14 +20,32 @@ practitioners_blueprint = Blueprint(
 
 
 class PractitionerController:
-    def __init__(self, resource_client=None):
+    def __init__(self, resource_client=None, practitioner_role_service=None):
         self.resource_client = resource_client or ResourceClient()
+        self.practitioner_role_service = (
+            practitioner_role_service or PractitionerRoleService(self.resource_client)
+        )
 
     def search_practitioners(self, request) -> Response:
-        if (email := request.args.get("email")) is None:
-            return Response(status=400, response="missing param: email")
         search_clause = []
-        search_clause.append(("email", email))
+        search_clause.append(("_summary", "data"))
+        if email := request.args.get("email"):
+            search_clause.append(("email", email))
+
+        if role_type := request.args.get("role_type"):
+            (
+                err,
+                practitioner_id,
+            ) = self.practitioner_role_service.get_practitioner_ids(role_type)
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+
+            if not practitioner_id:
+                return Response(
+                    status=200, response=json.dumps({"data": []}, default=json_serial)
+                )
+
+            search_clause.append(("_id", ",".join(practitioner_id)))
 
         result = self.resource_client.search(
             "Practitioner",
@@ -37,6 +56,7 @@ class PractitionerController:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
+
         return Response(
             status=200,
             response=json.dumps(
@@ -161,6 +181,13 @@ def get_today_time(hours: int):
 @practitioners_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
 def search():
+    """
+    Sample request body:
+    {
+        'email': 'example@umed.jp',
+        'role_type': 'doctor',
+    }
+    """
     return PractitionerController().search_practitioners(request)
 
 

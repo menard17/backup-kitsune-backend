@@ -10,10 +10,17 @@ SUPPORTED_LANGUAGE = {"en", "ja"}
 
 
 class HumanName:
-    def __init__(self, given_name: str, family_name: str, language: str):
+    def __init__(
+        self,
+        given_name: str,
+        family_name: str,
+        language: str,
+        role_type: str = "doctor",
+    ):
         self.given_name = given_name
         self.family_name = family_name
         self.language = language
+        self.role_type = role_type
 
         if language not in SUPPORTED_LANGUAGE:
             raise NotImplementedError()
@@ -33,9 +40,15 @@ class HumanName:
         }
 
         if self.language == "en":
-            output["prefix"] = ["MD"]
-        if self.language == "ja":
-            output["prefix"] = ["医師"]
+            if self.role_type == "doctor":
+                output["prefix"] = ["MD"]
+            else:
+                output["prefix"] = ["Nurse"]
+        elif self.language == "ja":
+            if self.role_type == "doctor":
+                output["prefix"] = ["医師"]
+            else:
+                output["prefix"] = ["看護師"]
 
         return output
 

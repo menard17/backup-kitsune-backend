@@ -80,6 +80,11 @@ class FakeRequest:
         return self.args
 
 
+class FakeAppointment:
+    def __init__(self, status):
+        self.status = status
+
+
 class MockResourceClient:
     def create_resource(self, data: DomainResource):
         data.id = "id1"

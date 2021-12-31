@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Set, Tuple, TypedDict
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
@@ -23,9 +23,9 @@ class PractitionerRoleService:
         end: str,
         practitioner_id: str,
         practitioner_name: str,
-        zoom_id: str,
-        zoom_password: str,
-        available_time: dict,
+        zoom_id: str = None,
+        zoom_password: str = None,
+        available_time: dict = None,
     ):
         if role_type == "doctor":
             practitioner_code = SystemCode.practitioner_code("doctor")
@@ -41,16 +41,29 @@ class PractitionerRoleService:
                 "display": practitioner_name,
             },
             "code": [{"coding": [practitioner_code]}],
-            "availableTime": available_time,
-            "extension": [
+        }
+
+        if available_time:
+            practitioner_role_jsondict["availableTime"] = available_time
+        elif role_type != "doctor":
+            # Hard coded for all days for nurse for now
+            practitioner_role_jsondict["availableTime"] = [
+                {
+                    "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+                    "availableStartTime": "00:00:00",
+                    "availableEndTime": "23:59:59",
+                },
+            ]
+        if zoom_id and zoom_password:
+            practitioner_role_jsondict["extension"] = [
                 {"url": "zoom-id", "valueString": zoom_id},
                 {"url": "zoom-passcode", "valueString": zoom_password},
-            ],
-        }
+            ]
 
         practitioner_role = construct_fhir_element(
             "PractitionerRole", practitioner_role_jsondict
         )
+
         practitioner_role = self.resource_client.get_post_bundle(
             practitioner_role, identity
         )
@@ -84,3 +97,27 @@ class PractitionerRoleService:
             )
             return None, practitioner_role_bundle
         return None, None
+
+    def get_practitioner_ids(self, role_type: str) -> Tuple[Exception, Set[str]]:
+        """Returns list of practitioner ids referenced by practitioner role with given role type
+
+        :param role_type: doctor or nurse
+        :type role_type: str
+
+        :rtype: Tuple[Exception, Set[str]]
+        """
+        if role_type != "doctor" and role_type != "nurse":
+            return Exception(f"Not implemented role is provided: {role_type}"), None
+
+        role_search_clause = []
+        role_search_clause.append(("role", role_type))
+        practitioner_roles = self.resource_client.search(
+            "PractitionerRole", role_search_clause
+        )
+        if practitioner_roles.total == 0:
+            return None, set()
+
+        practitioner_ids = set()
+        for role in practitioner_roles.entry:
+            practitioner_ids.add(role.resource.practitioner.reference.split("/")[1])
+        return None, practitioner_ids

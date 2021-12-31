@@ -56,7 +56,6 @@ def get_encounter(
 def start_encounter(
     client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
 ):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
     resp_patch = client.patch(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}?status=in-progress",
@@ -79,7 +78,6 @@ def start_encounter(
 def finish_encounter(
     client: Client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
 ):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
     resp = client.patch(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}?status=finished",
@@ -129,7 +127,6 @@ def permission_for_patient(
 
 @then("patient A cannot change the status of encounter")
 def cannot_update_status(client: Client, patientA: Patient, encounter: Encounter):
-    token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
     resp = client.patch(
         f"/patients/{patientA.fhir_data['id']}/encounters/{encounter['id']}?status=finished",
@@ -143,7 +140,6 @@ def cannot_update_status(client: Client, patientA: Patient, encounter: Encounter
 def get_encounter_by_appointment_id(
     client: Client, patientA: Patient, appointment: Appointment, encounter: Encounter
 ):
-    token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
     resp = client.get(
         f"/patients/{patientA.fhir_data['id']}/encounters?appointment_id={appointment['id']}",
@@ -156,7 +152,6 @@ def get_encounter_by_appointment_id(
 
 @then("appointment status is changed to fulfilled")
 def get_appointment_status(client: Client, patientA: Patient):
-    token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))

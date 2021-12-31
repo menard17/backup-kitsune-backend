@@ -1,6 +1,5 @@
 import json
 
-from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.characters import Patient, Practitioner
@@ -41,7 +40,6 @@ def patient_create_document_reference(client: Client, patientA: Patient):
 
 @then("patient A can access the document reference")
 def check_access_of_self(client: Client, patientA: Patient):
-    token = auth.create_custom_token(patientA.uid)
     token = get_token(patientA.uid)
 
     patient_id = patientA.fhir_data["id"]
@@ -64,7 +62,6 @@ def check_access_of_self(client: Client, patientA: Patient):
 def check_access_of_doctor(
     client: Client, patientA: Patient, practitioner: Practitioner
 ):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
 
     patient_id = patientA.fhir_data["id"]
@@ -87,7 +84,6 @@ def check_access_of_doctor(
 def check_access_of_doctor_for_patient_b(
     client: Client, patientA: Patient, patientB: Patient
 ):
-    token = auth.create_custom_token(patientB.uid)
     token = get_token(patientB.uid)
 
     patient_id = patientA.fhir_data["id"]

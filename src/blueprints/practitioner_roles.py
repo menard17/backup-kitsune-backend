@@ -22,6 +22,11 @@ practitioner_roles_blueprint = Blueprint(
 )
 
 
+def to_bool(item: str) -> bool:
+    true_set = {"true", "1"}
+    return item.lower() in true_set
+
+
 class PractitionerRoleController:
     def __init__(
         self,
@@ -63,9 +68,8 @@ class PractitionerRoleController:
 
         else:
             roles = self.resource_client.get_resources("PractitionerRole")
-        roles = self.resource_client.get_resources("PractitionerRole")
 
-        if roles.entry is None:
+        if roles.total == 0:
             return Response(status=200, response=json.dumps([]))
 
         resp = json.dumps(
@@ -103,15 +107,22 @@ class PractitionerRoleController:
             and (email := request_body.get("email"))
             and (photo := request_body.get("photo"))
             and (role_type := request_body.get("role_type"))
-            and (zoom_id := request_body.get("zoom_id"))
-            and (zoom_password := request_body.get("zoom_password"))
-            and (available_time := request_body.get("available_time"))
             and (gender := request_body.get("gender"))
         ):
             return Response(status=400, response="Body is insufficient")
+        zoom_id, zoom_password, available_time = None, None, []
         language_options = ["en", "ja"]
         names = get_names_ext(request_body, language_options)
         biographies = get_biographies_ext(request_body, language_options)
+        if role_type and (role_type == "doctor"):
+            if not (
+                (zoom_id := request_body.get("zoom_id"))
+                and (zoom_password := request_body.get("zoom_password"))
+                and (available_time := request_body.get("available_time"))
+            ):
+                return Response(
+                    status=400, response="Doctor requires available time and zoom cred"
+                )
 
         PIXEL_SIZE = 104  # Max size of image in pixel
         byte_size = (PIXEL_SIZE ** 2) * 3
@@ -125,11 +136,14 @@ class PractitionerRoleController:
         pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
 
         resources = []
-
         # Create a practitioner
+        language_options = ["en", "ja"]
+        names = get_names_ext(request_body, language_options, role_type)
+        biographies = get_biographies_ext(request_body, language_options)
         err, pracititioner = self.practitioner_service.create_practitioner(
             pracititioner_id, email, photo, gender, biographies, names
         )
+
         if err is not None:
             return Response(status=400, response=err.args[0])
         resources.append(pracititioner)
@@ -350,7 +364,7 @@ def create_practitioner_role():
     """
     Sample request body:
     {
-        'role_type': 'doctor,
+        'role_type': 'doctor',
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
         'zoom_id': 'zoom id',
@@ -433,7 +447,9 @@ def get_biographies_ext(
     return biographies
 
 
-def get_names_ext(request_body: dict, language_options: list) -> List[HumanName]:
+def get_names_ext(
+    request_body: dict, language_options: list, role_type: str = "doctor"
+) -> List[HumanName]:
     """
     Returns list of HumanName. request param is comparised of prefix(given_name or family_name) and suffix connected with _.
     suffix is language code
@@ -441,6 +457,8 @@ def get_names_ext(request_body: dict, language_options: list) -> List[HumanName]
     :param request_body: request body from http request
     :type request_body: dict
     :param language_options: list of language that are supported
+    :type language_options: List[str]
+    :param role_type: str that this is doctor or nurse
     :type language_options: List[str]
 
     :rtype: List[HumanName]
@@ -450,5 +468,5 @@ def get_names_ext(request_body: dict, language_options: list) -> List[HumanName]
         if (given_name := request_body.get("given_name_" + language)) and (
             family_name := request_body.get("family_name_" + language)
         ):
-            names.append(HumanName(given_name, family_name, language))
+            names.append(HumanName(given_name, family_name, language, role_type))
     return names

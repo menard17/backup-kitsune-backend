@@ -2,7 +2,6 @@ import json
 from datetime import datetime, timedelta
 
 import pytz
-from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.blueprints.helper import (
@@ -31,7 +30,7 @@ scenarios("../features/create_service_request.feature")
 
 
 @given("a doctor", target_fixture="doctor")
-def get_doctor(client: Client):
+def get_doctor(client: Client) -> Practitioner:
     user = create_user()
     return create_practitioner(client, user)
 
@@ -39,7 +38,7 @@ def get_doctor(client: Client):
 @given("a nurse", target_fixture="nurse")
 def get_nurse(client: Client) -> Practitioner:
     user = create_user()
-    return create_practitioner(client, user)
+    return create_practitioner(client, user, role_type="nurse")
 
 
 @given("a patient", target_fixture="patient")
@@ -71,7 +70,6 @@ def create_service_request(
     nurse: Practitioner,
     encounter: Encounter,
 ) -> DiagnosticReport:
-    token = auth.create_custom_token(doctor.uid)
     token = get_token(doctor.uid)
     diagnostic_report_resp = client.post(
         "/diagnostic_reports",
@@ -149,7 +147,6 @@ def get_next_appointment(
     encounter: Encounter,
     nurse_appointment: Appointment,
 ):
-    token = auth.create_custom_token(patient.uid)
     token = get_token(patient.uid)
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
@@ -165,7 +162,6 @@ def get_next_appointment(
 def get_service_request_by_id(
     client: Client, nurse: Practitioner, service_request: ServiceRequest
 ):
-    token = auth.create_custom_token(nurse.uid)
     token = get_token(nurse.uid)
 
     resp = client.get(

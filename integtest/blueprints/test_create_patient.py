@@ -1,6 +1,5 @@
 import json
 
-from firebase_admin import auth
 from pytest_bdd import given, scenarios, then
 
 from integtest.characters import Patient
@@ -18,7 +17,6 @@ def get_patient(client: Client) -> Patient:
 
 @then("patient returns correct birthday format")
 def returns_patient(client: Client, patient: Patient):
-    token = auth.create_custom_token(patient.uid)
     token = get_token(patient.uid)
 
     patient_resp = client.get(

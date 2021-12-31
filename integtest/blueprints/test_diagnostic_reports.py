@@ -1,6 +1,5 @@
 import json
 
-from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.blueprints.helper import get_diagnostic_report_data
@@ -61,7 +60,6 @@ def get_encounter(
 def create_diagnostic_report(
     client: Client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
 ):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
     diagnostic_report_resp = client.post(
         "/diagnostic_reports",
@@ -87,7 +85,6 @@ def create_diagnostic_report(
 def update_diagnostic_report(
     client: Client, practitioner: Practitioner, diagnostic_report: DiagnosticReport
 ):
-    doctor_token = auth.create_custom_token(practitioner.uid)
     doctor_token = get_token(practitioner.uid)
 
     resp_patch = client.patch(
@@ -110,7 +107,6 @@ def check_diagnostic_report_access(
     patientB: Patient,
     diagnostic_report: DiagnosticReport,
 ):
-    doctor_token = auth.create_custom_token(practitioner.uid)
     doctor_token = get_token(practitioner.uid)
 
     resp = client.get(
@@ -129,7 +125,6 @@ def check_diagnostic_report_access(
 
     assert len(json.loads(resp_all.data)) == 1
 
-    patienta_token = auth.create_custom_token(patientA.uid)
     patienta_token = get_token(patientA.uid)
 
     resp_a = client.get(
@@ -140,7 +135,6 @@ def check_diagnostic_report_access(
 
     assert resp_a.status_code == 200
 
-    patientb_token = auth.create_custom_token(patientB.uid)
     patientb_token = get_token(patientB.uid)
 
     resp_b = client.get(
@@ -157,7 +151,6 @@ def get_updated_diagnostic_report(
     client: Client, patientA: Patient, diagnostic_report: DiagnosticReport
 ):
 
-    patienta_token = auth.create_custom_token(patientA.uid)
     patienta_token = get_token(patientA.uid)
 
     resp_a = client.get(
@@ -178,7 +171,6 @@ def get_diagnostic_report_by_encounter(
     encounter: Encounter,
     diagnostic_report: DiagnosticReport,
 ):
-    patienta_token = auth.create_custom_token(patientA.uid)
     patienta_token = get_token(patientA.uid)
 
     resp_a = client.get(

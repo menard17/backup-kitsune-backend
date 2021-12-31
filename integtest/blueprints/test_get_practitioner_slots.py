@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from urllib.parse import quote
 
 import pytz
-from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.characters import Practitioner, Slot
@@ -21,7 +20,6 @@ def get_doctor(client: Client):
 
 @when("the practitioner role set the period to busy", target_fixture="slot")
 def set_busy_slots(client: Client, practitioner: Practitioner):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
@@ -52,7 +50,6 @@ def set_busy_slots(client: Client, practitioner: Practitioner):
 
 @then("the user can fetch those busy slots")
 def available_slots(client: Client, practitioner: Practitioner, slot: Slot):
-    token = auth.create_custom_token(practitioner.uid)
     token = get_token(practitioner.uid)
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
