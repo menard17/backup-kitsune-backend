@@ -101,15 +101,18 @@ class PractitionerRoleController:
         :rtype: Response
         """
         request_body = request.get_json()
-        if not (
-            (start := request_body.get("start"))
-            and (end := request_body.get("end"))
-            and (email := request_body.get("email"))
-            and (photo := request_body.get("photo"))
-            and (role_type := request_body.get("role_type"))
-            and (gender := request_body.get("gender"))
-        ):
-            return Response(status=400, response="Body is insufficient")
+        REQUIRED_FIELDS = ["start", "end", "email", "photo", "role_type", "gender"]
+        for field in REQUIRED_FIELDS:
+            if request_body.get(field) is None:
+                error_msg = f"{field} is missing in the request body"
+                return Response(status=400, response=error_msg)
+        start = request_body.get("start")
+        end = request_body.get("end")
+        email = request_body.get("email")
+        photo = request_body.get("photo")
+        role_type = request_body.get("role_type")
+        gender = request_body.get("gender")
+
         zoom_id, zoom_password, available_time = None, None, []
         language_options = ["en", "ja"]
         names = get_names_ext(request_body, language_options)
