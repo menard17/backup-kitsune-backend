@@ -60,7 +60,7 @@ class PractitionerRoleController:
         }:
             search_clause.append(("role", role_type))
 
-        if practitoner_id := request.args.get("practitoner_id"):
+        if practitoner_id := request.args.get("practitioner_id"):
             search_clause.append(("practitioner", practitoner_id))
 
         if search_clause:
