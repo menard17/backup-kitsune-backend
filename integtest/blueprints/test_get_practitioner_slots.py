@@ -31,6 +31,7 @@ def set_busy_slots(client: Client, practitioner: Practitioner):
         "start": start,
         "end": end,
         "status": "busy",
+        "comment": "appointment",
     }
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots'
 
@@ -41,7 +42,7 @@ def set_busy_slots(client: Client, practitioner: Practitioner):
         content_type="application/json",
     )
     slot = json.loads(resp.data)
-    assert slot["comment"] == "slot creation from backend"
+    assert slot["comment"] == "appointment"
     assert slot["status"] == "busy"
     assert slot["start"] == start
     assert slot["end"] == end

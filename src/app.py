@@ -16,6 +16,7 @@ from blueprints.payments import payments_blueprint
 from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
 from blueprints.service_requests import service_requests_blueprint
+from blueprints.slots import slots_blueprint
 from blueprints.zoom import zoom_blueprint
 from utils.metric import (
     after_request_log_endpoint_metric,
@@ -59,6 +60,7 @@ app.register_blueprint(practitioner_roles_blueprint)
 app.register_blueprint(messaging_blueprint)
 app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)
+app.register_blueprint(slots_blueprint)
 app.register_blueprint(zoom_blueprint)
 
 

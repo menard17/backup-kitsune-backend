@@ -289,6 +289,7 @@ class PractitionerRoleController:
         start = request_body.get("start")
         end = request_body.get("end")
         status = request_body.get("status", "busy")
+        comment = request_body.get("comment")
 
         if start is None or end is None:
             return Response(status=400, response="must provide start and end")
@@ -299,6 +300,7 @@ class PractitionerRoleController:
             start,
             end,
             status,
+            comment,
         )
 
         if err is not None:
@@ -316,6 +318,7 @@ class PractitionerRoleController:
         start = request.args.get("start", nine_am.isoformat())
         end = request.args.get("end", six_pm.isoformat())
         status = request.args.get("status", "free")
+        not_status = request.args.get("not_status")
 
         schedule_search = self.resource_client.search(
             "Schedule",
@@ -333,14 +336,20 @@ class PractitionerRoleController:
 
         schedule = schedule_search.entry[0].resource
 
+        slot_search = [
+            ("schedule", schedule.id),
+            ("start", "ge" + start),
+            ("start", "lt" + end),
+        ]
+
+        if not_status:
+            slot_search.append(("status:not", not_status))
+        else:
+            slot_search.append(("status", status))
+
         slot_search = self.resource_client.search(
             "Slot",
-            search=[
-                ("schedule", schedule.id),
-                ("start", "ge" + start),
-                ("start", "lt" + end),
-                ("status", status),
-            ],
+            search=slot_search,
         )
         if slot_search.entry is None:
             return {"data": []}

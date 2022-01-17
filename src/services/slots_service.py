@@ -11,7 +11,9 @@ class SlotService:
     def __init__(self, resource_client: ResourceClient) -> None:
         self.resource_client = resource_client
 
-    def _create_slot(self, role_id, start, end, status) -> DomainResource:
+    def _create_slot(
+        self, role_id, start, end, status, comment
+    ) -> tuple[Exception, DomainResource]:
         """Returns tuple of Exception and Slot resource in bundle.
 
         :param role_id: id of practitioner
@@ -37,7 +39,7 @@ class SlotService:
         if schedule_search.entry is None:
             return Exception("cannat find schedule"), None
 
-        # check if the time is available
+        # check if any other slot started during the requested slot
         schedule = schedule_search.entry[0].resource
         slot_search = self.resource_client.search(
             "Slot",
@@ -45,11 +47,41 @@ class SlotService:
                 ("schedule", schedule.id),
                 ("start", "ge" + start),
                 ("start", "lt" + end),
-                ("status", status),
+                ("status:not", "free"),
             ],
         )
+
         if slot_search.entry is not None:
             return Exception("the time is already booked"), None
+
+        # TODO: add custom search parameter to fhir
+        # check if any other slot cover the whole requested slot
+        slot_search = self.resource_client.search(
+            "Slot",
+            search=[
+                ("schedule", schedule.id),
+                ("start", "lt" + start),
+                ("end", "ge" + end),
+                ("status:not", "free"),
+            ],
+        )
+
+        if slot_search.entry is not None:
+            return Exception("the time is already booked inside"), None
+
+        # check if any other slot not ended during the requested slot
+        slot_search = self.resource_client.search(
+            "Slot",
+            search=[
+                ("schedule", schedule.id),
+                ("end", "ge" + start),
+                ("end", "lt" + end),
+                ("status:not", "free"),
+            ],
+        )
+
+        if slot_search.entry is not None:
+            return Exception("the time is already booked end"), None
 
         slot_jsondict = {
             "resourceType": "Slot",
@@ -57,13 +89,13 @@ class SlotService:
             "status": status or "busy",
             "start": start,
             "end": end,
-            "comment": "slot creation from backend",
+            "comment": comment,
         }
         slot = construct_fhir_element(slot_jsondict["resourceType"], slot_jsondict)
-        return slot
+        return None, slot
 
     def create_slot_for_practitioner_role(
-        self, role_id, start, end, status="busy"
+        self, role_id, start, end, status="busy", comment="slot creation from backend"
     ) -> tuple[Exception, DomainResource]:
         """Returns tuple of Exception and Slot resource.
         Actual slot is not created in the service but constructing json for slot
@@ -80,12 +112,19 @@ class SlotService:
         :rtype: Exception
         :rtype: Practitioner
         """
-        slot = self._create_slot(role_id, start, end, status)
-        slot = self.resource_client.create_resource(slot)
-        return None, slot
+        err, slot = self._create_slot(role_id, start, end, status, comment)
+        if err is None:
+            slot = self.resource_client.create_resource(slot)
+        return err, slot
 
     def create_slot_bundle(
-        self, role_id, start, end, slot_id, status="busy"
+        self,
+        role_id,
+        start,
+        end,
+        slot_id,
+        status="busy",
+        comment="slot creation from backend",
     ) -> tuple[Exception, DomainResource]:
         """Returns tuple of Exception and Slot resource in bundle.
 
@@ -103,9 +142,10 @@ class SlotService:
         :rtype: Exception
         :rtype: Practitioner
         """
-        slot = self._create_slot(role_id, start, end, status)
-        slot = self.resource_client.get_post_bundle(slot, slot_id)
-        return None, slot
+        err, slot = self._create_slot(role_id, start, end, status, comment)
+        if err is None:
+            slot = self.resource_client.get_post_bundle(slot, slot_id)
+        return err, slot
 
     def update_slot(
         self, slot_id: uuid, status: str
