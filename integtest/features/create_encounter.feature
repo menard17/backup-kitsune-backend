@@ -23,3 +23,10 @@ Feature: Encounters
         When patient A makes an appointment
         When the doctor creates an encounter
         Then appointment status is changed to fulfilled
+
+    Scenario: Only one encounter per appointment
+        Given a doctor
+        Given patient A
+        When patient A makes an appointment
+        When the doctor creates an encounter
+        Then the doctor cannot create another encounter for the same appointment

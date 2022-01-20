@@ -6,13 +6,13 @@ from utils.middleware import jwt_authenticated
 messaging_blueprint = Blueprint("messaging", __name__, url_prefix="/messaging")
 
 
-class Massanger:
+class Messanger:
     def send(self, message: messaging.Message, dry_run: bool):
         messaging.send(message, dry_run)
 
 
 class MessagingController:
-    def __init__(self, messanger: Massanger, dry_run=False):
+    def __init__(self, messanger: Messanger, dry_run=False):
         self.messanger = messanger
         self.dry_run = dry_run
 
@@ -42,5 +42,5 @@ class MessagingController:
 @jwt_authenticated()
 def send_push_notification():
     request_body = request.get_json()
-    controller = MessagingController(messager=Massanger())
+    controller = MessagingController(messanger=Messanger())
     return controller.send_push_notification(request_body)

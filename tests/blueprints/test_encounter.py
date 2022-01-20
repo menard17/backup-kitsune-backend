@@ -40,38 +40,39 @@ class MockEncounterClient:
 
     def search(self, resource_type: str, search: list) -> DomainResource:
         self.mocker.entry = None
+        self.mocker.total = 0
         return self.mocker
 
 
-def test_update_encounter_status_not_in_list(firebase_auth):
+def test_update_encounter_status_not_in_list():
     mock_resource = MockEncounterClient()
-    encounter_controller = EncountersController(mock_resource, firebase_auth)
+    encounter_controller = EncountersController(mock_resource)
     response = encounter_controller.update_encounter("id1", "arriveds")
     assert response.status_code == 401
     assert mock_resource.get_resource("id1", "Encounter").status == "planned"
 
 
-def test_update_encounter_status_in_list(firebase_auth):
+def test_update_encounter_status_in_list():
     mock_resource = MockEncounterClient()
-    encounter_controller = EncountersController(mock_resource, firebase_auth)
+    encounter_controller = EncountersController(mock_resource)
     response = encounter_controller.update_encounter("id1", "arrived")
     assert response.status_code == 200
     assert mock_resource.get_resource("id1", "Encounter").status == "arrived"
 
 
-def test_no_encounters_from_search(firebase_auth, mocker):
+def test_no_encounters_from_search(mocker):
     mock = mocker.Mock()
     mock_resource = MockEncounterClient(mock)
-    encounter_controller = EncountersController(mock_resource, firebase_auth)
+    encounter_controller = EncountersController(mock_resource)
     response = encounter_controller.get_encounters("id1")
     assert response.status_code == 200
     assert json.loads(response.data) == {"data": []}
 
 
-def test_no_encounter_from_search(firebase_auth, mocker):
+def test_no_encounter_from_search(mocker):
     mock = mocker.Mock()
     mock_resource = MockEncounterClient(mock)
-    encounter_controller = EncountersController(mock_resource, firebase_auth)
+    encounter_controller = EncountersController(mock_resource)
     response = encounter_controller.get_encounter("patientId", "encounterId")
     assert response.status_code == 200
     assert json.loads(response.data) == {"data": []}

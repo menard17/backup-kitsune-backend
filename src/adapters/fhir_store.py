@@ -178,7 +178,6 @@ class ResourceClient:
         :rtype: DomainResource
         """
         resource_path = f"{self._url}/{resource.resource_type}"
-
         # NOTE: resource.json(indent=True) would make date field to string
         # otherwise the json result would not be a string for date fields and
         # would lead to error later
@@ -186,7 +185,6 @@ class ResourceClient:
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
         response.raise_for_status()
-
         return construct_fhir_element(resource.resource_type, response.json())
 
     def patch_resource(

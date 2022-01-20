@@ -15,4 +15,12 @@ Feature: Diagnosis Report
         When the doctor creates a diagnostic report
         When the doctor updates diagnostic report
         Then the diagnostic report gets updated
-        Then the diagnostic report can be fetched by encountner id
+        Then the diagnostic report can be fetched by encounter id
+    Scenario: Only one Diagnostic report can be created per encounter
+        Given patient A
+        Given a doctor
+        When patient A makes an appointment
+        When the doctor creates an encounter
+        When the doctor creates a diagnostic report
+        And the doctor creates another diagnostic report
+        Then the diagnostic report can be fetched by encounter id

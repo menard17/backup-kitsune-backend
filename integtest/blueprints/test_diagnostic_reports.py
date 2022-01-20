@@ -2,7 +2,6 @@ import json
 
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.helper import get_diagnostic_report_data
 from integtest.characters import (
     Appointment,
     DiagnosticReport,
@@ -56,6 +55,9 @@ def get_encounter(
     return create_encounter(client, practitioner, patientA, appointment)
 
 
+@when(
+    "the doctor creates another diagnostic report", target_fixture="diagnostic_report"
+)
 @when("the doctor creates a diagnostic report", target_fixture="diagnostic_report")
 def create_diagnostic_report(
     client: Client, practitioner: Practitioner, patientA: Patient, encounter: Encounter
@@ -64,11 +66,12 @@ def create_diagnostic_report(
     diagnostic_report_resp = client.post(
         "/diagnostic_reports",
         data=json.dumps(
-            get_diagnostic_report_data(
-                patientA.fhir_data["id"],
-                practitioner.practitioner_id,
-                encounter["id"],
-            )
+            {
+                "patient_id": patientA.fhir_data["id"],
+                "role_id": practitioner.fhir_data["id"],
+                "encounter_id": encounter["id"],
+                "conclusion": "conclusion",
+            }
         ),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
@@ -94,7 +97,7 @@ def update_diagnostic_report(
         content_type="application/json",
     )
 
-    assert resp_patch.status_code == 200
+    assert resp_patch.status_code == 201
 
 
 @then(
@@ -164,7 +167,7 @@ def get_updated_diagnostic_report(
     assert resp_a.status_code == 200
 
 
-@then("the diagnostic report can be fetched by encountner id")
+@then("the diagnostic report can be fetched by encounter id")
 def get_diagnostic_report_by_encounter(
     client: Client,
     patientA: Patient,
@@ -182,3 +185,4 @@ def get_diagnostic_report_by_encounter(
     assert resp_a.status_code == 200
     data = json.loads(resp_a.data)
     assert data["data"][0]["id"] == diagnostic_report["id"]
+    assert len(data["data"]) == 1

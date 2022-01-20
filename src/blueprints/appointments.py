@@ -54,6 +54,7 @@ class AppointmentController:
         request_body = request.get_json()
         encounter_id = request_body.get("prev_encounter_id")
         requester_id = request_body.get("requester_id")
+        service = request_body.get("service", "online")
 
         if (
             (role_id := request_body.get("practitioner_role_id")) is None
@@ -146,6 +147,7 @@ class AppointmentController:
             service_type,
             service_request_uuid,
             appointment_uuid,
+            service,
         )
 
         if err is not None:
@@ -252,6 +254,9 @@ def book_appointment():
     """
     The endpoint to book an appointment
     service_request_id is optional argument
+    prev_encounter_id is optional argument
+    requester_id is optional argument
+    service is optional argument
 
     Sample request body:
     {
@@ -262,7 +267,8 @@ def book_appointment():
         'service_request_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171',
         'service_type': 'followup',
         'prev_encounter_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d172',
-        'requester_id':  '0d49bb25-97f7-4f6d-8459-2b6a18d4d173'
+        'requester_id':  '0d49bb25-97f7-4f6d-8459-2b6a18d4d173',
+        'service': 'visit'
     }
     """
     return AppointmentController().book_appointment()

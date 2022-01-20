@@ -26,3 +26,8 @@ Feature: Book Appointment
         Then patient cannot book an appointment
         Then patient cancels the appointment
         Then patient can book an appointment
+    Scenario: Appointment is booked for nurse
+        Given a nurse
+        Given a patient
+        When an appointment is booked for nurse
+        Then the appointment is for nurse visit

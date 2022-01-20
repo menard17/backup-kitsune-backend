@@ -22,7 +22,13 @@ scenarios("../features/book_appointments.feature")
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     user = create_user()
-    return create_practitioner(client, user)
+    return create_practitioner(client, user, role_type="doctor")
+
+
+@given("a nurse", target_fixture="nurse")
+def get_nurse(client: Client):
+    user = create_user()
+    return create_practitioner(client, user, role_type="nurse")
 
 
 @given("a patient", target_fixture="patient")
@@ -34,6 +40,11 @@ def get_patientB(client: Client):
 @when("the patient books a free time of the doctor", target_fixture="appointment")
 def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
     return create_appointment(client, practitioner, patient)
+
+
+@when("an appointment is booked for nurse", target_fixture="visit_appointment")
+def book_nurse_appointment(client: Client, nurse: Practitioner, patient: Patient):
+    return create_appointment(client, nurse, patient, service="visit")
 
 
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")
@@ -265,3 +276,8 @@ def get_practitioner_bio(client: Client, patientA: Patient, practitioner: Practi
         filter(lambda item: item["resourceType"] == "Practitioner", appointments)
     )
     assert practitioner["extension"][0]["url"] == "bio"
+
+
+@then("the appointment is for nurse visit")
+def appopintment_service_type(visit_appointment: Appointment):
+    assert visit_appointment["serviceType"][0]["coding"][0]["code"] == "497"

@@ -161,3 +161,26 @@ def get_appointment_status(client: Client, patientA: Patient):
 
     appointments = json.loads(resp.data)["data"]
     assert appointments[0]["status"] == "fulfilled"
+
+
+@then("the doctor cannot create another encounter for the same appointment")
+def get_another_encounter(
+    client: Client,
+    practitioner: Practitioner,
+    patientA: Patient,
+    appointment: Appointment,
+):
+    token = get_token(practitioner.uid)
+    resp = client.post(
+        f"/patients/{patientA.fhir_data['id']}/encounters",
+        data=json.dumps(
+            {
+                "patient_id": patientA.fhir_data["id"],
+                "role_id": practitioner.fhir_data["id"],
+                "appointment_id": appointment["id"],
+            }
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 400

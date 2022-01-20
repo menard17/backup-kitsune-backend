@@ -1,10 +1,8 @@
 import json
 
-from fhir.resources.diagnosticreport import DiagnosticReport
-from firebase_admin import auth
+from fhir.resources import construct_fhir_element
 from flask import Blueprint, request
 from flask.wrappers import Response
-from pydantic.types import Json
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
@@ -50,7 +48,7 @@ def get_diagnostic_reports(practitioner_id: str) -> Response:
 @jwt_authenticated()
 @jwt_authorized("/Patient/*")
 def create_diagnostic_report() -> Response:
-    return DiagnosticReportController().create_diagnostic_report(request.get_json())
+    return DiagnosticReportController().create_diagnostic_report()
 
 
 @diagnostic_reports_blueprint.route(
@@ -59,15 +57,16 @@ def create_diagnostic_report() -> Response:
 @jwt_authenticated()
 @jwt_authorized("/Patient/*")
 def update_diagnostic_report(diagnostic_report_id: str) -> Response:
+    request_body = request.get_json()
+    conclusion = request_body.get("conclusion")
     return DiagnosticReportController().update_diagnostic_report(
-        diagnostic_report_id, request.get_json()
+        diagnostic_report_id, conclusion
     )
 
 
 class DiagnosticReportController:
-    def __init__(self, resource_client=None, firebase_auth=None):
+    def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
-        self.firebase_auth = firebase_auth or auth
 
     def _search_diagnostic_report(self, search_clause):
         """
@@ -82,7 +81,7 @@ class DiagnosticReportController:
             "DiagnosticReport", search=search_clause
         )
 
-        if diagnostic_report_search.entry is None:
+        if diagnostic_report_search.total == 0:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
@@ -141,44 +140,89 @@ class DiagnosticReportController:
         search_list = [("performer", practitioner_id)]
         return self._search_diagnostic_report(search_list)
 
-    def create_diagnostic_report(self, data: Json) -> Response:
+    def create_diagnostic_report(self) -> Response:
         """Returns the details of a diagnostic report created.
 
         This creates a diagnostic report in FHIR
         Note that this function should only be called
-        from the frontend client(by doctor) since everything assumes to use Firebase for
+        from the frontend client(by doctor or nurse) since everything assumes to use Firebase for
         authentication/authorization. diagnostic Report should be created after encounter is created
-
-        Body should contain appointment, practitionerRole, and patient
-
-        :param data: FHIR data for diagnostic report
-        :type data: JSON
+        sample json
+        {
+            'patient_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d170'
+            'role_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d171',
+            'encounter_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d172',
+            'conclusion': 'conclusion'
+        }
 
         :rtype: Response
         """
-        diagnostic_report = DiagnosticReport.parse_obj(data)
-        diagnostic_report = self.resource_client.create_resource(diagnostic_report)
 
+        request_body = request.get_json()
+        if (
+            (patient_id := request_body.get("patient_id")) is None
+            or (encounter_id := request_body.get("encounter_id")) is None
+            or (role_id := request_body.get("role_id")) is None
+            or (conclusion := request_body.get("conclusion")) is None
+        ):
+            return Response(
+                status=400,
+                response="missing param: patient_id, encounter_id, practitioner_id, or conclusion",
+            )
+
+        # Check if there is diagnostic report
+        diagnostic_report_search = self.resource_client.search(
+            "DiagnosticReport", search=[("encounter", encounter_id)]
+        )
+
+        if diagnostic_report_search.total > 0:
+            return self.update_diagnostic_report(
+                diagnostic_report_search.entry[0].resource.id, conclusion
+            )
+
+        diagnostic_report_jsondict = {
+            "resourceType": "DiagnosticReport",
+            "status": "final",
+            "subject": {"reference": f"Patient/{patient_id}"},
+            "encounter": {"reference": f"Encounter/{encounter_id}"},
+            "performer": [{"reference": f"PractitionerRole/{role_id}"}],
+            "conclusion": conclusion,
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "448337001",
+                        "display": "Telemedicine",
+                    }
+                ]
+            },
+        }
+        diagnostic_report = construct_fhir_element(
+            diagnostic_report_jsondict["resourceType"], diagnostic_report_jsondict
+        )
+        diagnostic_report = self.resource_client.create_resource(diagnostic_report)
         return Response(status=201, response=datetime_encoder(diagnostic_report.json()))
 
     def update_diagnostic_report(
-        self, diagnostic_report_id: str, data: Json
+        self,
+        diagnostic_report_id: str,
+        conclusion: str,
     ) -> Response:
         """Update diagnostic report
 
         This overwrites current result of diagnostic report
 
-        :param diagnostic_report_id: uuid of diagnostic report. e.g. { data: "conclusion"}
+        :param diagnostic_report_id: uuid of diagnostic report.
         :type diagnostic_report_id: str
-        :param data: data you want to overwrite
-        :type data: Json
+        :param conclusion: conclusion you want to override
+        :type conclusion: str
 
         :rtype: Response
         """
-        value = [{"op": "add", "path": "/conclusion", "value": data["conclusion"]}]
+        value = [{"op": "add", "path": "/conclusion", "value": conclusion}]
 
         new_diagnostic_report = self.resource_client.patch_resource(
             diagnostic_report_id, "DiagnosticReport", value
         )
 
-        return Response(status=200, response=new_diagnostic_report.json())
+        return Response(status=201, response=new_diagnostic_report.json())

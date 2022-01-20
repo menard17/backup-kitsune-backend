@@ -4,10 +4,7 @@ from datetime import datetime, timedelta
 import pytz
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.blueprints.helper import (
-    get_diagnostic_report_data,
-    get_service_request_data,
-)
+from integtest.blueprints.helper import get_service_request_data
 from integtest.characters import (
     Appointment,
     DiagnosticReport,
@@ -74,11 +71,12 @@ def create_service_request(
     diagnostic_report_resp = client.post(
         "/diagnostic_reports",
         data=json.dumps(
-            get_diagnostic_report_data(
-                patient.fhir_data["id"],
-                doctor.fhir_practitioner_data["id"],
-                encounter["id"],
-            )
+            {
+                "patient_id": patient.fhir_data["id"],
+                "practitioner_id": doctor.fhir_practitioner_data["id"],
+                "encounter_id": encounter["id"],
+                "conclusin": "conclusion",
+            }
         ),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",

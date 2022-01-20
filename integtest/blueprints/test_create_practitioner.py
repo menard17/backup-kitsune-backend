@@ -14,6 +14,11 @@ def get_user() -> User:
     return create_user()
 
 
+@given("other user", target_fixture="other_user")
+def get_other_user() -> User:
+    return create_user()
+
+
 @when("a doctor is created", target_fixture="practitioner")
 def create_doctor(client: Client, user: User) -> str:
     return create_practitioner(client, user)
@@ -54,7 +59,7 @@ def fail_to_create_doctor(client: Client, user: User) -> str:
 
 
 @then("the doctor can be searched by email")
-def get_doctor_email(client: Client, user: User, practitioner: Practitioner) -> str:
+def get_doctor_email(client: Client, user: User, practitioner: Practitioner):
     resp = client.get(
         f"/practitioners?email={user.email}",
         headers={"Authorization": f"Bearer {user.token}"},
@@ -66,3 +71,38 @@ def get_doctor_email(client: Client, user: User, practitioner: Practitioner) -> 
         f"Practitioner/{data['data'][0]['id']}"
         == practitioner.fhir_data["practitioner"]["reference"]
     )
+
+
+@then("second doctor cannot be created with user but with other user")
+def create_second_doctor(client: Client, user: User, other_user: User):
+    def get_param(email):
+        with open("artifact/image_base64") as f:
+            photo_base64 = f.readlines()[0]
+        param_data = {
+            "role_type": "doctor",
+            "start": "2021-08-15T13:55:57.967345+09:00",
+            "end": "2021-08-15T14:55:57.967345+09:00",
+            "family_name_en": "Last name",
+            "given_name_en": "Given name",
+            "bio_en": "My background ...",
+            "gender": "male",
+            "email": email,
+            "photo": photo_base64,
+            "zoom_password": "zoom password",
+            "zoom_id": "zoom id",
+            "available_time": {
+                "daysOfWeek": ["mon", "tue", "wed"],
+                "availableStartTime": "09:00:00",
+                "availableEndTime": "16:30:00",
+            },
+        }
+        return param_data
+
+    resp = client.post(
+        "/practitioner_roles",
+        data=json.dumps(get_param(user.email)),
+        headers={"Authorization": f"Bearer {user.token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 400
+    create_practitioner(client, other_user)

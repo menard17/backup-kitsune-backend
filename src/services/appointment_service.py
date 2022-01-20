@@ -21,14 +21,18 @@ class AppointmentService:
         service_type: ServiceType,
         service_request_id,
         appointment_uuid: str = None,
+        service: str = None,
     ):
+        if not service:
+            service = "online"
+
         appointment_jsondict = {
             "resourceType": "Appointment",
             "status": "booked",
             "description": "Booking practitioner role",
             "start": start,
             "end": end,
-            "serviceType": [{"coding": [SystemCode.online_service()]}],
+            "serviceType": [{"coding": [SystemCode.service(service)]}],
             "serviceCategory": [{"coding": [SystemCode.general_practice()]}],
             "appointmentType": {
                 "coding": [SystemCode.appointment_service_type(service_type)]

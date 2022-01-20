@@ -139,6 +139,18 @@ class PractitionerRoleController:
         pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
 
         resources = []
+
+        # Check if practitioner already exists or not
+        search_clause = [("email", email)]
+        practitioner_search = self.resource_client.search(
+            "Practitioner",
+            search=search_clause,
+        )
+        if practitioner_search.total > 0:
+            return Response(
+                status=400, response=f"practitoner exists with given email: {email}"
+            )
+
         # Create a practitioner
         language_options = ["en", "ja"]
         names = get_names_ext(request_body, language_options, role_type)

@@ -11,7 +11,6 @@ from integtest.blueprints.fhir_input_constants import (
     DOCUMENT_REFERENCE_DATA,
     PATIENT_DATA,
 )
-from integtest.blueprints.helper import get_encounter_data
 from integtest.characters import Appointment, Patient, Practitioner, User
 from integtest.conftest import Client
 
@@ -110,7 +109,11 @@ def create_patient(client: Client, user: User):
 
 
 def create_appointment(
-    client: Client, practitioner: Practitioner, patient: Patient, days=0
+    client: Client,
+    practitioner: Practitioner,
+    patient: Patient,
+    days=0,
+    service="online",
 ):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
@@ -123,6 +126,7 @@ def create_appointment(
         "start": start,
         "end": end,
         "service_type": "walkin",
+        "service": service,
     }
 
     token = get_token(patient.uid)
@@ -149,17 +153,18 @@ def create_encounter(
     resp = client.post(
         f"/patients/{patient.fhir_data['id']}/encounters",
         data=json.dumps(
-            get_encounter_data(
-                patient.fhir_data["id"],
-                practitioner.practitioner_id,
-                appointment["id"],
-            )
+            {
+                "patient_id": patient.fhir_data["id"],
+                "role_id": practitioner.fhir_data["id"],
+                "appointment_id": appointment["id"],
+            }
         ),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
     assert resp.status_code == 201
-    encounter = json.loads(resp.data)
+    output = json.loads(resp.data)["data"]
+    encounter = next(filter(lambda item: item["resourceType"] == "Encounter", output))
     return encounter
 
 

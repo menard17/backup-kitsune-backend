@@ -12,6 +12,7 @@ class ServiceURL:
     cancel_reason_type = (
         "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason"
     )
+    encounter_code = "http://terminology.hl7.org/CodeSystem/v3-ActCode"
 
 
 class Code(TypedDict):
@@ -45,14 +46,24 @@ class CancelType:
     patient: str
 
 
+class ProvidingType:
+    online: str
+    visit: str
+
+
 class SystemCode:
     @staticmethod
-    def online_service():
-        return create_coding_clause(ServiceURL.service_type, "540", "Online Service")
-
-    @staticmethod
-    def home_visit():
-        return create_coding_clause(ServiceURL.service_type, "497", "Home Visits")
+    def service(providing_type: ProvidingType):
+        if providing_type == "online":
+            return create_coding_clause(
+                ServiceURL.service_type, "540", "Online Service"
+            )
+        elif providing_type == "visit":
+            return create_coding_clause(ServiceURL.service_type, "497", "Home Visits")
+        else:
+            return create_coding_clause(
+                ServiceURL.service_type, "124", "General Practice"
+            )
 
     @staticmethod
     def general_practice():
@@ -139,3 +150,7 @@ class SystemCode:
                 ServiceURL.communication_code, language, "English"
             )
         raise TypeError()
+
+    @staticmethod
+    def enconuter():
+        return create_coding_clause(ServiceURL.encounter_code, "HH", "home health")
