@@ -54,13 +54,12 @@ class SlotService:
         if slot_search.entry is not None:
             return Exception("the time is already booked"), None
 
-        # TODO: add custom search parameter to fhir
         # check if any other slot cover the whole requested slot
         slot_search = self.resource_client.search(
             "Slot",
             search=[
                 ("schedule", schedule.id),
-                ("start", "lt" + start),
+                ("start", "le" + start),
                 ("end", "ge" + end),
                 ("status:not", "free"),
             ],
@@ -74,8 +73,8 @@ class SlotService:
             "Slot",
             search=[
                 ("schedule", schedule.id),
-                ("end", "ge" + start),
-                ("end", "lt" + end),
+                ("end", "gt" + start),
+                ("end", "le" + end),
                 ("status:not", "free"),
             ],
         )
