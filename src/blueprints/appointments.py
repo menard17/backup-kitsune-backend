@@ -9,6 +9,7 @@ from adapters.fhir_store import ResourceClient
 from blueprints.service_requests import ServiceRequestController
 from json_serialize import json_serial
 from services.appointment_service import AppointmentService
+from services.email_notification_service import EmailNotificationService
 from services.schedule_service import ScheduleService
 from services.service_request_service import ServiceRequestService
 from services.slots_service import SlotService
@@ -31,6 +32,7 @@ class AppointmentController:
         appointment_service=None,
         service_request_service=None,
         schedule_service=None,
+        email_notification_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
@@ -42,6 +44,9 @@ class AppointmentController:
         )
         self.schedule_service = schedule_service or ScheduleService(
             self.resource_client
+        )
+        self.email_notification_service = (
+            email_notification_service or EmailNotificationService()
         )
 
     def book_appointment(self) -> Response:
@@ -55,6 +60,7 @@ class AppointmentController:
         encounter_id = request_body.get("prev_encounter_id")
         requester_id = request_body.get("requester_id")
         service = request_body.get("service", "online")
+        send_notification = request_body.get("email_notification", "true")
 
         if (
             (role_id := request_body.get("practitioner_role_id")) is None
@@ -158,6 +164,9 @@ class AppointmentController:
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
+
+        if send_notification != "false":
+            self.email_notification_service.send()
         return Response(status=201, response=resp.json())
 
     def update_appointment(self, request, appointment_id: str) -> Response:
@@ -268,7 +277,8 @@ def book_appointment():
         'service_type': 'followup',
         'prev_encounter_id': '0d49bb25-97f7-4f6d-8459-2b6a18d4d172',
         'requester_id':  '0d49bb25-97f7-4f6d-8459-2b6a18d4d173',
-        'service': 'visit'
+        'service': 'visit',
+        'email_notification': 'false'
     }
     """
     return AppointmentController().book_appointment()

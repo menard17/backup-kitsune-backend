@@ -36,6 +36,7 @@ jobs:
   - script: |
       export PYTHONPATH=src/
       export FCM_TOKEN=$(FCM_TOKEN)
+      export ENV=dev
       poetry run pytest --reruns 3 --reruns-delay 1 . --junitxml=junit/test-results.xml --cov=. --cov-report=xml
     displayName: pytest
     env:
