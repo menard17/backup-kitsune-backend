@@ -348,6 +348,9 @@ class PractitionerRoleController:
 
         schedule = schedule_search.entry[0].resource
 
+        slots = []
+
+        # start time cover
         slot_search = [
             ("schedule", schedule.id),
             ("start", "ge" + start),
@@ -359,15 +362,62 @@ class PractitionerRoleController:
         else:
             slot_search.append(("status", status))
 
-        slot_search = self.resource_client.search(
+        result = self.resource_client.search(
             "Slot",
             search=slot_search,
         )
-        if slot_search.entry is None:
-            return {"data": []}
-        return {
-            "data": [datetime_encoder(e.resource.dict()) for e in slot_search.entry]
-        }
+
+        if result.entry is not None:
+            for e in result.entry:
+                slots.append(datetime_encoder(e.resource.dict()))
+
+        # full time cover
+        slot_search = [
+            ("schedule", schedule.id),
+            ("start", "le" + start),
+            ("end", "ge" + end),
+        ]
+
+        if not_status:
+            slot_search.append(("status:not", not_status))
+        else:
+            slot_search.append(("status", status))
+
+        result = self.resource_client.search(
+            "Slot",
+            search=slot_search,
+        )
+
+        if result.entry is not None:
+            for e in result.entry:
+                slot = datetime_encoder(e.resource.dict())
+                if slot not in slots:
+                    slots.append(slot)
+
+        # end time cover
+        slot_search = [
+            ("schedule", schedule.id),
+            ("end", "gt" + start),
+            ("end", "le" + end),
+        ]
+
+        if not_status:
+            slot_search.append(("status:not", not_status))
+        else:
+            slot_search.append(("status", status))
+
+        result = self.resource_client.search(
+            "Slot",
+            search=slot_search,
+        )
+
+        if result.entry is not None:
+            for e in result.entry:
+                slot = datetime_encoder(e.resource.dict())
+                if slot not in slots:
+                    slots.append(slot)
+
+        return {"data": slots}
 
 
 @practitioner_roles_blueprint.route("/", methods=["GET"])

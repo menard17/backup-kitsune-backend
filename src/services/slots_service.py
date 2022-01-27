@@ -66,7 +66,7 @@ class SlotService:
         )
 
         if slot_search.entry is not None:
-            return Exception("the time is already booked inside"), None
+            return Exception("the time is already booked"), None
 
         # check if any other slot not ended during the requested slot
         slot_search = self.resource_client.search(
@@ -80,7 +80,7 @@ class SlotService:
         )
 
         if slot_search.entry is not None:
-            return Exception("the time is already booked end"), None
+            return Exception("the time is already booked"), None
 
         slot_jsondict = {
             "resourceType": "Slot",
