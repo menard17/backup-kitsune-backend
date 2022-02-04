@@ -196,7 +196,6 @@ class PractitionerRoleController:
             filter(lambda x: x.resource.resource_type == "Practitioner", resp.entry)
         )[0].resource
         role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
-
         resp = list(
             filter(lambda x: x.resource.resource_type == "PractitionerRole", resp.entry)
         )[0].resource
@@ -244,7 +243,7 @@ class PractitionerRoleController:
             practitioner_id_raw, "Practitioner"
         )
         claims_roles = role_auth.extract_roles(request.claims)
-        if ("Patient" in claims_roles) or (
+        if ("Patient" in claims_roles and "Practitioner" not in claims_roles) or (
             "Practitioner" in claims_roles
             and claims_roles["Practitioner"]["id"] != practitioner_id_raw
         ):
@@ -272,7 +271,6 @@ class PractitionerRoleController:
             resources.append(pracititioner_role_bundle)
 
         # Modify practitioner
-
         err, pracititioner_bundle = self.practitioner_service.update_practitioner(
             practitioner, biographies, names, photo, gender
         )

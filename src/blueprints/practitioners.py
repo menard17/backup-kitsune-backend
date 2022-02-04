@@ -126,6 +126,7 @@ class PractitionerController:
         if practitioner:
             # Then grant the custom claim for the caller in Firebase
             role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
+
         return practitioner
 
     def get_practitioner(self, practitioner_id: uuid) -> Response:

@@ -96,3 +96,9 @@ class MockResourceClient:
         if resource == "PractitionerRole":
             return construct_fhir_element(resource, PRACTITIONER_ROLE_DATA)
         return ""
+
+    def search(self, param1, search):
+        class result:
+            entry = None
+
+        return result

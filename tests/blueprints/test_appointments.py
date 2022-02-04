@@ -283,6 +283,31 @@ def test_search_appointment_patient_cannot_see_other_people_data():
     assert resp_data == "patient can only search appointment for him/herself"
 
 
+def test_search_appointment_patiets_if_both_practitioner_and_patient_present():
+    other_patient_id = "other-patient-id"
+    auth_patient_id = "auth-patient-id"
+
+    practitioner_id = "practitioner_id"
+
+    resource_client = MockResourceClient()
+
+    request = FakeRequest(
+        args={"actor_id": other_patient_id},
+        claims={
+            "roles": {
+                "Patient": {
+                    "id": auth_patient_id,
+                },
+                "Practitioner": {"id": practitioner_id},
+            },
+        },
+    )
+    controller = AppointmentController(resource_client)
+    resp = controller.search_appointments(request)
+
+    assert resp.status_code == 200
+
+
 def test_search_appointment_actor_id_is_required():
     auth_patient_id = "auth-patient-id"
 

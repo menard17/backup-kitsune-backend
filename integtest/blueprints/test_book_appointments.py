@@ -6,7 +6,7 @@ import pytz
 from pytest_bdd import scenarios, then, when
 from pytest_bdd.steps import given
 
-from integtest.characters import Appointment, Patient, Practitioner
+from integtest.characters import Appointment, Patient, Practitioner, User
 from integtest.conftest import Client
 from integtest.utils import (
     create_appointment,
@@ -19,9 +19,26 @@ from integtest.utils import (
 scenarios("../features/book_appointments.feature")
 
 
+@given("a user", target_fixture="user")
+def get_user():
+    return create_user()
+
+
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     user = create_user()
+    return create_practitioner(client, user, role_type="doctor")
+
+
+@given("patientA", target_fixture="patientA")
+def get_patientA(client: Client, user):
+    return create_patient(client, user)
+
+
+@given(
+    "a doctor is created with the same user as patientA", target_fixture="practitionerA"
+)
+def get_doctorA(client: Client, user):
     return create_practitioner(client, user, role_type="doctor")
 
 
@@ -31,6 +48,7 @@ def get_nurse(client: Client):
     return create_practitioner(client, user, role_type="nurse")
 
 
+@given("patientB", target_fixture="patient")
 @given("a patient", target_fixture="patient")
 def get_patientB(client: Client):
     user = create_user()
@@ -40,6 +58,11 @@ def get_patientB(client: Client):
 @when("the patient books a free time of the doctor", target_fixture="appointment")
 def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
     return create_appointment(client, practitioner, patient)
+
+
+@when("an appointment is created by patientB")
+def book_new_appointment(client: Client, practitionerA: Practitioner, patient: Patient):
+    return create_appointment(client, practitionerA, patient)
 
 
 @when("an appointment is booked for nurse", target_fixture="visit_appointment")
@@ -281,3 +304,16 @@ def get_practitioner_bio(client: Client, patientA: Patient, practitioner: Practi
 @then("the appointment is for nurse visit")
 def appopintment_service_type(visit_appointment: Appointment):
     assert visit_appointment["serviceType"][0]["coding"][0]["code"] == "497"
+
+
+@then("the doctor can see list of appointments")
+def get_list_of_appointments(client: Client, patientA: Patient, user: User):
+    practitioner_url = f"/practitioners?email={user.email}"
+    token = get_token(patientA.uid)
+    resp = client.get(practitioner_url, headers={"Authorization": f"Bearer {token}"})
+    practitioner_id = json.loads(resp.data)["data"][0]["id"]
+    appointment_url = f"/appointments?actor_id={practitioner_id}"
+    resp_appointment = client.get(
+        appointment_url, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp_appointment.status_code == 200

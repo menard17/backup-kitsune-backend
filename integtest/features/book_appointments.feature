@@ -31,3 +31,10 @@ Feature: Book Appointment
         Given a patient
         When an appointment is booked for nurse
         Then the appointment is for nurse visit
+    Scenario: Appointment can be seen by a doctor who is patient
+        Given a user
+        Given a doctor is created with the same user as patientA
+        Given patientA
+        Given patientB
+        When an appointment is created by patientB
+        Then the doctor can see list of appointments

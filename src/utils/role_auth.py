@@ -28,18 +28,22 @@ def grant_role(request_claims: dict, role: str, role_id: str = None):
     current_roles = extract_roles(request_claims)
     if current_roles is None:
         current_roles = {}
-
     if role_id is not None:
         current_roles[role] = {"id": role_id}
     else:
         current_roles[role] = {}
-
     uid = request_claims["uid"]
     auth.set_custom_user_claims(uid, {"roles": current_roles})
 
 
 def extract_roles(request_claims: dict):
-    return request_claims.get("roles")
+    roles = request_claims.get("roles")
+    if roles is None:
+        # if request_claims does not contain roles, needs to check firebase with uid
+        uid = request_claims.get("uid")
+        if (uid is not None) and (custom_claims := auth.get_user(uid).custom_claims):
+            return custom_claims.get("roles")
+    return roles
 
 
 def is_authorized(claims_roles: dict, scope_role: str, scope_role_id: str) -> bool:

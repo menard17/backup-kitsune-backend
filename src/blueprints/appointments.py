@@ -212,7 +212,11 @@ class AppointmentController:
             return Response(status=400, response="missing param: actor_id")
 
         claims_roles = role_auth.extract_roles(request.claims)
-        if "Patient" in claims_roles and claims_roles["Patient"]["id"] != actor_id:
+        if (
+            "Practitioner" not in claims_roles
+            and "Patient" in claims_roles
+            and claims_roles["Patient"]["id"] != actor_id
+        ):
             return Response(
                 status=401,
                 response="patient can only search appointment for him/herself",

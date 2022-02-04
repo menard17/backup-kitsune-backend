@@ -3,15 +3,19 @@ from unittest.mock import patch
 from utils import role_auth
 
 
+class UserObject:
+    custom_claims = {}
+
+
 def test_grant_role_without_existing_role():
     request_claims = {"uid": "test-uid"}
 
     with patch("utils.role_auth.auth") as mock_auth:
-        role_auth.grant_role(request_claims, "Patient", "patient-id")
-
-        mock_auth.set_custom_user_claims.assert_called_once_with(
-            "test-uid", {"roles": {"Patient": {"id": "patient-id"}}}
-        )
+        with patch("utils.role_auth.auth.get_user", return_value=UserObject):
+            role_auth.grant_role(request_claims, "Patient", "patient-id")
+            mock_auth.set_custom_user_claims.assert_called_once_with(
+                "test-uid", {"roles": {"Patient": {"id": "patient-id"}}}
+            )
 
 
 def test_grant_role_with_existing_same_role():
@@ -48,11 +52,12 @@ def test_grant_role_without_role_id():
     }
 
     with patch("utils.role_auth.auth") as mock_auth:
-        role_auth.grant_role(current_claims, "Admin")
+        with patch("utils.role_auth.auth.get_user", return_value=UserObject):
+            role_auth.grant_role(current_claims, "Admin")
 
-        mock_auth.set_custom_user_claims.assert_called_once_with(
-            "test-uid", {"roles": {"Admin": {}}}
-        )
+            mock_auth.set_custom_user_claims.assert_called_once_with(
+                "test-uid", {"roles": {"Admin": {}}}
+            )
 
 
 def test_extract_roles():
