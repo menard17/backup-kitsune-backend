@@ -24,6 +24,13 @@ def get_user():
     return create_user()
 
 
+@given("a patient with nurse user", target_fixture="nurse_user")
+def get_patient(client: Client):
+    user = create_user()
+    create_patient(client, user)
+    return user
+
+
 @given("a doctor", target_fixture="practitioner")
 def get_doctor(client: Client):
     user = create_user()
@@ -43,9 +50,8 @@ def get_doctorA(client: Client, user):
 
 
 @given("a nurse", target_fixture="nurse")
-def get_nurse(client: Client):
-    user = create_user()
-    return create_practitioner(client, user, role_type="nurse")
+def get_nurse(client: Client, nurse_user: User):
+    return create_practitioner(client, nurse_user, role_type="nurse")
 
 
 @given("patientB", target_fixture="patient")
@@ -66,8 +72,35 @@ def book_new_appointment(client: Client, practitionerA: Practitioner, patient: P
 
 
 @when("an appointment is booked for nurse", target_fixture="visit_appointment")
-def book_nurse_appointment(client: Client, nurse: Practitioner, patient: Patient):
-    return create_appointment(client, nurse, patient, service="visit")
+def book_nurse_appointment(
+    client: Client, nurse: Practitioner, patient: Patient, practitioner: Practitioner
+):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    start = (now - timedelta(days=1)).isoformat()
+    end = (now - timedelta(days=1) + timedelta(hours=1)).isoformat()
+
+    appointment_data = {
+        "practitioner_role_id": nurse.fhir_data["id"],
+        "patient_id": patient.fhir_data["id"],
+        "start": start,
+        "end": end,
+        "service_type": "walkin",
+        "service": "visit",
+        "send_notification": "false",
+    }
+
+    token = get_token(practitioner.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    appointment = json.loads(resp.data)
+    return appointment
 
 
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")

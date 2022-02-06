@@ -75,9 +75,13 @@ class AppointmentController:
             )
 
         claims_roles = role_auth.extract_roles(request.claims)
-        if "Patient" in claims_roles and claims_roles["Patient"]["id"] != patient_id:
+        if (
+            "Practitioner" not in claims_roles
+            and "Patient" in claims_roles
+            and claims_roles["Patient"]["id"] != patient_id
+        ):
             return Response(
-                status=401, response="could only book appointment for the patient"
+                status=401, response="only book appointment for the patient"
             )
 
         if (start is None) or (end is None):
