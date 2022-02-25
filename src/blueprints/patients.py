@@ -114,4 +114,4 @@ class Controller:
         patient = request.get_json()
         patient = self.resource_client.patch_resource(patient_id, "Patient", patient)
 
-        return patient.dict(), 200
+        return datetime_encoder(patient.dict()), 200
