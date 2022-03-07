@@ -24,38 +24,6 @@ stages:
       publish: or(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['sandbox'],  'true'))
       containerRegistry: $(containerRegistry)
       repository: $(repository)
-  - job: CleanUp
-    condition: false # Disabled cleanup for FHIR for now
-    steps:
-    - task: TerraformInstaller@0
-      inputs:
-        terraformVersion: '1.0.3'
-      displayName: 'Install Terraform'
-    - checkout: Infra
-    - task: TerraformTaskV2@2
-      displayName: 'Terraform Init'
-      inputs:
-        provider: 'gcp'
-        command: 'init'
-        backendServiceGCP: 'gcp-terraform-sp'
-        backendGCPBucketName: 'terraform-kitsune-state'
-        backendGCPPrefix: dev
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
-    - task: TerraformTaskV2@2
-      displayName: 'Terraform destroy dataset'
-      inputs:
-        provider: 'gcp'
-        command: 'destroy'
-        commandOptions: '-target module.fhir_store.google_healthcare_dataset.dataset -target module.fhir_store.google_healthcare_fhir_store.fhir_store'
-        environmentServiceNameGCP: 'gcp-terraform-sp'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
-    - task: TerraformTaskV2@2
-      displayName: 'Terraform Apply'
-      inputs:
-        provider: 'gcp'
-        command: 'apply'
-        environmentServiceNameGCP: 'gcp-terraform-sp'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
 - stage: CD_DEV
   dependsOn: CI
   displayName: CD for Dev

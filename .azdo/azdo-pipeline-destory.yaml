@@ -1,0 +1,73 @@
+trigger:
+- none
+
+pool:
+  vmImage: ubuntu-18.04
+
+variables:
+- group: CloudRun
+- group: CloudRunCICD
+
+resources:
+  repositories:
+  - repository: Infra
+    type: github
+    name: umed-jp/infra
+    endpoint: umed-jp
+
+stages:
+- stage: CI
+  jobs:
+  - job: CleanUp
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: '1.0.3'
+      displayName: 'Install Terraform'
+    - checkout: Infra
+    - task: TerraformTaskV2@2
+      displayName: 'Terraform Init'
+      inputs:
+        provider: 'gcp'
+        command: 'init'
+        backendServiceGCP: 'gcp-terraform-sp'
+        backendGCPBucketName: 'terraform-kitsune-state'
+        backendGCPPrefix: dev
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
+    - task: TerraformTaskV2@2
+      displayName: 'Terraform destroy dataset'
+      inputs:
+        provider: 'gcp'
+        command: 'destroy'
+        commandOptions: '-target module.fhir_store.google_healthcare_dataset.dataset -target module.fhir_store.google_healthcare_fhir_store.fhir_store'
+        environmentServiceNameGCP: 'gcp-terraform-sp'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
+    - task: TerraformTaskV2@2
+      displayName: 'Terraform Apply'
+      inputs:
+        provider: 'gcp'
+        command: 'apply'
+        environmentServiceNameGCP: 'gcp-terraform-sp'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev/kitsune'
+  - job: DeleteUsers
+    dependsOn: CleanUp
+    steps:
+    - task: DownloadSecureFile@1
+      name: googleApplicationCredentials
+      displayName: 'Download GOOGLE_APPLICATION_CREDENTIALS'
+      inputs:
+        secureFile: 'kitsune-dev-service-account.json'
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.9
+      displayName: Install Python
+    - script: |
+        python -m pip install -U pip
+        pip install poetry
+        poetry install
+      displayName: Install software
+    - script: |
+        poetry run python scripts/delete_users.py
+      displayName: delete users
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)
