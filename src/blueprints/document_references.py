@@ -86,8 +86,12 @@ class DocumentReferenceController:
 
         claims_roles = role_auth.extract_roles(request.claims)
 
-        if "Patient" in claims_roles and (
-            role_type == "Practitioner" or claims_roles["Patient"]["id"] != role_id
+        if (
+            "Patient" in claims_roles
+            and "Practitioner" not in claims_roles
+            and (
+                role_type == "Practitioner" or claims_roles["Patient"]["id"] != role_id
+            )
         ):
             return Response(
                 status=403,
@@ -154,8 +158,12 @@ class DocumentReferenceController:
         role_id = subject_match.group(2)
 
         claims_roles = role_auth.extract_roles(request.claims)
-        if "Patient" in claims_roles and (
-            role_type == "Practitioner" or claims_roles["Patient"]["id"] != role_id
+        if (
+            "Patient" in claims_roles
+            and "Practitioner" not in claims_roles
+            and (
+                role_type == "Practitioner" or claims_roles["Patient"]["id"] != role_id
+            )
         ):
             return Response(
                 status=403,
