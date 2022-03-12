@@ -19,6 +19,7 @@ stages:
 - stage: CI
   jobs:
   - job: CleanUp
+    condition: and(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'],  'Manual'))
     steps:
     - task: TerraformInstaller@0
       inputs:
