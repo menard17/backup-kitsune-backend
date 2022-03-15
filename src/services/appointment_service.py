@@ -96,9 +96,9 @@ class AppointmentService:
     def check_appointment_ontime(self, appointment_id: uuid):
         appointment = self.resource_client.get_resource(appointment_id, "Appointment")
         if datetime.now(timezone.utc) < appointment.start - timedelta(minutes=5):
-            return False, "meeting is not started yet", appointment
+            return False, "meeting is not started yet"
 
         if datetime.now(timezone.utc) > appointment.end:
-            return False, "meeting is already finished", appointment
+            return False, "meeting is already finished"
 
-        return True, None, appointment
+        return True, None

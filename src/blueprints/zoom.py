@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import jwt
 from flask import Blueprint, Response, request
@@ -38,7 +38,7 @@ class ZoomController:
         if not (appointment_id := request.args.get("appointment_id")):
             return Response(status=400, response="missing param: appointment_id")
 
-        ontime, detail, appointment = self.appointment_service.check_appointment_ontime(
+        ontime, detail = self.appointment_service.check_appointment_ontime(
             appointment_id
         )
         if not ontime:
@@ -49,13 +49,14 @@ class ZoomController:
 
         zoom_api_key = zoom_object.key
         zoom_api_secret = zoom_object.secret
-        exp = appointment.end
+        iat = time.mktime(datetime.now().timetuple())
+        exp = time.mktime((datetime.now() + timedelta(hours=1)).timetuple())
 
         payload = {
             "appKey": zoom_api_key,
-            "iat": time.mktime(datetime.now().timetuple()),
-            "exp": time.mktime(exp.timetuple()),
-            "tokenExp": time.mktime(exp.timetuple()),
+            "iat": iat,
+            "exp": exp,
+            "tokenExp": exp,
         }
 
         jwt_encoded = jwt.encode(payload, zoom_api_secret)
