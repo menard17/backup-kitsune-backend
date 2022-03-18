@@ -15,30 +15,30 @@ patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 @jwt_authenticated()
 @jwt_authorized("/Patient/{patient_id}")
 def get_patient(patient_id: str) -> Response:
-    return Controller().get_patient(patient_id)
+    return PatientController().get_patient(patient_id)
 
 
 @patients_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
 @jwt_authorized("/Patient/*")
 def get_patients() -> Response:
-    return Controller().get_patients()
+    return PatientController().get_patients()
 
 
 @patients_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def create_patient() -> tuple:
-    return Controller().create_patient(request)
+    return PatientController().create_patient(request)
 
 
 @patients_blueprint.route("/<patient_id>", methods=["PATCH"])
 @jwt_authenticated()
 @jwt_authorized("/Patient/{patient_id}")
 def patch_patient(patient_id: str) -> tuple:
-    return Controller().patch_patient(request, patient_id)
+    return PatientController().patch_patient(request, patient_id)
 
 
-class Controller:
+class PatientController:
     def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
 

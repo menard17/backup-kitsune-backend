@@ -5,12 +5,12 @@ import pytest
 from fhir.resources.bundle import Bundle
 from fhir.resources.patient import Patient
 
-from blueprints.patients import Controller
+from blueprints.patients import PatientController
 
 
 def test_get_patient(mocker, resource_client, test_patient_data):
     mocker.patch.object(resource_client, "get_resource", return_value=test_patient_data)
-    controller = Controller(resource_client)
+    controller = PatientController(resource_client)
 
     result = controller.get_patient("test-patient-id")
 
@@ -20,7 +20,7 @@ def test_get_patient(mocker, resource_client, test_patient_data):
 
 def test_get_patients(mocker, resource_client, test_bundle_data):
     mocker.patch.object(resource_client, "get_resources", return_value=test_bundle_data)
-    controller = Controller(resource_client)
+    controller = PatientController(resource_client)
 
     result = controller.get_patients()
 
@@ -37,7 +37,7 @@ def test_create_patient_happy_path(mocker, resource_client, test_patient_data):
         resource_client, "create_resource", return_value=test_patient_data
     )
     with patch("blueprints.patients.role_auth") as mock_role_auth:
-        controller = Controller(resource_client)
+        controller = PatientController(resource_client)
 
         result = controller.create_patient(request)
 
@@ -56,7 +56,7 @@ def test_create_patient_should_return_401_when_no_email_verified(
     mocker.patch.object(
         resource_client, "create_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client)
+    controller = PatientController(resource_client)
 
     result = controller.create_patient(request)
 
@@ -73,7 +73,7 @@ def test_create_patient_should_return_401_when_email_unverified(
     mocker.patch.object(
         resource_client, "create_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client)
+    controller = PatientController(resource_client)
 
     result = controller.create_patient(request)
 
@@ -86,7 +86,7 @@ def test_patch_patient(mocker, resource_client, test_patient_data):
     mocker.patch.object(
         resource_client, "patch_resource", return_value=test_patient_data
     )
-    controller = Controller(resource_client)
+    controller = PatientController(resource_client)
 
     result = controller.patch_patient(request, "test-patient-id")
 

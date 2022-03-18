@@ -127,7 +127,7 @@ def create_appointment(
         "end": end,
         "service_type": "walkin",
         "service": service,
-        "send_notification": "false",
+        "email_notification": "false",
     }
 
     token = get_token(patient.uid)

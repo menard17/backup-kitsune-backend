@@ -1,4 +1,5 @@
-from typing import Set, Tuple, TypedDict
+import uuid
+from typing import Dict, List, Set, Tuple, TypedDict
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
@@ -121,3 +122,40 @@ class PractitionerRoleService:
         for role in practitioner_roles.entry:
             practitioner_ids.add(role.resource.practitioner.reference.split("/")[1])
         return None, practitioner_ids
+
+    def get_practitioner_name(self, loc: str, role_id: uuid) -> Tuple[Exception, Dict]:
+        """Returns dictionary of practitioner name based on loc.
+
+        If loc is not found, loc=ABC is returned. If loc=ABC is not found, NONE is returned.
+
+        :param loc: ABC, IDE, etc
+        :type loc: str
+
+        :rtype: Tuple[Exception, Dict]
+        """
+        role_search_clause = []
+        role_search_clause.append(("id", role_id))
+        role_search_clause.append(("_include:iterate", "PractitionerRole:practitioner"))
+        practitioner_roles = self.resource_client.search(
+            "PractitionerRole", role_search_clause
+        )
+        if practitioner_roles.total == 0:
+            return None, None
+        practitioner = list(
+            filter(
+                lambda x: x.resource.resource_type == "Practitioner",
+                practitioner_roles.entry,
+            )
+        )[0].resource
+        practitioner_name_list: List[DomainResource] = list(
+            filter(lambda x: x.extension[0].valueString == loc, practitioner.name)
+        )
+        if practitioner_name_list:
+            return None, practitioner_name_list[0].dict()
+        else:
+            practitioner_name_list: List[DomainResource] = list(
+                filter(lambda x: x.extension[0].valueString == "ABC", practitioner.name)
+            )
+            if practitioner_name_list:
+                return None, practitioner_name_list[0].dict()
+        return Exception("No item found"), None

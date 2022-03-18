@@ -20,6 +20,10 @@ PATIENT_DATA = {
             "country": "US",
         }
     ],
+    "telecom": [
+        {"system": "email", "use": "home", "value": "example@umed.jp"},
+        {"system": "phone", "use": "mobile", "value": "00000000000"},
+    ],
 }
 
 DOCUMENT_REFERENCE_DATA = {

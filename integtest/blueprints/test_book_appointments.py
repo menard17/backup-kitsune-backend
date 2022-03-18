@@ -87,7 +87,7 @@ def book_nurse_appointment(
         "end": end,
         "service_type": "walkin",
         "service": "visit",
-        "send_notification": "false",
+        "email_notification": "false",
     }
 
     token = get_token(practitioner.uid)
@@ -263,6 +263,7 @@ def cannot_book_busy_slot(
         "start": appointment["start"],
         "end": appointment["end"],
         "service_type": "walkin",
+        "email_notification": "false",
     }
 
     token = get_token(patient.uid)
@@ -306,6 +307,7 @@ def book_canceled_appointment(
         "start": appointment["start"],
         "end": appointment["end"],
         "service_type": "WALKIN",
+        "email_notification": "false",
     }
 
     token = get_token(patient.uid)

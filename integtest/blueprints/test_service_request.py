@@ -122,6 +122,7 @@ def create_appointment_for_nurse(
         "start": start,
         "end": end,
         "service_request_id": service_request["id"],
+        "email_notification": "false",
     }
 
     token = get_token(doctor.uid)

@@ -10,6 +10,8 @@ from blueprints.service_requests import ServiceRequestController
 from json_serialize import json_serial
 from services.appointment_service import AppointmentService
 from services.email_notification_service import EmailNotificationService
+from services.patient_service import PatientService
+from services.practitioner_role_service import PractitionerRoleService
 from services.schedule_service import ScheduleService
 from services.service_request_service import ServiceRequestService
 from services.slots_service import SlotService
@@ -33,6 +35,8 @@ class AppointmentController:
         service_request_service=None,
         schedule_service=None,
         email_notification_service=None,
+        patient_service=None,
+        practitioner_role_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
@@ -47,6 +51,10 @@ class AppointmentController:
         )
         self.email_notification_service = (
             email_notification_service or EmailNotificationService()
+        )
+        self.patient_service = patient_service or PatientService(self.resource_client)
+        self.practitioner_role_service = (
+            practitioner_role_service or PractitionerRoleService(self.resource_client)
         )
 
     def book_appointment(self) -> Response:
@@ -168,9 +176,33 @@ class AppointmentController:
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
+        _, en_practitioner_name = self.practitioner_role_service.get_practitioner_name(
+            "ABC", role_id
+        )
 
         if send_notification != "false":
-            self.email_notification_service.send()
+            is_visit = appointment["resource"].serviceType[0].coding[0].code != "540"
+            start = appointment["resource"].start
+            end = appointment["resource"].end
+            _, patient_name = self.patient_service.get_patient_name(patient_id)
+            _, patient_email = self.patient_service.get_patient_email(patient_id)
+            (
+                _,
+                en_practitioner_name,
+            ) = self.practitioner_role_service.get_practitioner_name("ABC", role_id)
+            (
+                _,
+                ja_practitioner_name,
+            ) = self.practitioner_role_service.get_practitioner_name("IDE", role_id)
+            self.email_notification_service.send(
+                start,
+                end,
+                patient_name,
+                en_practitioner_name,
+                ja_practitioner_name,
+                patient_email,
+                is_visit,
+            )
         return Response(status=201, response=resp.json())
 
     def update_appointment(self, request, appointment_id: str) -> Response:
@@ -204,7 +236,7 @@ class AppointmentController:
         return Response(status=200, response=resp.json())
 
     def search_appointments(self, request, service_request_id: str = None) -> Response:
-        """ "Returns list of appointments matching searching query
+        """Returns list of appointments matching searching query
         :returns: Json list of appointments
         :rtype: Response
         """
