@@ -219,7 +219,7 @@ def set_appointment_no_show(
     token = get_token(practitioner.uid)
     resp = client.put(
         f"/appointments/{appointment['id']}/status",
-        data=json.dumps({"status": "noshow"}),
+        data=json.dumps({"status": "noshow", "email_notification": "false"}),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -286,7 +286,7 @@ def cancel_appointment(
     token = get_token(patient.uid)
     resp = client.put(
         f"/appointments/{appointment['id']}/status",
-        data=json.dumps({"status": "cancelled"}),
+        data=json.dumps({"status": "cancelled", "email_notification": "false"}),
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )

@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timedelta
+from typing import Tuple
 
 import pytz
 import requests
@@ -52,7 +53,11 @@ def create_user() -> User:
 
 
 def create_practitioner(
-    client: Client, user: User, language=["en"], role_type="doctor"
+    client: Client,
+    user: User,
+    language=["en"],
+    role_type="doctor",
+    practitioner_name: Tuple = ("Last Name", "Given Name"),
 ):
     base64_prefix = "data:image/png;base64,"
     with open("artifact/image_base64") as f:
@@ -62,8 +67,8 @@ def create_practitioner(
         "role_type": role_type,
         "start": "2021-08-15T13:55:57.967345+09:00",
         "end": "2021-08-15T14:55:57.967345+09:00",
-        "family_name_en": "Last name",
-        "given_name_en": "Given name",
+        "family_name_en": practitioner_name[0],
+        "given_name_en": practitioner_name[1],
         "bio_en": "My background ...",
         "gender": "male",
         "email": user.email,
@@ -93,7 +98,12 @@ def create_practitioner(
     assert resp.status_code == 201
     practitioner_id = json.loads(resp.data)["practitioner"]["reference"].split("/")[1]
 
-    return Practitioner(user.uid, json.loads(resp.data), practitioner_id)
+    return Practitioner(
+        user.uid,
+        json.loads(resp.data),
+        practitioner_id,
+        practitioner_name=practitioner_name,
+    )
 
 
 def create_patient(client: Client, user: User):

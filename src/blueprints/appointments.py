@@ -176,33 +176,9 @@ class AppointmentController:
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
-        _, en_practitioner_name = self.practitioner_role_service.get_practitioner_name(
-            "ABC", role_id
-        )
 
         if send_notification != "false":
-            is_visit = appointment["resource"].serviceType[0].coding[0].code != "540"
-            start = appointment["resource"].start
-            end = appointment["resource"].end
-            _, patient_name = self.patient_service.get_patient_name(patient_id)
-            _, patient_email = self.patient_service.get_patient_email(patient_id)
-            (
-                _,
-                en_practitioner_name,
-            ) = self.practitioner_role_service.get_practitioner_name("ABC", role_id)
-            (
-                _,
-                ja_practitioner_name,
-            ) = self.practitioner_role_service.get_practitioner_name("IDE", role_id)
-            self.email_notification_service.send(
-                start,
-                end,
-                patient_name,
-                en_practitioner_name,
-                ja_practitioner_name,
-                patient_email,
-                is_visit,
-            )
+            self._send_notification(appointment)
         return Response(status=201, response=resp.json())
 
     def update_appointment(self, request, appointment_id: str) -> Response:
@@ -214,6 +190,8 @@ class AppointmentController:
         """
         request_body = request.get_json()
         status = request_body.get("status")
+        send_notification = request_body.get("email_notification", "true")
+
         resources = []
         err, appointment = self.appointment_service.update_appointment_status(
             appointment_id, status
@@ -233,6 +211,11 @@ class AppointmentController:
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
+
+        if send_notification != "false" and (
+            status == "noshow" or status == "cancelled"
+        ):
+            self._send_notification(appointment, True)
         return Response(status=200, response=resp.json())
 
     def search_appointments(self, request, service_request_id: str = None) -> Response:
@@ -294,6 +277,38 @@ class AppointmentController:
                 },
                 default=json_serial,
             ),
+        )
+
+    def _send_notification(self, appointment, cancellation=False):
+        is_visit = appointment["resource"].serviceType[0].coding[0].code != "540"
+        start = appointment["resource"].start
+        end = appointment["resource"].end
+        participants = appointment["resource"].participant
+        patient_id = list(
+            filter(lambda x: "Patient" in x.actor.reference, participants)
+        )[0].actor.reference.split("/")[1]
+        role_id = list(
+            filter(lambda x: "PractitionerRole" in x.actor.reference, participants)
+        )[0].actor.reference.split("/")[1]
+        _, patient_name = self.patient_service.get_patient_name(patient_id)
+        _, patient_email = self.patient_service.get_patient_email(patient_id)
+        (
+            _,
+            en_practitioner_name,
+        ) = self.practitioner_role_service.get_practitioner_name("ABC", role_id)
+        (
+            _,
+            ja_practitioner_name,
+        ) = self.practitioner_role_service.get_practitioner_name("IDE", role_id)
+        self.email_notification_service.send(
+            start,
+            end,
+            patient_name,
+            en_practitioner_name,
+            ja_practitioner_name,
+            patient_email,
+            is_visit,
+            cancellation,
         )
 
 

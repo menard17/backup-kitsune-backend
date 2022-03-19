@@ -8,10 +8,17 @@ class Patient:
 
 
 class Practitioner:
-    def __init__(self, firebase_uid, practitioner_role=None, practitioner_id=None):
+    def __init__(
+        self,
+        firebase_uid,
+        practitioner_role=None,
+        practitioner_id=None,
+        practitioner_name=None,
+    ):
         self.uid = firebase_uid
         self.fhir_data = practitioner_role
         self.practitioner_id = practitioner_id
+        self.practitioner_name = practitioner_name
 
 
 class User:

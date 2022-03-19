@@ -133,20 +133,13 @@ class PractitionerRoleService:
 
         :rtype: Tuple[Exception, Dict]
         """
-        role_search_clause = []
-        role_search_clause.append(("id", role_id))
-        role_search_clause.append(("_include:iterate", "PractitionerRole:practitioner"))
-        practitioner_roles = self.resource_client.search(
-            "PractitionerRole", role_search_clause
+        practitioner_role = self.resource_client.get_resource(
+            role_id, "PractitionerRole"
         )
-        if practitioner_roles.total == 0:
-            return None, None
-        practitioner = list(
-            filter(
-                lambda x: x.resource.resource_type == "Practitioner",
-                practitioner_roles.entry,
-            )
-        )[0].resource
+        practitioner_id = practitioner_role.practitioner.reference.split("/")[1]
+        practitioner = self.resource_client.get_resource(
+            practitioner_id, "Practitioner"
+        )
         practitioner_name_list: List[DomainResource] = list(
             filter(lambda x: x.extension[0].valueString == loc, practitioner.name)
         )

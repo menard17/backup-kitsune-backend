@@ -5,6 +5,7 @@ from datetime import datetime
 import pytz
 from fhir.resources import construct_fhir_element
 from fhir.resources.appointment import Appointment
+from fhir.resources.patient import Patient
 from fhir.resources.slot import Slot
 from helper import FakeRequest, MockResourceClient
 
@@ -143,6 +144,34 @@ APPOINTMENT_SEARCH_DATA = {
     "resourceType": "Bundle",
 }
 
+PATIENT_DATA = {
+    "resourceType": "Patient",
+    "id": "example",
+    "active": True,
+    "name": [{"use": "official", "family": "Chalmers", "given": ["Peter", "James"]}],
+    "gender": "male",
+    "birthDate": "1990-01-01",
+    "deceasedBoolean": False,
+    "address": [
+        {
+            "use": "home",
+            "type": "both",
+            "text": "534 Erewhon St PeasantVille, Rainbow, Vic  3999",
+            "line": ["534 Erewhon St"],
+            "city": "PleasantVille",
+            "district": "Rainbow",
+            "state": "Vic",
+            "postalCode": "3999",
+            "period": {"start": "1974-12-25"},
+            "country": "US",
+        }
+    ],
+    "telecom": [
+        {"system": "email", "use": "home", "value": "example@umed.jp"},
+        {"system": "phone", "use": "mobile", "value": "00000000000"},
+    ],
+}
+
 
 def test_update_appointment():
     test_appointment_id = "dummy-appointment-id"
@@ -153,6 +182,8 @@ def test_update_appointment():
             return Appointment.parse_obj(BOOKED_APPOINTMENT_DATA)
         if type == "Slot":
             return Slot.parse_obj(SLOT_DATA)
+        if type == "Patient":
+            return Patient.parse_obj(PATIENT_DATA)
 
     def mock_put_resource(resource, uid):
         return {
@@ -178,7 +209,7 @@ def test_update_appointment():
     resource_client.create_resources = mock_create_resources
 
     controller = AppointmentController(resource_client)
-    req = FakeRequest(data={"status": "noshow"})
+    req = FakeRequest(data={"status": "noshow", "email_notification": "false"})
     resp = controller.update_appointment(req, test_appointment_id)
 
     resp_data = json.loads(resp.data.decode("utf-8"))

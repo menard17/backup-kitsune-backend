@@ -18,6 +18,7 @@ class EmailNotificationService:
         ja_practitioner_name: Dict,
         patient_email: str,
         is_visit: bool,
+        cancellation: bool,
     ):
         date_format = "%Y/%m/%d"
         time_format = "%H:%M"
@@ -31,6 +32,7 @@ class EmailNotificationService:
             "patient_family_name": patient_name["family"],
             "patient_email": patient_email,
             "is_visit": str(is_visit),
+            "cancellation": str(cancellation),
         }
 
         if en_practitioner_name:

@@ -53,26 +53,20 @@ practitioner_role = {
 }
 
 
-class Object(object):
-    pass
-
-
-class MockPractitionerRoleClient:
+class MockClient:
     def __init__(self, mocker=None):
         self.mocker = mocker
-
-        self.practitioner = Object()
-        self.practitioner.resource = construct_fhir_element(
-            "Practitioner", json.dumps(practitioner)
-        )
-
-        self.practitioner_role = Object()
-        self.practitioner_role.resource = construct_fhir_element(
-            "PractitionerRole", json.dumps(practitioner_role)
-        )
+        self.resource = {
+            "Practitioner": construct_fhir_element(
+                "Practitioner", json.dumps(practitioner)
+            ),
+            "PractitionerRole": construct_fhir_element(
+                "PractitionerRole", json.dumps(practitioner_role)
+            ),
+        }
 
     def get_resource(self, id: str, resource_type: str) -> DomainResource:
-        return construct_fhir_element(resource_type, json.dumps(self.data))
+        return self.resource.get(resource_type)
 
     def search(self, resource_type: str, search: list) -> DomainResource:
         self.mocker.entry = [self.practitioner, self.practitioner_role]
@@ -200,7 +194,7 @@ def test_get_en_practitioner_name(mocker):
     language = "ABC"
     expected_family = "Family_EN"
     expected_given = "Given_EN"
-    mock_resource_client = MockPractitionerRoleClient(mocker)
+    mock_resource_client = MockClient(mocker)
     role_service = PractitionerRoleService(mock_resource_client)
 
     # When
@@ -216,7 +210,7 @@ def test_get_ja_practitioner_name(mocker):
     language = "IDE"
     expected_family = "Family"
     expected_given = "Given"
-    mock_resource_client = MockPractitionerRoleClient(mocker)
+    mock_resource_client = MockClient(mocker)
     role_service = PractitionerRoleService(mock_resource_client)
 
     # When
@@ -232,7 +226,7 @@ def test_get_radnom_loc_practitioner_name(mocker):
     language = "AAA"
     expected_family = "Family_EN"
     expected_given = "Given_EN"
-    mock_resource_client = MockPractitionerRoleClient(mocker)
+    mock_resource_client = MockClient(mocker)
     role_service = PractitionerRoleService(mock_resource_client)
 
     # When
