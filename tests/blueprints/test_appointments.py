@@ -173,6 +173,23 @@ PATIENT_DATA = {
 }
 
 
+def test_get_appointment():
+    test_appointment_id = "dummy-appointment-id"
+
+    def mock_get_resource(uid, type):
+        if type == "Appointment":
+            assert uid == test_appointment_id
+            return Appointment.parse_obj(BOOKED_APPOINTMENT_DATA)
+
+    resource_client = MockResourceClient()
+    resource_client.get_resource = mock_get_resource
+
+    controller = AppointmentController(resource_client)
+    resp = controller.get_appointment(test_appointment_id)
+
+    assert resp.status_code == 200
+
+
 def test_update_appointment():
     test_appointment_id = "dummy-appointment-id"
 

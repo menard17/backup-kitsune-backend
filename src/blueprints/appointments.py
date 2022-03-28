@@ -181,6 +181,18 @@ class AppointmentController:
             self._send_notification(appointment)
         return Response(status=201, response=resp.json())
 
+    def get_appointment(self, appointment_id: str) -> Response:
+        """Get appointment information by the ID.
+
+        :returns: Appointment object conformed with FHIR
+        :rtype: Response
+        """
+        appointment = self.resource_client.get_resource(appointment_id, "Appointment")
+        return Response(
+            status=200,
+            response=json.dumps({"data": datetime_encoder(appointment.dict())}),
+        )
+
     def update_appointment(self, request, appointment_id: str) -> Response:
         """Updates status of appointment and frees dependent slot
         This method is supporting transactional call
@@ -341,6 +353,12 @@ def book_appointment():
     }
     """
     return AppointmentController().book_appointment()
+
+
+@appointment_blueprint.route("/<appointment_id>", methods=["GET"])
+@jwt_authenticated()
+def get_appointment(appointment_id: str):
+    return AppointmentController().get_appointment(appointment_id)
 
 
 @appointment_blueprint.route("/<appointment_id>/status", methods=["PUT"])
