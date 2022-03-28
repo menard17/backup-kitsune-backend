@@ -226,6 +226,7 @@ class AppointmentController:
         date = request.args.get("date")
         actor_id = request.args.get("actor_id")
         include_practitioner = to_bool(request.args.get("include_practitioner"))
+        include_patient = to_bool(request.args.get("include_patient"))
 
         if actor_id is None:
             return Response(status=400, response="missing param: actor_id")
@@ -248,6 +249,9 @@ class AppointmentController:
                 ("_include:iterate", "Appointment:actor:PractitionerRole")
             )
             search_clause.append(("_include:iterate", "PractitionerRole:practitioner"))
+
+        if include_patient:
+            search_clause.append(("_include:iterate", "Appointment:actor:Patient"))
 
         if service_request_id:
             search_clause.append(("basedOn", service_request_id))
@@ -365,7 +369,8 @@ def search():
     * date: optional, default to current date.
             Will filter appointment with its start date to be greater or equal to the given date.
     * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
-    * include_practitioner: optional. With this argument, practitoner details are added to each appointment
+    * include_practitioner: optional. With this argument, practitoner details are added for each appointment
+    * include_patient: optional. With this argument, patient details are added for each appointment
     """
     encounter_id = request.args.get("encounter_id")
     patient_id = request.args.get("actor_id")
