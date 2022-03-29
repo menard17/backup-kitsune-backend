@@ -147,7 +147,7 @@ class ResourceClient:
         """Search all resources with given type and search condition from FHIR store.
         The data retrieved from FHIR store is a JSON object,
         which will be converted into an DomainResource Python object,
-        using Resource Factory Function.
+        using Resource Factory Function. Currently returning search results = 300
 
         :param resource_type: The FHIR resource type
         :param search: list of search (key, value) tuple
@@ -156,7 +156,13 @@ class ResourceClient:
         """
         resource_path = f"{self._url}/{resource_type}"
 
-        for i, (key, value) in enumerate(search):
+        # Increase the max number of search results returned from 100 to 300
+        if "_count" not in map(lambda x: x[0], search):
+            modified_search = search + [("_count", "300")]
+        else:
+            modified_search = search
+
+        for i, (key, value) in enumerate(modified_search):
             if i == 0:
                 resource_path += "?"
             else:

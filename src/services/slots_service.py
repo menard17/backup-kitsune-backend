@@ -171,6 +171,9 @@ class SlotService:
         return None, slot
 
     def get_slot(self, schedule_id, start) -> Tuple[Exception, DomainResource]:
-        search_clause = [("schedule", schedule_id), ("start", start)]
+        search_clause = [
+            ("schedule", schedule_id),
+            ("start", start),
+        ]
         slot_response = self.resource_client.search("Slot", search_clause)
         return None, slot_response

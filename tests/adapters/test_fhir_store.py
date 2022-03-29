@@ -50,7 +50,7 @@ def test_search(mocker, session, url, test_bundle_data):
     assert result.resource_type == "Bundle"
     assert result.id == "bundle-id"
     session.get.assert_called_once_with(
-        "testurl/Patient?_id=patient-id",
+        "testurl/Patient?_id=patient-id&_count=300",
         headers={"Content-Type": "application/fhir+json;charset=utf-8"},
     )
     response.raise_for_status.assert_called_once()
