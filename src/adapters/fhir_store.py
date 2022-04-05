@@ -136,7 +136,9 @@ class ResourceClient:
 
         :rtype: DomainResource
         """
+        count = "?_count=300"
         resource_path = f"{self._url}/{resource_type}"
+        resource_path += count
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
