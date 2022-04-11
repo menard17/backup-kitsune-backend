@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 import pytz
@@ -108,6 +108,47 @@ def create_yesterday_appointment(
     client: Client, practitioner: Practitioner, patient: Patient
 ):
     return create_appointment(client, practitioner, patient, 1)
+
+
+@when("a time has been blocked by doctor and then freed")
+def create_freed_slot(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+
+    target_day = datetime.now() + timedelta(days=7)
+
+    start = datetime(
+        target_day.year, target_day.month, target_day.day, 1, 0, 0
+    ).replace(tzinfo=timezone.utc)
+    end = start + timedelta(minutes=15)
+
+    star_str = start.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    end_str = end.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    slot_data = {
+        "start": star_str,
+        "end": end_str,
+        "status": "busy-unavailable",
+        "comment": "Blocked",
+    }
+
+    resp = client.post(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}/slots",
+        data=json.dumps(slot_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+
+    slot = json.loads(resp.data)
+
+    resp = client.put(
+        f"/slots/{slot['id']}/free",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 204
+
+    return slot
 
 
 @then("an appointment is created")
@@ -352,3 +393,37 @@ def get_list_of_appointments(client: Client, patientA: Patient, user: User):
         appointment_url, headers={"Authorization": f"Bearer {token}"}
     )
     assert resp_appointment.status_code == 200
+
+
+@then("the patient can book at the same start time")
+def book_at_start_time_of_freed_slot(
+    client: Client, patient: Patient, practitioner: Practitioner
+):
+    target_day = datetime.now() + timedelta(days=7)
+
+    start = datetime(
+        target_day.year, target_day.month, target_day.day, 1, 0, 0
+    ).replace(tzinfo=timezone.utc)
+    end = start + timedelta(minutes=15)
+
+    star_str = start.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    end_str = end.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    appointment_data = {
+        "practitioner_role_id": practitioner.fhir_data["id"],
+        "patient_id": patient.fhir_data["id"],
+        "start": star_str,
+        "end": end_str,
+        "service_type": "WALKIN",
+        "email_notification": "false",
+    }
+
+    token = get_token(patient.uid)
+    resp = client.post(
+        "/appointments",
+        data=json.dumps(appointment_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201

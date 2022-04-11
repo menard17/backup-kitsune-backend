@@ -105,32 +105,22 @@ class AppointmentController:
         if schedule.total == 0:
             return Response(status=400, response="No schedule is created")
 
-        # Check if the slot is busy/free or does not exists
-        err, slot = self.slot_service.get_slot(schedule.entry[0].resource.id, start)
-        if err is not None:
-            return Response(status=400, response=err.args[0])
-
         # Create New Slot Bundle
         role_rid = f"PractitionerRole/{role_id}"
         patient_rid = f"Patient/{patient_id}"
-        if slot.total == 0:
-            slot_uuid = f"urn:uuid:{uuid.uuid1()}"
-            err, slot = self.slot_service.create_slot_bundle(
-                role_rid,
-                start,
-                end,
-                slot_uuid,
-                "busy",
-            )
-        else:
-            slot_id = slot.entry[0].resource.id
-            slot_uuid = f"Slot/{slot_id}"
-            if slot.entry[0].resource.status != "free":
-                return Response(status=400, response=f"Slot: {slot_id} is alreay busy")
-            err, slot = self.slot_service.update_slot(slot_id, "busy")
+
+        slot_uuid = f"urn:uuid:{uuid.uuid1()}"
+        err, slot = self.slot_service.create_slot_bundle(
+            role_rid,
+            start,
+            end,
+            slot_uuid,
+            "busy",
+        )
 
         if err is not None:
             return Response(status=400, response=err.args[0])
+
         resources.append(slot)
 
         # Create Request Service Bundle

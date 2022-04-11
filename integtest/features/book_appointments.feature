@@ -33,3 +33,8 @@ Feature: Book Appointment
         Given patientB
         When an appointment is created by patientB
         Then the doctor can see list of appointments
+    Scenario: Appointment can be booked for time which is a freed slot
+        Given a doctor
+        Given a patient
+        When a time has been blocked by doctor and then freed
+        Then the patient can book at the same start time
