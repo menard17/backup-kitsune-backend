@@ -2,6 +2,7 @@ Feature: Create a payment
     Scenario: Patient is charged correctly
         Given a doctor
         And a patient
+        And a back-office staff
         And an appointment
         And an encounter
         When account status is correctly set: active
@@ -11,6 +12,7 @@ Feature: Create a payment
     Scenario: Patient was not charged correctly
         Given a doctor
         And a patient
+        And a back-office staff
         And an appointment
         And an encounter
         When account status is correctly set: active

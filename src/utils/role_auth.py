@@ -73,15 +73,22 @@ def is_authorized(claims_roles: dict, scope_role: str, scope_role_id: str) -> bo
     if "Admin" in claims_roles:
         return True
 
+    if scope_role == "Staff":
+        if "Staff" in claims_roles and claims_roles["Staff"]["id"] == scope_role_id:
+            return True
+
     if scope_role == "Patient":
         # Bypass all patients access for Practitioner (Doctor/Nurse)
-        if "Practitioner" in claims_roles:
+        if "Practitioner" in claims_roles or "Staff" in claims_roles:
             return True
 
         if "Patient" in claims_roles and claims_roles["Patient"]["id"] == scope_role_id:
             return True
 
     if scope_role == "Practitioner":
+        if "Staff" in claims_roles:
+            return True
+
         if (
             "Practitioner" in claims_roles
             and claims_roles["Practitioner"]["id"] == scope_role_id

@@ -2,7 +2,7 @@ Feature: Book Appointment
     Scenario: Patient can book an appointment and see an encounter
         Given a doctor
         And a patient
-        When the patient books a free time of the doctor
+        When the patient books a free time of the doctor: 0
         Then an appointment is created
         And the period would be set as busy slots
         And the patient can see his/her own appointment
@@ -11,7 +11,7 @@ Feature: Book Appointment
     Scenario: Patient no show
         Given a doctor
         And a patient
-        When the patient books a free time of the doctor
+        When the patient books a free time of the doctor: 0
         And the patients end up not showing up so doctor set the appointment status as no show
         Then the appointment status is updated as no show
         And frees the slot
@@ -23,7 +23,7 @@ Feature: Book Appointment
     Scenario: Patient cancels an appointment
         Given a doctor
         And a patient
-        When the patient books a free time of the doctor
+        When the patient books a free time of the doctor: 0
         Then patient cannot book an appointment
         And patient cancels the appointment
         And patient can book an appointment
@@ -42,10 +42,24 @@ Feature: Book Appointment
     Scenario: Appointments can be paginated
         Given a doctor
         And a patient
-        When the patient books a free time of the doctor
+        When the patient books a free time of the doctor: 0
         Then an appointment is created
         When the patient books another free time of the doctor
         Then an appointment is created
         When pagination count being 1
         Then the doctor can see the first appointment page
         And the doctor can see the next appointment page
+    Scenario: Appointment can be filter by specified status
+        Given a doctor
+        And a patient
+        When the patient books a free time of the doctor: 1
+        And the patient books a free time of the doctor again: 2
+        Then patient cancels the appointment
+        And the doctor can get booked appointments
+        And the doctor can get cancelled appointments
+    Scenario: All appointment can be seen by back office staff
+        Given a doctor
+        And a patient
+        And a back-office staff
+        When the patient books a free time of the doctor: 0
+        Then the back-office staff can see the booked appointment

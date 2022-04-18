@@ -42,13 +42,17 @@ class HumanName:
         if self.language == "en":
             if self.role_type == "doctor":
                 output["prefix"] = ["MD"]
-            else:
+            elif self.role_type == "nurse":
                 output["prefix"] = ["Nurse"]
+            elif self.role_type == "staff":
+                output["prefix"] = ["Administrative healthcare staff"]
         elif self.language == "ja":
             if self.role_type == "doctor":
                 output["prefix"] = ["医師"]
-            else:
+            elif self.role_type == "nurse":
                 output["prefix"] = ["看護師"]
+            elif self.role_type == "staff":
+                output["prefix"] = ["医療事務"]
 
         return output
 

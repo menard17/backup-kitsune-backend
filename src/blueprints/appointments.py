@@ -253,6 +253,7 @@ class AppointmentController:
         end_date = request.args.get("end_date")
 
         actor_id = request.args.get("actor_id")
+        status = request.args.get("status")
         include_practitioner = to_bool(request.args.get("include_practitioner"))
         include_patient = to_bool(request.args.get("include_patient"))
         include_encounter = to_bool(request.args.get("include_encounter"))
@@ -266,10 +267,10 @@ class AppointmentController:
                 response="both date and start_date supplied. Use start_date.",
             )
 
-        if actor_id is None:
+        claims_roles = role_auth.extract_roles(request.claims)
+        if actor_id is None and "Staff" not in claims_roles:
             return Response(status=400, response="missing param: actor_id")
 
-        claims_roles = role_auth.extract_roles(request.claims)
         if (
             "Practitioner" not in claims_roles
             and "Patient" in claims_roles
@@ -279,6 +280,9 @@ class AppointmentController:
                 status=401,
                 response="patient can only search appointment for him/herself",
             )
+
+        if status and not self.is_valid_appointment_status(status=status):
+            return Response(status=401, response=f"invalid status: {status}")
 
         search_clause = []
 
@@ -297,6 +301,12 @@ class AppointmentController:
         if service_request_id:
             search_clause.append(("basedOn", service_request_id))
 
+        if actor_id:
+            search_clause.append(("actor", actor_id))
+
+        if status:
+            search_clause.append(("status", status))
+
         # only one of `date` or `start_date` should be requested
         # if nothing is supplied, will default to search from "today"
         if date is None and start_date is None:
@@ -310,7 +320,6 @@ class AppointmentController:
         if end_date:
             search_clause.append(("date", "le" + end_date))
 
-        search_clause.append(("actor", actor_id))
         search_clause.append(("_count", f"{count}"))
 
         result = self.resource_client.search(
@@ -337,6 +346,11 @@ class AppointmentController:
             status=200,
             response=json.dumps(resp_dict, default=json_serial),
         )
+
+    @staticmethod
+    def is_valid_appointment_status(status):
+        status_set = {"booked", "fulfilled", "cancelled", "noshow"}
+        return status in status_set
 
     def _send_notification(self, appointment, cancellation=False):
         is_visit = appointment["resource"].serviceType[0].coding[0].code != "540"
@@ -429,9 +443,10 @@ def search():
     Args:
     * date: optional, default to current date.
             Will filter appointment with its start date to be greater or equal to the given date.
-    * actor_id: required. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
+    * actor_id: optional. Could be either the `patient_id` or `practitioner_role_id` of the appointment.
     * include_practitioner: optional. With this argument, practitoner details are added for each appointment
     * include_patient: optional. With this argument, patient details are added for each appointment
+    * status: status of appointment
     """
 
     # This is for pagination. FHIR will return a link for the next page.
@@ -441,9 +456,9 @@ def search():
         return AppointmentController().link(next_link)
 
     encounter_id = request.args.get("encounter_id")
-    patient_id = request.args.get("actor_id")
+    actor_id = request.args.get("actor_id")
     data = json.loads(
-        ServiceRequestController().get_service_requests(patient_id, encounter_id).data
+        ServiceRequestController().get_service_requests(actor_id, encounter_id).data
     )
     service_request_id = None
     if len(data["data"]) > 0:

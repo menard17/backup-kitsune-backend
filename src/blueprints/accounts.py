@@ -24,7 +24,7 @@ class AccountController:
         self.account_service = account_service or AccountService(self.resource_client)
         self.invoice_service = invoice_service or InvoiceService(self.resource_client)
 
-    def get_account(self, account_id: str) -> Response:
+    def get_account(self, request, account_id: str) -> Response:
         """Returns details of an account.
 
         :param account_id: uuid for account
@@ -34,11 +34,11 @@ class AccountController:
         """
         err, account = self.account_service.get_account(account_id)
 
-        # TODO: Allow back office account
         claims_roles = role_auth.extract_roles(request.claims)
-        if (
-            "Patient" in claims_roles
-            and claims_roles["Patient"]["id"] != account.subject.reference
+        if not role_auth.is_authorized(
+            claims_roles, "Staff", "*"
+        ) or not role_auth.is_authorized(
+            claims_roles, "Patient", account.subject.reference
         ):
             Response(status=401, response="User not authorized to perform given action")
 
@@ -79,18 +79,18 @@ def get_account(account_id: str):
     """
     Authorization added in AccountController.get_account
     """
-    return AccountController().get_account(account_id)
+    return AccountController().get_account(request, account_id)
 
 
 @account_blueprint.route("/<account_id>", methods=["DELETE"])
 @jwt_authenticated()
-@jwt_authorized("/Patient/*")
+@jwt_authorized("/Practitioner/*")
 def cancel_account(account_id: str):
     return AccountController().inactivate_account(account_id=account_id)
 
 
 @account_blueprint.route("/<account_id>/invoices", methods=["GET"])
 @jwt_authenticated()
-@jwt_authorized("/Patient/*")
+@jwt_authorized("/Practitioner/*")
 def get_account_invoice(account_id: str):
     return AccountController().get_invoice_by_account_id(account_id=account_id)

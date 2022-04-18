@@ -28,10 +28,7 @@ class PractitionerRoleService:
         zoom_password: str = None,
         available_time: dict = None,
     ):
-        if role_type == "doctor":
-            practitioner_code = SystemCode.practitioner_code("doctor")
-        else:
-            practitioner_code = SystemCode.practitioner_code("nurse")
+        practitioner_code = SystemCode.practitioner_code(role_type)
 
         practitioner_role_jsondict = {
             "resourceType": "PractitionerRole",

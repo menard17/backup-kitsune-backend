@@ -199,13 +199,22 @@ class PractitionerRoleController:
             return Response(status=400, response=err.args[0])
         resources.append(schedule)
 
-        resp = self.resource_client.create_resources(resources)
+        if role_type == "staff":
+            roles = role_auth.extract_roles(request.claims)
+            if "Staff" not in roles:
+                return Response(status=404, response="Insufficient permission")
+            resp = self.resource_client.create_resources(resources)
+            practitioner = list(
+                filter(lambda x: x.resource.resource_type == "Practitioner", resp.entry)
+            )[0].resource
+            role_auth.grant_role(request.claims, "Staff", practitioner.id)
+        else:
+            resp = self.resource_client.create_resources(resources)
+            practitioner = list(
+                filter(lambda x: x.resource.resource_type == "Practitioner", resp.entry)
+            )[0].resource
+            role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
 
-        # Then grant the custom claim for the caller in Firebase
-        practitioner = list(
-            filter(lambda x: x.resource.resource_type == "Practitioner", resp.entry)
-        )[0].resource
-        role_auth.grant_role(request.claims, "Practitioner", practitioner.id)
         resp = list(
             filter(lambda x: x.resource.resource_type == "PractitionerRole", resp.entry)
         )[0].resource

@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlencode
 
 import pytz
-from pytest_bdd import scenarios, then, when
+from firebase_admin import auth
+from pytest_bdd import parsers, scenarios, then, when
 from pytest_bdd.steps import given
 
 from integtest.characters import Appointment, Patient, Practitioner, User
@@ -62,9 +63,38 @@ def get_patientB(client: Client):
     return create_patient(client, user)
 
 
-@when("the patient books a free time of the doctor", target_fixture="appointment")
-def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
-    return create_appointment(client, practitioner, patient)
+@given("a back-office staff", target_fixture="staff")
+def get_back_office_staff(client: Client) -> Practitioner:
+    user = create_user()
+
+    # Assign required role for staff
+    firebase_user = auth.get_user_by_email(user.email)
+    custom_claims = firebase_user.custom_claims or {}
+    current_roles = custom_claims.get("roles", {})
+    current_roles["Staff"] = {}
+    auth.set_custom_user_claims(user.uid, {"roles": current_roles})
+
+    return create_practitioner(client, user, role_type="staff")
+
+
+@when(
+    parsers.parse("the patient books a free time of the doctor: {days}"),
+    target_fixture="appointment",
+)
+def book_appointment(
+    client: Client, practitioner: Practitioner, patient: Patient, days: str
+) -> Appointment:
+    return create_appointment(client, practitioner, patient, days=int(days))
+
+
+@when(
+    parsers.parse("the patient books a free time of the doctor again: {days}"),
+    target_fixture="booked_appointment",
+)
+def book_another_appointment(
+    client: Client, practitioner: Practitioner, patient: Patient, days: str
+) -> Appointment:
+    return create_appointment(client, practitioner, patient, days=int(days))
 
 
 @when("the patient books another free time of the doctor", target_fixture="appointment")
@@ -83,7 +113,7 @@ def book_new_appointment(client: Client, practitionerA: Practitioner, patient: P
 @when("an appointment is booked for nurse", target_fixture="visit_appointment")
 def book_nurse_appointment(
     client: Client, nurse: Practitioner, patient: Patient, practitioner: Practitioner
-):
+) -> Appointment:
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(days=1)).isoformat()
@@ -115,8 +145,16 @@ def book_nurse_appointment(
 @when("yesterday appointment is created", target_fixture="appointment_yesterday")
 def create_yesterday_appointment(
     client: Client, practitioner: Practitioner, patient: Patient
-):
+) -> Appointment:
     return create_appointment(client, practitioner, patient, 1)
+
+
+@when("the patient books another free time of the doctor", target_fixture="appointment")
+def book_appointment_for_tomorrow(
+    client: Client, practitioner: Practitioner, patient: Patient
+):
+    # book in tomorrow
+    return create_appointment(client, practitioner, patient, days=-1)
 
 
 @when("a time has been blocked by doctor and then freed", target_fixture="slot")
@@ -224,17 +262,13 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
     today = tokyo_timezone.localize(datetime.now())
-
-    search_params = "&".join(
-        [
-            f"start_date={yesterday.date().isoformat()}",
-            f"end_date={today.date().isoformat()}",
-            f'actor_id={patient.fhir_data["id"]}',
-            "include_patient=true",
-        ]
-    )
-
-    url = f"/appointments?{search_params}"
+    search_params = {
+        "start_date": yesterday.date().isoformat(),
+        "end_date": today.date().isoformat(),
+        "actor_id": patient.fhir_data["id"],
+        "include_patient": True,
+    }
+    url = f"/appointments?{urlencode(search_params)}"
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
@@ -256,15 +290,12 @@ def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
     # for new client code, use `start_date` and `end_date` instead.
     # PS. `patient_can_see_appointment_with_list_appointment` function here is using
     # new search params.
-    search_params = "&".join(
-        [
-            f"date={yesterday.date().isoformat()}",
-            f'actor_id={practitioner.fhir_data["id"]}',
-            "include_encounter=true",
-        ]
-    )
-
-    url = f"/appointments?{search_params}"
+    search_params = {
+        "start_date": yesterday.date().isoformat(),
+        "actor_id": practitioner.fhir_data["id"],
+        "include_encounter": True,
+    }
+    url = f"/appointments?{urlencode(search_params)}"
     token = get_token(practitioner.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
@@ -552,3 +583,105 @@ def doctor_can_see_next_appointment_page(
 
     practitioners = [d for d in data if d["resourceType"] == "Practitioner"]
     assert len(practitioners) == 1
+
+
+@then("the back-office staff can see the booked appointment")
+def back_office_staff_check_appointment(
+    client, staff: Practitioner, appointment: Appointment
+):
+    token = get_token(staff.uid)
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
+    tomorrow = tokyo_timezone.localize(datetime.now() + timedelta(days=1))
+    search_params = {
+        "start_date": yesterday.date().isoformat(),
+        "end_date": tomorrow.date().isoformat(),
+    }
+    appointment_url = f"/appointments?{urlencode(search_params)}"
+    resp_appointment = client.get(
+        appointment_url, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp_appointment.status_code == 200
+    appointments = json.loads(resp_appointment.data)["data"]
+    assert (
+        len(list(filter(lambda item: item["id"] == appointment["id"], appointments)))
+        > 0
+    )
+
+
+@then("the doctor can get booked appointments")
+def get_booked_appointments(
+    client,
+    practitioner: Practitioner,
+    appointment: Appointment,
+    booked_appointment: Appointment,
+):
+    token = get_token(practitioner.uid)
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    start = tokyo_timezone.localize(datetime.now() - timedelta(days=5))
+    end = tokyo_timezone.localize(datetime.now() + timedelta(days=5))
+    search_params = {
+        "start_date": start.date().isoformat(),
+        "end_date": end.date().isoformat(),
+        "actor_id": practitioner.fhir_data["id"],
+        "status": "booked",
+    }
+    appointment_url = f"/appointments?{urlencode(search_params)}"
+    resp_appointment = client.get(
+        appointment_url, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp_appointment.status_code == 200
+    appointments = json.loads(resp_appointment.data)["data"]
+    assert (
+        len(
+            list(
+                filter(
+                    lambda item: item["id"] == booked_appointment["id"], appointments
+                )
+            )
+        )
+        > 0
+    )
+    assert (
+        len(list(filter(lambda item: item["id"] == appointment["id"], appointments)))
+        == 0
+    )
+
+
+@then("the doctor can get cancelled appointments")
+def get_cancelled_appointments(
+    client: Client,
+    practitioner: Practitioner,
+    booked_appointment: Appointment,
+    appointment: Appointment,
+):
+    token = get_token(practitioner.uid)
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    start = tokyo_timezone.localize(datetime.now() - timedelta(days=5))
+    end = tokyo_timezone.localize(datetime.now() + timedelta(days=5))
+    search_params = {
+        "start_date": start.date().isoformat(),
+        "end_date": end.date().isoformat(),
+        "status": "cancelled",
+        "actor_id": practitioner.fhir_data["id"],
+    }
+    appointment_url = f"/appointments?{urlencode(search_params)}"
+    resp_appointment = client.get(
+        appointment_url, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp_appointment.status_code == 200
+    appointments = json.loads(resp_appointment.data)["data"]
+    assert (
+        len(
+            list(
+                filter(
+                    lambda item: item["id"] == booked_appointment["id"], appointments
+                )
+            )
+        )
+        == 0
+    )
+    assert (
+        len(list(filter(lambda item: item["id"] == appointment["id"], appointments)))
+        > 0
+    )

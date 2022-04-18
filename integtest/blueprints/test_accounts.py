@@ -1,5 +1,6 @@
 import json
 
+from firebase_admin import auth
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from blueprints.payments import PaymentsController
@@ -36,6 +37,20 @@ def get_doctor(client: Client) -> Practitioner:
     return create_practitioner(client, user, role_type="doctor")
 
 
+@given("a back-office staff", target_fixture="staff")
+def get_staff(client: Client) -> Practitioner:
+    user = create_user()
+
+    # Assign required role for staff
+    firebase_user = auth.get_user_by_email(user.email)
+    custom_claims = firebase_user.custom_claims or {}
+    current_roles = custom_claims.get("roles", {})
+    current_roles["Staff"] = {}
+    auth.set_custom_user_claims(user.uid, {"roles": current_roles})
+
+    return create_practitioner(client, user, role_type="staff")
+
+
 @given("an appointment", target_fixture="appointment")
 def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
     return create_appointment(client, practitioner, patient)
@@ -52,13 +67,9 @@ def get_encounter(
 
 
 @when("the payment is cancelled")
-def payment_is_cancelled(
-    client: Client, practitioner: Practitioner, encounter: Encounter
-):
-    token = get_token(practitioner.uid)
-    print(token)
+def payment_is_cancelled(client: Client, staff: Practitioner, encounter: Encounter):
+    token = get_token(staff.uid)
     account_id = encounter["account"][0]["reference"].split("/")[1]
-    print(account_id)
     url = f"/accounts/{account_id}"
     resp = client.delete(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 204

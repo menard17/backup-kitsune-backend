@@ -1,5 +1,6 @@
 import json
 
+from firebase_admin import auth
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from blueprints.payments import PaymentsController
@@ -27,6 +28,20 @@ def get_patient(client: Client) -> Patient:
 def get_doctor(client: Client) -> Practitioner:
     user = create_user()
     return create_practitioner(client, user, role_type="doctor")
+
+
+@given("a back-office staff", target_fixture="staff")
+def get_staff(client: Client) -> Practitioner:
+    user = create_user()
+
+    # Assign required role for staff
+    firebase_user = auth.get_user_by_email(user.email)
+    custom_claims = firebase_user.custom_claims or {}
+    current_roles = custom_claims.get("roles", {})
+    current_roles["Staff"] = {}
+    auth.set_custom_user_claims(user.uid, {"roles": current_roles})
+
+    return create_practitioner(client, user, role_type="staff")
 
 
 @given("an appointment", target_fixture="appointment")
@@ -125,12 +140,12 @@ def check_account_status(
 @then(parsers.parse("invoice status is correctly set: {all_or_any} {status}"))
 def check_invoice_status(
     client: Client,
-    practitioner: Practitioner,
+    staff: Practitioner,
     account: Account,
     all_or_any: str,
     status: str,
 ):
-    token = get_token(practitioner.uid)
+    token = get_token(staff.uid)
     url = f"/accounts/{account['id']}/invoices"
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
@@ -145,8 +160,8 @@ def check_invoice_status(
 
 
 @then("payment is charged manually")
-def charged_manually(client: Client, practitioner: Practitioner, account: Account):
-    token = get_token(practitioner.uid)
+def charged_manually(client: Client, staff: Practitioner, account: Account):
+    token = get_token(staff.uid)
     url = "/payments?manual=true"
     body = json.dumps(
         {

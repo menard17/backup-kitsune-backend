@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from fhir.resources import construct_fhir_element
 
+from blueprints.appointments import AppointmentController
 from services.appointment_service import AppointmentService
 from tests.blueprints.helper import FakeRequest
 
@@ -170,3 +172,22 @@ def test_check_link_should_return_err_response_if_not_authorized():
     assert ok is False
     assert respErr.status_code == 401
     assert respErr.data == b"not authorized"
+
+
+@pytest.mark.parametrize(
+    "status,expected",
+    [
+        ("booked", True),
+        ("fulfilled", True),
+        ("cancelled", True),
+        ("noshow", True),
+        ("book", False),
+        ("pending", False),
+    ],
+)
+def test_status_valid(status, expected):
+    # Given
+    is_valid_status = AppointmentController.is_valid_appointment_status(status)
+
+    # Then
+    assert is_valid_status == expected

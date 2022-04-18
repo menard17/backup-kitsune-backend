@@ -1,5 +1,3 @@
-import logging
-
 import stripe
 from flask import Blueprint, Response, json, request
 
@@ -9,7 +7,6 @@ from services.invoice_service import InvoiceService
 from services.payment_service import PaymentService
 from utils.middleware import jwt_authenticated, jwt_authorized
 
-log = logging.getLogger(__name__)
 
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 
@@ -34,7 +31,7 @@ def create_payment_intent():
 
 @payments_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
-@jwt_authorized("/Patient/*")
+@jwt_authorized("/Practitioner/*")
 def create_payment():
     request.get_json()
     manual = request.args.get("manual")
@@ -323,3 +320,11 @@ class PaymentsController:
         self.invoice_service.update_invoice_status(payment_intent_id, invoice.id, True)
         self.account_service.inactivate_account(account_id)
         return Response(status=201)
+
+    def cancel_payment(self, encounter_id: str) -> Response:
+        err, account = self.account_service.get_account(encounter_id)
+        err, _ = self.account_service.in_activate_account(account.id)
+        if err is None:
+            return Response(status=204)
+        else:
+            return Response(status=400)

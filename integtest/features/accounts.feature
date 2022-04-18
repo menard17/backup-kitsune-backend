@@ -2,6 +2,7 @@ Feature: Cancel Account
     Scenario: Account is cancelled
         Given a doctor
         And a patient
+        And a back-office staff
         And an appointment
         And an encounter
         When account status is correctly set: active
@@ -10,6 +11,7 @@ Feature: Cancel Account
     Scenario: Account is cancelled after charged
         Given a doctor
         And a patient
+        And a back-office staff
         And an appointment
         And an encounter
         When account status is correctly set: active

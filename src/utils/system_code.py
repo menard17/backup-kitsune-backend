@@ -161,6 +161,12 @@ class SystemCode:
             return create_coding_clause(ServiceURL.practition_type, "doctor")
         elif practition == "nurse":
             return create_coding_clause(ServiceURL.practition_type, "nurse")
+        elif practition == "staff":
+            return create_coding_clause(
+                ServiceURL.practition_type,
+                "224608005",
+                "Administrative healthcare staff",
+            )
         raise TypeError()
 
     @staticmethod
