@@ -177,6 +177,7 @@ def test_create_payment_intent(mock_stripe):
         payment_method="fake-payment-method-id",
         off_session=True,
         confirm=True,
+        description="診療費用等",
     )
 
 

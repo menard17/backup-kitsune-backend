@@ -145,6 +145,7 @@ class PaymentsController:
         amount = body["amount"]
         currency = "jpy"
 
+        # TODO: AB#725
         try:
             payment_intent = stripe.PaymentIntent.create(
                 amount=amount,
@@ -153,6 +154,7 @@ class PaymentsController:
                 payment_method=payment_method_id,
                 off_session=True,
                 confirm=True,
+                description="診療費用等",  # This shows up on the receipt
             )
 
             return Response(
