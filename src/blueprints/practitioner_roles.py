@@ -15,7 +15,7 @@ from services.schedule_service import ScheduleService
 from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
 from utils.file_size import size_from_base64
-from utils.middleware import jwt_authenticated, role_auth
+from utils.middleware import jwt_authenticated, jwt_authorized, role_auth
 
 practitioner_roles_blueprint = Blueprint(
     "practitioner_roles", __name__, url_prefix="/practitioner_roles"
@@ -52,7 +52,7 @@ class PractitionerRoleController:
         :return: all practitioner roles are returns in JSON object
         :rtype: Response
         """
-        search_clause = []
+        search_clause = [("active", "true")]
 
         if (role_type := request.args.get("role_type")) and role_type in {
             "nurse",
@@ -417,6 +417,39 @@ class PractitionerRoleController:
 
         return {"data": slots}
 
+    def update_status(self, request, role_id):
+
+        if (is_active := request.args.get("active")) is None:
+            return Response(status=400, response="missing param: active")
+
+        is_active = to_bool(is_active)
+        resources = []
+
+        # Get practitioner_role and practitioner
+        role = self.resource_client.get_resource(role_id, "PractitionerRole")
+        practitioner_id = role.practitioner.reference
+        practitioner_id = practitioner_id.split("/")[1]
+
+        # Change the status of practitioner
+        practitioner = self.resource_client.get_resource(
+            practitioner_id, "Practitioner"
+        )
+        practitioner.active = is_active
+        practitioner_bundle = self.resource_client.get_put_bundle(
+            practitioner, practitioner_id
+        )
+        resources.append(practitioner_bundle)
+
+        # Change the status of practitioner_role
+        role.active = is_active
+        role_bundle = self.resource_client.get_put_bundle(role, role_id)
+        resources.append(role_bundle)
+
+        if resources:
+            _ = self.resource_client.create_resources(resources)
+            return Response(status=204)
+        return Response(status=204)
+
 
 @practitioner_roles_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
@@ -482,7 +515,7 @@ def create_practitioner_role_slots(role_id: str):
 
 @practitioner_roles_blueprint.route("/<role_id>/slots", methods=["GET"])
 @jwt_authenticated()
-def get_role_slots(role_id: str) -> dict:
+def get_role_slots(role_id: str) -> Response:
     """Returns list of slots of a doctor with the given time range
 
     Request params:
@@ -496,6 +529,19 @@ def get_role_slots(role_id: str) -> dict:
     :rtype: dict
     """
     return PractitionerRoleController().get_role_slots(request, role_id)
+
+
+@practitioner_roles_blueprint.route("/<role_id>", methods=["PATCH"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/*")
+def change_status(role_id: str) -> Response:
+    """Returns 204 if there is no error
+    Updates status of both practitioner role and practitioner
+
+    Request params:
+    1. active: boolean on status
+    """
+    return PractitionerRoleController().update_status(request, role_id)
 
 
 def get_biographies_ext(

@@ -1,6 +1,6 @@
 import json
 
-from pytest_bdd import given, scenarios, then
+from pytest_bdd import given, scenarios, then, when
 
 from integtest.characters import Patient, Practitioner
 from integtest.conftest import Client
@@ -25,6 +25,33 @@ def get_nurse(client: Client) -> Practitioner:
 def get_patient_a(client: Client) -> Patient:
     user = create_user()
     return create_patient(client, user)
+
+
+@when("the doctor gets disabled")
+def disable_doctor(client: Client, doctor: Practitioner):
+    token = get_token(doctor.uid)
+    role_id = doctor.fhir_data["id"]
+    resp = client.patch(
+        f"/practitioner_roles/{role_id}?active=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 204
+
+
+@then("the patient cannot fetch disabled doctor")
+def cannot_get_disabled_doctor(client: Client, patient: Patient, doctor: Practitioner):
+    token = get_token(patient.uid)
+    resp = client.get(
+        "/practitioners?role_type=doctor",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    filtered_doctor_size = len(
+        list(filter(lambda item: item["id"] == doctor.practitioner_id, data["data"]))
+    )
+    assert filtered_doctor_size == 0
 
 
 @then("the patient can fetch all doctors info")

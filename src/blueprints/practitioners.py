@@ -29,6 +29,7 @@ class PractitionerController:
     def search_practitioners(self, request) -> Response:
         search_clause = []
         search_clause.append(("_summary", "data"))
+        search_clause.append(("active", str(True)))
         if email := request.args.get("email"):
             search_clause.append(("email", email))
 
