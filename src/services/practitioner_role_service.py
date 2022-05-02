@@ -44,8 +44,11 @@ class PractitionerRoleService:
             "code": [{"coding": [practitioner_code]}],
         }
 
-        if available_time:
-            practitioner_role_jsondict["availableTime"] = available_time
+        if available_time is not None:
+            if not available_time:
+                practitioner_role_jsondict["availableTime"] = [{}]
+            else:
+                practitioner_role_jsondict["availableTime"] = available_time
         elif role_type != "doctor":
             # Hard coded for all days for nurse for now
             practitioner_role_jsondict["availableTime"] = [
@@ -83,9 +86,12 @@ class PractitionerRoleService:
         if start and end:
             modified = True
             practitioner_role.period = {"start": start, "end": end}
-        if available_time:
+        if available_time is not None:
             modified = True
-            practitioner_role.availableTime = available_time
+            if not available_time:
+                practitioner_role.availableTime = [{}]
+            else:
+                practitioner_role.availableTime = list(filter(None, available_time))
         if zoom_id and zoom_password:
             modified = True
             practitioner_role.extension = [

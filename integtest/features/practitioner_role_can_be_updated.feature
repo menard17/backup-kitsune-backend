@@ -7,3 +7,7 @@ Feature: Practitioner Role can be updated
         Given a doctor
         When the doctor updates only English biography
         Then English biography is updated
+    Scenario: available time can be empty
+        Given a doctor
+        When the doctor updates available time empty
+        Then the doctor has empty avaialbe time

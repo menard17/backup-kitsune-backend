@@ -53,6 +53,19 @@ def doctor_update_english_bio(client: Client, practitioner: Practitioner):
     assert resp.status_code == 200
 
 
+@when("the doctor updates available time empty")
+def update_available_time(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps({"available_time": []}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
 @then("the working hour is updated")
 def check_working_hour(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
@@ -82,3 +95,15 @@ def check_english_biography(client: Client, practitioner: Practitioner):
         None,
     )["valueString"]
     assert english_bio == UPDATED_ENGLISH_BIO
+
+
+@then("the doctor has empty avaialbe time")
+def check_working_hour_empty(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    role = json.loads(resp.data)
+    assert resp.status_code == 200
+    assert role["availableTime"] == [{}]

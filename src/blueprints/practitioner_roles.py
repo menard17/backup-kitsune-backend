@@ -52,7 +52,7 @@ class PractitionerRoleController:
         :return: all practitioner roles are returns in JSON object
         :rtype: Response
         """
-        search_clause = [("active", "true")]
+        search_clause = []
 
         if (role_type := request.args.get("role_type")) and role_type in {
             "nurse",
@@ -62,6 +62,8 @@ class PractitionerRoleController:
 
         if practitoner_id := request.args.get("practitioner_id"):
             search_clause.append(("practitioner", practitoner_id))
+        else:
+            search_clause.append(("active", "true"))
 
         if search_clause:
             roles = self.resource_client.search("PractitionerRole", search_clause)
