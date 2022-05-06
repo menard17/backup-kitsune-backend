@@ -214,8 +214,18 @@ def available_slots(client: Client, practitioner: Practitioner, patient: Patient
 def patient_can_see_appointment_with_list_appointment(client: Client, patient: Patient):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
+    today = tokyo_timezone.localize(datetime.now())
 
-    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patient.fhir_data["id"]}&include_patient=true'
+    searchParams = "&".join(
+        [
+            f"start_date={yesterday.date().isoformat()}",
+            f"end_date={today.date().isoformat()}",
+            f'actor_id={patient.fhir_data["id"]}',
+            "include_patient=true",
+        ]
+    )
+
+    url = f"/appointments?{searchParams}"
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
@@ -233,7 +243,18 @@ def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={practitioner.fhir_data["id"]}'
+    # using legacy `date` search param here to ensure backward compatibility.
+    # for new client code, use `start_date` and `end_date` instead.
+    # PS. `patient_can_see_appointment_with_list_appointment` function here is using
+    # new search params.
+    searchParams = "&".join(
+        [
+            f"date={yesterday.date().isoformat()}",
+            f'actor_id={practitioner.fhir_data["id"]}',
+        ]
+    )
+
+    url = f"/appointments?{searchParams}"
     token = get_token(practitioner.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 

@@ -307,6 +307,77 @@ def test_search_appointment_with_date_provided():
     )
 
 
+def test_search_appointment_with_start_date_and_date_provided_should_fail():
+    patient_id = "dummy-patient-id"
+    expected_search_start_date = "2021-08-25"
+    expected_search_date = "2022-01-01"
+
+    resource_client = MockResourceClient()
+
+    request = FakeRequest(
+        args={
+            "start_date": expected_search_start_date,
+            "date": expected_search_date,
+            "actor_id": patient_id,
+        },
+        claims={
+            "roles": {
+                "Patient": {
+                    "id": patient_id,
+                },
+            },
+        },
+    )
+
+    controller = AppointmentController(resource_client)
+    resp = controller.search_appointments(request)
+    resp_data = resp.data.decode("utf-8")
+
+    assert resp.status_code == 400
+    assert resp_data == "both date and start_date supplied. Use start_date."
+
+
+def test_search_appointment_with_start_date_and_end_date_provided():
+    patient_id = "dummy-patient-id"
+    expected_search_start_date = "2021-08-25"
+    expected_search_end_date = "2022-01-01"
+
+    def mock_search(resource_type, search):
+        assert resource_type == "Appointment"
+        assert ("date", "ge" + expected_search_start_date) in search
+        assert ("date", "le" + expected_search_end_date) in search
+        assert ("actor", patient_id) in search
+        return construct_fhir_element("Bundle", APPOINTMENT_SEARCH_DATA)
+
+    resource_client = MockResourceClient()
+    resource_client.search = mock_search
+
+    request = FakeRequest(
+        args={
+            "start_date": expected_search_start_date,
+            "end_date": expected_search_end_date,
+            "actor_id": patient_id,
+        },
+        claims={
+            "roles": {
+                "Patient": {
+                    "id": patient_id,
+                },
+            },
+        },
+    )
+
+    controller = AppointmentController(resource_client)
+    resp = controller.search_appointments(request)
+    resp_data = resp.data.decode("utf-8")
+
+    assert resp.status_code == 200
+    assert (
+        json.loads(resp_data)["data"][0]["id"]
+        == APPOINTMENT_SEARCH_DATA["entry"][0]["resource"]["id"]
+    )
+
+
 def test_search_appointment_patient_cannot_see_other_people_data():
     other_patient_id = "other-patient-id"
     auth_patient_id = "auth-patient-id"

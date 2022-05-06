@@ -225,10 +225,19 @@ class AppointmentController:
         :returns: Json list of appointments
         :rtype: Response
         """
-        date = request.args.get("date")
+        date = request.args.get("date")  # deprecated, use start_date instead.
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+
         actor_id = request.args.get("actor_id")
         include_practitioner = to_bool(request.args.get("include_practitioner"))
         include_patient = to_bool(request.args.get("include_patient"))
+
+        if start_date is not None and date is not None:
+            return Response(
+                status=400,
+                response="both date and start_date supplied. Use start_date.",
+            )
 
         if actor_id is None:
             return Response(status=400, response="missing param: actor_id")
@@ -257,11 +266,20 @@ class AppointmentController:
 
         if service_request_id:
             search_clause.append(("basedOn", service_request_id))
-        if date is None:
+
+        # only one of `date` or `start_date` should be requested
+        # if nothing is supplied, will default to search from "today"
+        if date is None and start_date is None:
             tokyo_timezone = pytz.timezone("Asia/Tokyo")
             now = tokyo_timezone.localize(datetime.now())
-            date = now.date().isoformat()
-        search_clause.append(("date", "ge" + date))
+            search_clause.append(("date", "ge" + now.date().isoformat()))
+        if date:
+            search_clause.append(("date", "ge" + date))
+        if start_date:
+            search_clause.append(("date", "ge" + start_date))
+        if end_date:
+            search_clause.append(("date", "le" + end_date))
+
         search_clause.append(("actor", actor_id))
 
         result = self.resource_client.search(
