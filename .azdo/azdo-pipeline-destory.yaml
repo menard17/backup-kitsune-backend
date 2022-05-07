@@ -7,6 +7,7 @@ pool:
 variables:
 - group: CloudRun
 - group: CloudRunCICD
+- group: kv-infra-post-deployment
 
 resources:
   repositories:
@@ -72,3 +73,10 @@ stages:
       displayName: delete users
       env:
         GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)
+- stage: PostSetup
+  condition: and(in(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.Reason'],  'Manual'), in(dependencies.CI.result, 'Succeeded', 'SucceededWithIssues', 'Skipped'))
+  jobs:
+  - template: templates/fhir-add-search-parameters.yaml
+    parameters:
+      service_account: 'kitsune-dev-service-account.json'
+      target_dataset: projects/$(project-dev)/locations/$(fhir-location-dev)/datasets/$(fhir-dataset-dev)/fhirStores/$(fhir-datastore-dev)

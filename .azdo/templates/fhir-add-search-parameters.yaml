@@ -1,0 +1,72 @@
+parameters:
+- name: service_account
+- name: target_dataset
+
+jobs:
+- job: SetupSearchParameters
+  steps:
+  - task: DownloadSecureFile@1
+    name: googleApplicationCredentials
+    displayName: 'Download GOOGLE_APPLICATION_CREDENTIALS'
+    inputs:
+      secureFile: '${{ parameters.service_account }}'
+
+  - task: Bash@3
+    displayName: Generate Access Token
+    name: Tokens
+    inputs:
+      filePath: '.azdo/scripts/generate_access_token.sh'
+      arguments: '$(googleApplicationCredentials.secureFilePath) "https://www.googleapis.com/auth/cloud-platform"'
+
+  - task: Bash@3
+    displayName: Add Search Parameter Slot.end
+    inputs:
+      targetType: 'inline'
+      script: |
+        response=$(curl -X POST \
+                  -H "Authorization: Bearer $(Tokens.access_token)" \
+                  -H "Content-Type: application/json; charset=utf-8" \
+                  --data "{
+                        \"resourceType\": \"SearchParameter\",
+                        \"url\": \"https://umed.jp/fhir/datatype/SearchParameter/slot/enddate\",
+                        \"base\": [\"Slot\"],
+                        \"code\": \"end\",
+                        \"name\": \"end\",
+                        \"type\": \"date\",
+                        \"expression\": \"Slot.end\",
+                        \"status\": \"active\",
+                        \"description\": \"Search Slot by end\"
+                    }" \
+                -w “%{http_code}” \
+                "https://healthcare.googleapis.com/v1beta1/${{ parameters.target_dataset }}/fhir/SearchParameter")
+
+          echo $response
+
+          http_code=${response: -4}
+          http_code=${http_code: 0:3}
+          if [[ "$http_code" != "201"  ]] ; then
+              exit 1
+          fi
+
+
+  - task: Bash@3
+    displayName: Activate Search Parameter Slot.end
+    inputs:
+      targetType: 'inline'
+      script: |
+        response=$(curl -X POST \
+                  -H "Authorization: Bearer $(Tokens.access_token)" \
+                  -H "Content-Type: application/json; charset=utf-8" \
+                  --data "{
+                        \"canonicalUrls\": [\"https://umed.jp/fhir/datatype/SearchParameter/slot/enddate\"],
+                    }" \
+                  -w “%{http_code}” \
+                  "https://healthcare.googleapis.com/v1beta1/${{ parameters.target_dataset }}:configureSearch")
+
+        echo $response
+
+        http_code=${response: -4}
+        http_code=${http_code: 0:3}
+        if [[ "$http_code" != "200"  ]] ; then
+            exit 1
+        fi
