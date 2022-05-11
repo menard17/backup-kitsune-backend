@@ -34,6 +34,7 @@ class PractitionerRoleController:
         schedule_service=None,
         practitioner_service=None,
         practitioner_role_service=None,
+        slot_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.schdule_service = schedule_service or ScheduleService(self.resource_client)
@@ -43,6 +44,7 @@ class PractitionerRoleController:
         self.practitioner_role_service = (
             practitioner_role_service or PractitionerRoleService(self.resource_client)
         )
+        self.slot_service = slot_service or SlotService(self.resource_client)
 
     def get_practitioner_roles(self) -> Response:
         """Returns roles of practitioner.
@@ -130,7 +132,7 @@ class PractitionerRoleController:
                 )
 
         PIXEL_SIZE = 104  # Max size of image in pixel
-        byte_size = (PIXEL_SIZE ** 2) * 3
+        byte_size = (PIXEL_SIZE**2) * 3
         if (image_size := size_from_base64(photo)) > byte_size:
             return Response(
                 status=400,
@@ -229,7 +231,7 @@ class PractitionerRoleController:
         biographies = get_biographies_ext(request_body, language_options)
 
         PIXEL_SIZE = 104  # Max size of image in pixel
-        byte_size = (PIXEL_SIZE ** 2) * 3
+        byte_size = (PIXEL_SIZE**2) * 3
         if photo and (image_size := size_from_base64(photo)) > byte_size:
             return Response(
                 status=400,
@@ -307,8 +309,7 @@ class PractitionerRoleController:
         if start is None or end is None:
             return Response(status=400, response="must provide start and end")
 
-        slot_service = SlotService(self.resource_client)
-        err, slot = slot_service.create_slot_for_practitioner_role(
+        err, slot = self.slot_service.create_slot_for_practitioner_role(
             role_id,
             start,
             end,
@@ -349,76 +350,24 @@ class PractitionerRoleController:
 
         schedule = schedule_search.entry[0].resource
 
-        slots = []
-
-        # start time cover
-        slot_search = [
-            ("schedule", schedule.id),
-            ("start", "ge" + start),
-            ("start", "lt" + end),
-        ]
-
+        additional_params = []
         if not_status:
-            slot_search.append(("status:not", not_status))
+            additional_params.append(("status:not", not_status))
         else:
-            slot_search.append(("status", status))
+            additional_params.append(("status", status))
 
-        result = self.resource_client.search(
-            "Slot",
-            search=slot_search,
+        _, slots = self.slot_service.search_overlapped_slots(
+            schedule.id, start, end, additional_params
         )
 
-        if result.entry is not None:
-            for e in result.entry:
-                slots.append(datetime_encoder(e.resource.dict()))
-
-        # full time cover
-        slot_search = [
-            ("schedule", schedule.id),
-            ("start", "le" + start),
-            ("end", "ge" + end),
-        ]
-
-        if not_status:
-            slot_search.append(("status:not", not_status))
-        else:
-            slot_search.append(("status", status))
-
-        result = self.resource_client.search(
-            "Slot",
-            search=slot_search,
+        return Response(
+            status=200,
+            response=json.dumps(
+                {"data": [json.loads(datetime_encoder(slot.json())) for slot in slots]},
+                default=json_serial,
+            ),
+            mimetype="application/json",
         )
-
-        if result.entry is not None:
-            for e in result.entry:
-                slot = datetime_encoder(e.resource.dict())
-                if slot not in slots:
-                    slots.append(slot)
-
-        # end time cover
-        slot_search = [
-            ("schedule", schedule.id),
-            ("end", "gt" + start),
-            ("end", "le" + end),
-        ]
-
-        if not_status:
-            slot_search.append(("status:not", not_status))
-        else:
-            slot_search.append(("status", status))
-
-        result = self.resource_client.search(
-            "Slot",
-            search=slot_search,
-        )
-
-        if result.entry is not None:
-            for e in result.entry:
-                slot = datetime_encoder(e.resource.dict())
-                if slot not in slots:
-                    slots.append(slot)
-
-        return {"data": slots}
 
     def update_status(self, request, role_id):
 

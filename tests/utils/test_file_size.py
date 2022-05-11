@@ -12,7 +12,7 @@ def base64_image():
 
 def test_correct_format_size(base64_image):
     pixel_size = 104
-    assert size_from_base64(base64_image) <= (pixel_size ** 2) * 3
+    assert size_from_base64(base64_image) <= (pixel_size**2) * 3
 
 
 def test_wrong_format(base64_image):

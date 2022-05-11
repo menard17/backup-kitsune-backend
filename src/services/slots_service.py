@@ -1,8 +1,8 @@
 import uuid
-from typing import Tuple
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
+from fhir.resources.slot import Slot
 
 from adapters.fhir_store import ResourceClient
 
@@ -25,8 +25,7 @@ class SlotService:
         :param status: default is busy. free or busy
         :type status: str
 
-        :rtype: Exception
-        :rtype: Practitioner
+        :rtype: tuple[Exception, DomainResource]
         """
         schedule_search = self.resource_client.search(
             "Schedule",
@@ -37,49 +36,15 @@ class SlotService:
         )
 
         if schedule_search.entry is None:
-            return Exception("cannat find schedule"), None
+            return Exception("cannot find schedule"), None
 
-        # check if any other slot started during the requested slot
         schedule = schedule_search.entry[0].resource
-        slot_search = self.resource_client.search(
-            "Slot",
-            search=[
-                ("schedule", schedule.id),
-                ("start", "ge" + start),
-                ("start", "lt" + end),
-                ("status:not", "free"),
-            ],
+
+        additional_params = [("status:not", "free")]
+        _, overlapped_not_free_slots = self.search_overlapped_slots(
+            schedule.id, start, end, additional_params
         )
-
-        if slot_search.entry is not None:
-            return Exception("the time is already booked"), None
-
-        # check if any other slot cover the whole requested slot
-        slot_search = self.resource_client.search(
-            "Slot",
-            search=[
-                ("schedule", schedule.id),
-                ("start", "le" + start),
-                ("end", "ge" + end),
-                ("status:not", "free"),
-            ],
-        )
-
-        if slot_search.entry is not None:
-            return Exception("the time is already booked"), None
-
-        # check if any other slot not ended during the requested slot
-        slot_search = self.resource_client.search(
-            "Slot",
-            search=[
-                ("schedule", schedule.id),
-                ("end", "gt" + start),
-                ("end", "le" + end),
-                ("status:not", "free"),
-            ],
-        )
-
-        if slot_search.entry is not None:
+        if overlapped_not_free_slots:
             return Exception("the time is already booked"), None
 
         slot_jsondict = {
@@ -108,8 +73,7 @@ class SlotService:
         :param status: default is busy. free or busy
         :type status: str
 
-        :rtype: Exception
-        :rtype: Practitioner
+        :rtype: tuple[Exception, DomainResource]
         """
         err, slot = self._create_slot(role_id, start, end, status, comment)
         if err is None:
@@ -138,8 +102,7 @@ class SlotService:
         :param slot_id: Id for the slot. This is used to reference before creating slot resource
         :type slot_id: str
 
-        :rtype: Exception
-        :rtype: Practitioner
+        :rtype: tuple[Exception, DomainResource]
         """
         err, slot = self._create_slot(role_id, start, end, status, comment)
         if err is None:
@@ -148,7 +111,7 @@ class SlotService:
 
     def update_slot(
         self, slot_id: uuid, status: str
-    ) -> Tuple[Exception, DomainResource]:
+    ) -> tuple[Exception, DomainResource]:
         """
         Update slot status. this method is idempotent.
 
@@ -157,8 +120,7 @@ class SlotService:
         :param status: status you want to update to. status can be either free or busy
         :type status: str
 
-        :rtype: Exception
-        :rtype: Slot
+        :rtype: tuple[Exception, DomainResource]
         """
 
         if not (status == "free" or status == "busy"):
@@ -170,10 +132,51 @@ class SlotService:
         slot = self.resource_client.get_put_bundle(slot, slot_id)
         return None, slot
 
-    def get_slot(self, schedule_id, start) -> Tuple[Exception, DomainResource]:
+    def search_overlapped_slots(
+        self,
+        schedule_id: uuid,
+        start: str,
+        end: str,
+        additional_params: list[tuple] = [],
+    ) -> tuple[Exception, list[Slot]]:
+        """
+        Search overlapped slots based on specific parameters.
+
+        This search will find any slots that have intersection with
+        (start, end) interval, meaning it will exclude any slots that might just
+        next to the interval, e.g. (_, start] or [end, _)
+
+        Additional params (such as "status") can be provided as part of the
+        search slots.
+
+        :param schedule_id: id of schedule for this slot search
+        :type schedule_id: uuid
+        :param start: start time in ISO format
+        :type start: str
+        :param end: end time in ISO format
+        :type end: str
+        :param additional_params: additional search criteria
+        :type additional_params: list[tuple]
+
+        :rtype: tuple[Exception, list[Slot]]
+        """
+        # Find any slot that have slot.start < end and slot.end > start
+        # See https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
         search_clause = [
             ("schedule", schedule_id),
-            ("start", start),
-        ]
-        slot_response = self.resource_client.search("Slot", search_clause)
-        return None, slot_response
+            ("start", "lt" + end),
+            ("end", "gt" + start),
+        ] + additional_params
+        slots = self._search_slots(search_clause)
+
+        return None, slots
+
+    def _search_slots(self, search_clause) -> list[DomainResource]:
+        slots = []
+
+        result = self.resource_client.search("Slot", search_clause)
+        if result.entry is not None:
+            for entry in result.entry:
+                slots.append(entry.resource)
+
+        return slots
