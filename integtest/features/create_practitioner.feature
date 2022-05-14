@@ -8,6 +8,6 @@ Feature: Practitioners
         When a doctor is tried to be created with jpeg
     Scenario: Practitioner cannot be created with the same email
         Given a user
-        Given other user
+        And other user
         When a doctor is created
         Then second doctor cannot be created with user but with other user

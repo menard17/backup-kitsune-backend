@@ -1,12 +1,12 @@
 Feature: Get Practitioner Roles
     Scenario: Patient can get all doctors
         Given a doctor
-        Given a nurse
-        Given a patient
+        And a nurse
+        And a patient
         Then the patient can fetch all doctors info
-        Then the patient can fetch all nurses info
+        And the patient can fetch all nurses info
     Scenario: Patient cannot get inactive doctors
         Given a doctor
-        Given a patient
+        And a patient
         When the doctor gets disabled
         Then the patient cannot fetch disabled doctor
