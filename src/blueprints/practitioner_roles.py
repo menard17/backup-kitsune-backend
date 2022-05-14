@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from typing import List
 
 import pytz
+from dateutil.parser import isoparse
 from flask import Blueprint, Response, request
 from flask.wrappers import Request
 
@@ -16,6 +17,11 @@ from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
 from utils.file_size import size_from_base64
 from utils.middleware import jwt_authenticated, jwt_authorized, role_auth
+
+# The minimum delay between booking time and the actual appointment
+# This is done so that the doctor can have some time to prepare for the
+# appointment.
+MINIMUM_DELAY_BETWEEN_BOOKING = timedelta(minutes=15)
 
 practitioner_roles_blueprint = Blueprint(
     "practitioner_roles", __name__, url_prefix="/practitioner_roles"
@@ -350,15 +356,42 @@ class PractitionerRoleController:
 
         schedule = schedule_search.entry[0].resource
 
-        additional_params = []
-        if not_status:
-            additional_params.append(("status:not", not_status))
-        else:
-            additional_params.append(("status", status))
+        # Handling special case of generating a list of available slots
+        if not_status is None and status == "free":
+            start_time = isoparse(start) + MINIMUM_DELAY_BETWEEN_BOOKING
+            end_time = isoparse(end)
 
-        _, slots = self.slot_service.search_overlapped_slots(
-            schedule.id, start, end, additional_params
-        )
+            # Retrieve practitioner's availability
+            role = self.resource_client.get_resource(role_id, "PractitionerRole")
+            available_time = role.availableTime
+
+            # Search for busy slots
+            additional_params = [("status:not", "free")]
+            _, busy_slots = self.slot_service.search_overlapped_slots(
+                schedule.id,
+                start_time.isoformat(),
+                end_time.isoformat(),
+                additional_params,
+            )
+
+            _, slots = self.slot_service.generate_available_slots(
+                schedule_id=schedule.id,
+                start_time=start_time,
+                end_time=end_time,
+                available_time=available_time,
+                busy_slots=busy_slots,
+                timezone=tokyo_timezone,
+            )
+        # For general search cases
+        else:
+            additional_params = []
+            if not_status:
+                additional_params.append(("status:not", not_status))
+            else:
+                additional_params.append(("status", status))
+            _, slots = self.slot_service.search_overlapped_slots(
+                schedule.id, start, end, additional_params
+            )
 
         return Response(
             status=200,

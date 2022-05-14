@@ -110,7 +110,7 @@ def create_yesterday_appointment(
     return create_appointment(client, practitioner, patient, 1)
 
 
-@when("a time has been blocked by doctor and then freed")
+@when("a time has been blocked by doctor and then freed", target_fixture="slot")
 def create_freed_slot(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
@@ -301,15 +301,17 @@ def frees_the_slot(client: Client, practitioner: Practitioner, patient: Patient)
     start = (now - timedelta(hours=2)).isoformat()
     end = (now + timedelta(hours=1)).isoformat()
 
-    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+    # Given that we free the slots, it means there should be no unavalable slots
+    # anymore. This is done since "free" slots are also pre-populated, and it's
+    # hard to identify the freed slots without passing the id through the test.
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&not_status=free'
 
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
 
     slots = json.loads(resp.data)["data"]
-    assert len(slots) == 1
-    assert slots[0]["status"] == "free"
+    assert len(slots) == 0
 
 
 @then("patient cannot book an appointment")

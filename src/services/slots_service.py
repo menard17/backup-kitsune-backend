@@ -1,10 +1,19 @@
 import uuid
+from datetime import datetime, time, timedelta
 
+import pytz
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
+from fhir.resources.practitionerrole import PractitionerRoleAvailableTime
 from fhir.resources.slot import Slot
 
 from adapters.fhir_store import ResourceClient
+
+# The default duration for a single appointment
+DEFAULT_SLOT_DURATION = timedelta(minutes=15)
+# The default delta for rounding up time, for example 15 minutes mean
+# 12:05 -> 12:15
+DEFAULT_ROUND_UP_DELTA = timedelta(minutes=15)
 
 
 class SlotService:
@@ -25,7 +34,7 @@ class SlotService:
         :param status: default is busy. free or busy
         :type status: str
 
-        :rtype: tuple[Exception, DomainResource]
+        :rtype: tuple
         """
         schedule_search = self.resource_client.search(
             "Schedule",
@@ -73,7 +82,7 @@ class SlotService:
         :param status: default is busy. free or busy
         :type status: str
 
-        :rtype: tuple[Exception, DomainResource]
+        :rtype: tuple
         """
         err, slot = self._create_slot(role_id, start, end, status, comment)
         if err is None:
@@ -102,7 +111,7 @@ class SlotService:
         :param slot_id: Id for the slot. This is used to reference before creating slot resource
         :type slot_id: str
 
-        :rtype: tuple[Exception, DomainResource]
+        :rtype: tuple
         """
         err, slot = self._create_slot(role_id, start, end, status, comment)
         if err is None:
@@ -120,7 +129,7 @@ class SlotService:
         :param status: status you want to update to. status can be either free or busy
         :type status: str
 
-        :rtype: tuple[Exception, DomainResource]
+        :rtype: tuple
         """
 
         if not (status == "free" or status == "busy"):
@@ -158,7 +167,7 @@ class SlotService:
         :param additional_params: additional search criteria
         :type additional_params: list[tuple]
 
-        :rtype: tuple[Exception, list[Slot]]
+        :rtype: tuple
         """
         # Find any slot that have slot.start < end and slot.end > start
         # See https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
@@ -170,6 +179,113 @@ class SlotService:
         slots = self._search_slots(search_clause)
 
         return None, slots
+
+    def generate_available_slots(
+        self,
+        schedule_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        available_time: list[PractitionerRoleAvailableTime],
+        busy_slots: list[Slot],
+        timezone: pytz.timezone,
+        duration: timedelta = DEFAULT_SLOT_DURATION,
+        round_up_delta: timedelta = DEFAULT_ROUND_UP_DELTA,
+    ) -> tuple[Exception, list[Slot]]:
+        """
+        Generate a list of available/free slots.
+
+        The main purpose is to generate a list of available slots on the
+        frontend so that booking can be done.
+
+        The correct way should be pre-generate these slots, but that might
+        require a scheduling system, so we just create these for now.
+
+        Note that this will just create arbitrary slots, and nothing will
+        be committed to FHIR.
+
+        This is assuming that the busy slots are not overlapped. Otherwise this
+        function will not generate correctly.
+
+        :param schedule_id: id of schedule for this slot search
+        :type schedule_id: uuid
+        :param start_time: start time as datetime object
+        :type start_time: datetime
+        :param end_time: end time as datetime object
+        :type end_time: datetime
+        :param available_time: list of availabilities from PractitionerRole
+        :type available_time: list[PractitionerRoleAvailableTime]
+        :param timezone: the timezone for checking availability
+        :type timezone: timezone
+        :param duration: the duration for a slot
+        :type duration: timedelta
+        :param round_up_delta: the rounding of time, e.g. 15 mins is 12:04 -> 12:15
+        :type round_up_delta: timedelta
+
+        :rtype: tuple
+        """
+        slots = []
+
+        slot_start = self._ceil_time(start_time, round_up_delta)
+        while slot_start + duration <= end_time:
+            slot_end = slot_start + duration
+
+            if self._does_slot_time_inside_availability(
+                slot_start, slot_end, timezone, available_time
+            ) and not self._does_slot_time_overlap_with_busy_slots(
+                slot_start, slot_end, busy_slots
+            ):
+                slot_jsondict = {
+                    "resourceType": "Slot",
+                    "schedule": {"reference": f"Schedule/{schedule_id}"},
+                    "status": "free",
+                    "start": slot_start.isoformat(),
+                    "end": slot_end.isoformat(),
+                }
+                slot = construct_fhir_element(
+                    slot_jsondict["resourceType"], slot_jsondict
+                )
+                slots.append(slot)
+
+            slot_start += duration
+
+        return None, slots
+
+    def _does_slot_time_inside_availability(
+        self,
+        slot_start: datetime,
+        slot_end: datetime,
+        timezone: pytz.timezone,
+        available_time: list[PractitionerRoleAvailableTime],
+    ):
+        slot_start = slot_start.astimezone(tz=timezone)
+        slot_end = slot_end.astimezone(tz=timezone)
+        date_of_week = slot_start.strftime("%a").lower()
+        for role_time in available_time:
+            if date_of_week not in role_time.daysOfWeek:
+                continue
+            if role_time.availableStartTime <= slot_start.time() and (
+                # For cases where practitioner works until midnight
+                role_time.availableEndTime == time(0, 0)
+                or (
+                    slot_end.time() != time(0, 0)
+                    and slot_end.time() <= role_time.availableEndTime
+                )
+            ):
+                return True
+        return False
+
+    def _does_slot_time_overlap_with_busy_slots(
+        self, slot_start: datetime, slot_end: datetime, busy_slots: list[Slot]
+    ):
+        for busy_slot in busy_slots:
+            # If overlap happened then return true. For overlap logic, see
+            # https://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
+            if slot_start < busy_slot.end and slot_end > busy_slot.start:
+                return True
+        return False
+
+    def _ceil_time(self, time: datetime, delta: timedelta):
+        return time + (datetime.min.replace(tzinfo=pytz.UTC) - time) % delta
 
     def _search_slots(self, search_clause) -> list[DomainResource]:
         slots = []
