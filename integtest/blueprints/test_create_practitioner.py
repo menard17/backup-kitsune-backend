@@ -20,8 +20,13 @@ def get_other_user() -> User:
 
 
 @when("a doctor is created", target_fixture="practitioner")
-def create_doctor(client: Client, user: User) -> str:
+def create_doctor(client: Client, user: User) -> Practitioner:
     return create_practitioner(client, user)
+
+
+@when("a nurse is created", target_fixture="nurse")
+def create_nurse(client: Client, user: User) -> Practitioner:
+    return create_practitioner(client, user, role_type="nurse")
 
 
 @when("a doctor is tried to be created with jpeg")
@@ -71,6 +76,9 @@ def get_doctor_email(client: Client, user: User, practitioner: Practitioner):
         f"Practitioner/{data['data'][0]['id']}"
         == practitioner.fhir_data["practitioner"]["reference"]
     )
+    prefix = {"MD", "医師"}
+    for name in data["data"][0]["name"]:
+        assert name["prefix"][0] in prefix
 
 
 @then("second doctor cannot be created with user but with other user")
@@ -106,3 +114,17 @@ def create_second_doctor(client: Client, user: User, other_user: User):
     )
     assert resp.status_code == 400
     create_practitioner(client, other_user)
+
+
+@then("the nurse has correct prefix")
+def has_correct_prefix_for_nurse(client: Client, user: User):
+    resp = client.get(
+        f"/practitioners?email={user.email}",
+        headers={"Authorization": f"Bearer {user.token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    prefix = {"Nurse", "看護師"}
+    for name in data["data"][0]["name"]:
+        assert name["prefix"][0] in prefix

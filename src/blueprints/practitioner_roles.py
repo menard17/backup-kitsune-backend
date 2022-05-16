@@ -117,7 +117,6 @@ class PractitionerRoleController:
 
         zoom_id, zoom_password, available_time = None, None, []
         language_options = ["en", "ja"]
-        names = get_names_ext(request_body, language_options)
         biographies = get_biographies_ext(request_body, language_options)
         if role_type and (role_type == "doctor"):
             if not (
@@ -224,7 +223,8 @@ class PractitionerRoleController:
         available_time = request_body.get("available_time")
         gender = request_body.get("gender")
         language_options = ["en", "ja"]
-        names = get_names_ext(request_body, language_options)
+        role_type = request_body.get("role_type")
+        names = get_names_ext(request_body, language_options, role_type)
         biographies = get_biographies_ext(request_body, language_options)
 
         PIXEL_SIZE = 104  # Max size of image in pixel

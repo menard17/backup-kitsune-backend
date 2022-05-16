@@ -11,3 +11,7 @@ Feature: Practitioners
         And other user
         When a doctor is created
         Then second doctor cannot be created with user but with other user
+    Scenario: Nurse is created with correct prefix
+        Given a user
+        When a nurse is created
+        Then the nurse has correct prefix

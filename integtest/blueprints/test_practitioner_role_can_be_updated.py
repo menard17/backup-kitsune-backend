@@ -2,7 +2,7 @@ import json
 
 from pytest_bdd import given, scenarios, then, when
 
-from integtest.characters import Practitioner
+from integtest.characters import Practitioner, User
 from integtest.conftest import Client
 from integtest.utils import create_practitioner, create_user, get_token
 
@@ -19,9 +19,13 @@ ALWAYS_WORKING_HOUR = [
 UPDATED_ENGLISH_BIO = "English bio is updated"
 
 
+@given("a user", target_fixture="user")
+def get_user(client: Client) -> User:
+    return create_user()
+
+
 @given("a doctor", target_fixture="practitioner")
-def get_doctor(client: Client):
-    user = create_user()
+def get_doctor(client: Client, user: User):
     return create_practitioner(client, user)
 
 
@@ -64,6 +68,35 @@ def update_available_time(client: Client, practitioner: Practitioner):
         content_type="application/json",
     )
     assert resp.status_code == 200
+
+
+@when("the doctor updates to nurse")
+def update_role_type(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps(
+            {"given_name_en": "name", "family_name_en": "family", "role_type": "nurse"}
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@then("the doctor is converted to have prefix for nurse")
+def check_prefix(client: Client, user: User):
+    resp = client.get(
+        f"/practitioners?email={user.email}",
+        headers={"Authorization": f"Bearer {user.token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    prefix = {"Nurse", "看護師"}
+    for name in data["data"][0]["name"]:
+        assert name["prefix"][0] in prefix
 
 
 @then("the working hour is updated")
