@@ -13,8 +13,14 @@ default_app = firebase_admin.initialize_app()
 log = logging.getLogger(__name__)
 
 
-def jwt_authenticated():
-    """Decorator function to authenticate the user."""
+def jwt_authenticated(email_validation: bool = False):
+    """Decorator function to authenticate the user.
+
+    email_validation is not in authorizations because this needs to be validated before role is created.
+
+    :param email_validation: Additional authorizations to check if email is from allow list or not
+    :type email_validation: bool
+    """
 
     def decorator(func: Callable[..., int]) -> Callable[..., int]:
         @wraps(func)
@@ -35,6 +41,12 @@ def jwt_authenticated():
 
             if not decoded_token.get("email_verified"):
                 return Response(status=401)
+
+            if email_validation:
+                allowed_list = ["umed.jp", "inhome.co.jp", "fake.umed.jp"]
+                email = decoded_token.get("email")
+                if email.split("@")[1] not in allowed_list:
+                    return Response(status=401)
 
             request.claims = decoded_token
             return func(*args, **kwargs)
@@ -63,8 +75,6 @@ def jwt_authorized(scope: str):
     to Patient resource with patient_id
     * @jwt_authorized("/Patient/*"): the caller need to have access to all
     Patients resource
-
-
 
     :param scope: the minimum scope required to access the resource
     :type scope: str

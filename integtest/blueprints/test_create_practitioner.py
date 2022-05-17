@@ -1,10 +1,12 @@
 import json
+import uuid
 
+from firebase_admin import auth
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.characters import Practitioner
 from integtest.conftest import Client
-from integtest.utils import User, create_practitioner, create_user
+from integtest.utils import User, create_practitioner, create_user, get_token
 
 scenarios("../features/create_practitioner.feature")
 
@@ -17,6 +19,20 @@ def get_user() -> User:
 @given("other user", target_fixture="other_user")
 def get_other_user() -> User:
     return create_user()
+
+
+@given("a user with wrong email", target_fixture="wrong_user")
+def get_wrong_user() -> User:
+    email = f"user-{uuid.uuid4()}@fake.jp"
+    user = auth.create_user(
+        email=email,
+        email_verified=True,
+        password=f"password-{uuid.uuid4()}",
+        display_name="Test User",
+        disabled=False,
+    )
+    token = get_token(user.uid)
+    return User(user.uid, email, token)
 
 
 @when("a doctor is created", target_fixture="practitioner")
@@ -79,6 +95,21 @@ def get_doctor_email(client: Client, user: User, practitioner: Practitioner):
     prefix = {"MD", "医師"}
     for name in data["data"][0]["name"]:
         assert name["prefix"][0] in prefix
+
+
+@then("the practitioner is not created")
+def fail_to_create_doctor_with_wrong_email(client: Client, wrong_user: User):
+    resp = client.post(
+        "/practitioner_roles",
+        data=json.dumps(
+            {
+                "role_type": "doctor",
+            }
+        ),
+        headers={"Authorization": f"Bearer {wrong_user.token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
 
 
 @then("second doctor cannot be created with user but with other user")

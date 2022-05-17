@@ -108,6 +108,7 @@ class PractitionerRoleController:
             if request_body.get(field) is None:
                 error_msg = f"{field} is missing in the request body"
                 return Response(status=400, response=error_msg)
+
         start = request_body.get("start")
         end = request_body.get("end")
         email = request_body.get("email")
@@ -466,7 +467,7 @@ def get_practitioner_role_json(role_id: str):
 
 
 @practitioner_roles_blueprint.route("/", methods=["POST"])
-@jwt_authenticated()
+@jwt_authenticated(email_validation=True)
 def create_practitioner_role():
     """
     Sample request body:

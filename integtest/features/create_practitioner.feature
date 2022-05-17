@@ -11,6 +11,9 @@ Feature: Practitioners
         And other user
         When a doctor is created
         Then second doctor cannot be created with user but with other user
+    Scenario: Invalid Email is used to create practitioner
+        Given a user with wrong email
+        Then the practitioner is not created
     Scenario: Nurse is created with correct prefix
         Given a user
         When a nurse is created
