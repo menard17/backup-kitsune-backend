@@ -1,9 +1,11 @@
 import json
 
 from fhir.resources.patient import Patient
-from flask import Blueprint, Response, request
+from flask import Blueprint, Request, Response, request
 
 from adapters.fhir_store import ResourceClient
+from json_serialize import json_serial
+from services.patient_service import PatientService
 from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
@@ -38,9 +40,17 @@ def patch_patient(patient_id: str) -> tuple:
     return PatientController().patch_patient(request, patient_id)
 
 
+@patients_blueprint.route("/<patient_id>", methods=["PUT"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/{patient_id}")
+def put_patients(patient_id: str) -> Response:
+    return PatientController().update_patient(request, patient_id)
+
+
 class PatientController:
-    def __init__(self, resource_client=None):
+    def __init__(self, resource_client=None, patient_service=None):
         self.resource_client = resource_client or ResourceClient()
+        self.patient_service = patient_service or PatientService(self.resource_client)
 
     def get_patient(self, patient_id: str) -> Response:
         """Returns details of a patient.
@@ -115,3 +125,49 @@ class PatientController:
         patient = self.resource_client.patch_resource(patient_id, "Patient", patient)
 
         return datetime_encoder(patient.dict()), 200
+
+    def update_patient(self, request: Request, patient_id: str) -> Response:
+        """Returns the response of the updated patient.
+
+        This updates a patient in FHIR
+
+        :param request: the request for this operation including body of put calls
+        :type request: Request from flask
+        :param patient_id: uuid for patient
+        :type patient_id: str
+
+        :rtype: Response
+
+        Sample Request Body:
+        {
+            "family_name": "family name",
+            "given_name": ["given name"],
+            "gender": "male",
+            "phone": "00011111111"
+            "dob": "1990-01-01",
+            "address": [{"country": "JP"}]
+        }
+        """
+        request_body = request.get_json()
+        family_name = request_body.get("family_name")
+        given_name = request_body.get("given_name")
+        phone = request_body.get("phone")
+        gender = request_body.get("gender")
+        dob = request_body.get("dob")
+        address = request_body.get("address")
+
+        err, patient = self.patient_service.update(
+            patient_id, family_name, given_name, gender, phone, dob, address
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        if patient:
+            return Response(
+                status=200,
+                response=json.dumps({"data": datetime_encoder(patient.dict())}),
+            )
+        else:
+            return Response(
+                status=200, response=json.dumps({"data": []}, default=json_serial)
+            )
