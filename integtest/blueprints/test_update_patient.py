@@ -107,8 +107,7 @@ def updated_patients(client: Client, patient: Patient):
     )
     assert patient_resp.status_code == 200
     output = json.loads(patient_resp.data)["data"]
-    for name in {"Given", "Name"}:
-        assert name in output["name"][0]["given"]
+    assert output["name"][0]["given"] == ["Given", "Name"]
     assert output["name"][0]["family"] == "Family"
     assert output["gender"] == "female"
     expected_telecom = {"system": "phone", "use": "mobile", "value": "123"}

@@ -43,11 +43,11 @@ class PatientService:
         self,
         patient_id: str,
         family_name: str,
-        given_name: str,
+        given_name: list,
         gender: str,
         phone: str,
         dob: str,
-        address: str,
+        address: list,
     ):
         patient = self.resource_client.get_resource(patient_id, "Patient")
         modified = False
@@ -60,7 +60,7 @@ class PatientService:
 
         if given_name:
             modified = True
-            name[0]["given"] = list(given_name)
+            name[0]["given"] = given_name
         else:
             name[0]["given"] = patient.name[0].given
 
