@@ -200,11 +200,14 @@ class SlotService:
         The correct way should be pre-generate these slots, but that might
         require a scheduling system, so we just create these for now.
 
+        This is assuming that the busy slots are not overlapped. Otherwise this
+        function will not generate correctly.
+
         Note that this will just create arbitrary slots, and nothing will
         be committed to FHIR.
 
-        This is assuming that the busy slots are not overlapped. Otherwise this
-        function will not generate correctly.
+        DO NOT USE THE IDS IN ANY CIRCUMSTANCES, as they are just mocked and
+        might mess up with linking resources since these are no real FHIR.
 
         :param schedule_id: id of schedule for this slot search
         :type schedule_id: uuid
@@ -235,6 +238,7 @@ class SlotService:
                 slot_start, slot_end, busy_slots
             ):
                 slot_jsondict = {
+                    "id": f"{uuid.uuid4()}",
                     "resourceType": "Slot",
                     "schedule": {"reference": f"Schedule/{schedule_id}"},
                     "status": "free",
