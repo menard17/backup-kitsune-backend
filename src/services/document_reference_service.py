@@ -10,10 +10,22 @@ class DocumentReferenceService:
     def __init__(self, resource_client: ResourceClient) -> None:
         self.resource_client = resource_client
 
-    def create_document_reference(self, subject, document_type, pages):
-        content = []
+    def create_document_reference(
+        self, subject, document_type, pages, practitioner_role_id, encounter_id
+    ):
+        contents = []
         for page in pages:
-            content.append({"attachment": {"url": page["url"], "title": page["title"]}})
+            content = {}
+            if page.get("url"):
+                content["attachment"] = {"url": page["url"]}
+            if page.get("data"):
+                content["attachment"] = {
+                    "data": page["data"],
+                    "contentType": "text/xml;charset=utf-8",
+                }
+            content["attachment"]["creation"] = datetime.now(timezone.utc)
+            content["attachment"]["title"] = page["title"]
+            contents.append(content)
 
         document_reference_jsondict = {
             "resourceType": "DocumentReference",
@@ -23,8 +35,21 @@ class DocumentReferenceService:
             },
             "date": datetime.now(timezone.utc),
             "type": {"coding": [SystemCode.document_type_code(document_type)]},
-            "content": content,
+            "content": contents,
         }
+
+        if practitioner_role_id:
+            document_reference_jsondict["author"] = [
+                {"reference": f"PractitionerRole/{practitioner_role_id}"}
+            ]
+
+        if encounter_id:
+            document_reference_jsondict["context"] = {
+                "encounter": [{"reference": f"Encounter/{encounter_id}"}],
+            }
+
+        if category := SystemCode.document_category_code(document_type):
+            document_reference_jsondict["category"] = [{"coding": [category]}]
 
         document_reference = construct_fhir_element(
             document_reference_jsondict["resourceType"], document_reference_jsondict

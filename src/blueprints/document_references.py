@@ -15,13 +15,13 @@ document_references_blueprint = Blueprint(
 )
 
 
-@document_references_blueprint.route("/", methods=["Get"])
+@document_references_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
 def search_document_reference():
     return DocumentReferenceController().search_document_reference(request)
 
 
-@document_references_blueprint.route("/", methods=["Post"])
+@document_references_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
 def post_document_resource():
     return DocumentReferenceController().create_document_reference(request)
@@ -43,6 +43,7 @@ class DocumentReferenceController:
         {
             "subject": "Patient/c696cd08-babf-4ec2-8b40-73ffd422d571",
             "document_type": "insurance_card",
+            "encounter_id": "c696cd08-babf-4ec2-8b40-73ffd422d571"
             "pages": [
                 {
                     "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
@@ -56,11 +57,16 @@ class DocumentReferenceController:
                     "url": "http://example.org/xds/mhd/Binary/07a6483f-732b-461e-86b6-edb665c45510",
                     "title": "Page 3"
                 }
+                {
+                    "data": "PGh0bWw+Cjx0aXRsZT4gVGVzdCBEb2N1bWVudCA8L3RpdGxlPgoKRG9jdW1lbnQgY29udGVudCEKCjwvaHRtbD4=",
+                    "title": "Page4",
+                }
             ]
         }
         :rtype: Response
         """
         request_body = request.get_json()
+        encounter_id = request_body.get("encounter_id")
 
         subject = request_body.get("subject")
         if not subject:
@@ -98,9 +104,11 @@ class DocumentReferenceController:
                 response="patient can only create document references for him/herself",
             )
 
+        practitioner_role_id = None
         if (
             "Practitioner" in claims_roles
             and role_type == "Practitioner"
+            and (practitioner_role_id := claims_roles["Practitioner"]["id"])
             and claims_roles["Practitioner"]["id"] != role_id
         ):
             return Response(
@@ -109,7 +117,7 @@ class DocumentReferenceController:
             )
 
         document_reference = self.document_reference_service.create_document_reference(
-            subject, document_type, pages
+            subject, document_type, pages, practitioner_role_id, encounter_id
         )
         return Response(status=201, response=document_reference.json())
 

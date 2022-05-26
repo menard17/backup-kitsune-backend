@@ -12,7 +12,14 @@ from integtest.blueprints.fhir_input_constants import (
     DOCUMENT_REFERENCE_DATA,
     PATIENT_DATA,
 )
-from integtest.characters import Appointment, Patient, Practitioner, User
+from integtest.characters import (
+    Appointment,
+    DocumentReference,
+    Encounter,
+    Patient,
+    Practitioner,
+    User,
+)
 from integtest.conftest import Client
 
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -158,7 +165,7 @@ def create_encounter(
     practitioner: Practitioner,
     patient: Patient,
     appointment: Appointment,
-):
+) -> Encounter:
     token = get_token(practitioner.uid)
 
     resp = client.post(
@@ -179,7 +186,7 @@ def create_encounter(
     return encounter
 
 
-def create_document_reference(client: Client, patient: Patient):
+def create_document_reference(client: Client, patient: Patient) -> DocumentReference:
     token = get_token(patient.uid)
 
     patient_id = patient.fhir_data["id"]

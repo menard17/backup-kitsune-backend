@@ -11,3 +11,11 @@ Feature: Document References
         And patient B, another patient, cannot access the document reference
         And doctor D can access the document reference
         And doctor E, who is also a patient, can access the document reference
+    Scenario: A practitioner creates clinical note
+        Given a user
+        And patient A
+        And doctor D
+        When patient A creates an appointment with doctor D
+        And doctor D creates an encounter
+        And doctor D creates clinical note for patient A
+        Then doctor D can access

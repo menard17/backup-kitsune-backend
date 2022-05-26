@@ -13,6 +13,8 @@ class ServiceURL:
         "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason"
     )
     encounter_code = "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    payment_url = "https://stripe.com/docs/api/payment_intents"
+    clinical_note = "http://fhir.org/guides/argonaut-clinicalnotes/CodeSystem/documentreference-category"
 
 
 class Code(TypedDict):
@@ -111,8 +113,18 @@ class SystemCode:
             return create_coding_clause(
                 ServiceURL.document_type, "34117-2", "Medical Record"
             )
+        elif document_type == "clinical_note":
+            return create_coding_clause(
+                ServiceURL.document_type, "55110-1", "Conclusions Document"
+            )
         else:
             return document_type
+
+    def document_category_code(document_type: str):
+        if document_type == "clinical_note":
+            return create_coding_clause(
+                ServiceURL.clinical_note, "clinical-note", "Clinical Note"
+            )
 
     @staticmethod
     def document_type_token(document_type: str):
@@ -120,6 +132,8 @@ class SystemCode:
             return create_token(ServiceURL.document_type, "64290-0")
         elif document_type == "medical_record":
             return create_token(ServiceURL.document_type, "34117-2")
+        elif document_type == "clinical_note":
+            return create_token(ServiceURL.document_type, "55110-1")
         else:
             return document_type
 
