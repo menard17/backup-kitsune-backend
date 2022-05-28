@@ -28,11 +28,19 @@ class User:
         self.token = token
 
 
+class Account(TypedDict):
+    ...
+
+
 class Appointment(TypedDict):
     ...
 
 
 class Encounter(TypedDict):
+    ...
+
+
+class Invoice(TypedDict):
     ...
 
 

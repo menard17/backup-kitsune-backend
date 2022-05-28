@@ -1,14 +1,15 @@
 import json
+import uuid
 
-from fhir.resources import construct_fhir_element
 from flask import Blueprint, request
 from flask.wrappers import Response
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
+from services.account_service import AccountService
+from services.encounter_service import EncounterService
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
-from utils.system_code import SystemCode
 
 encounters_blueprint = Blueprint("encounters", __name__, url_prefix="/patients")
 
@@ -46,8 +47,14 @@ def create_encounter(patient_id: str) -> Response:
 
 
 class EncountersController:
-    def __init__(self, resource_client=None):
+    def __init__(
+        self, resource_client=None, account_service=None, encounter_service=None
+    ):
         self.resource_client = resource_client or ResourceClient()
+        self.account_service = account_service or AccountService(self.resource_client)
+        self.encounter_service = encounter_service or EncounterService(
+            self.resource_client
+        )
 
     def _search_encounters(self, search_clause) -> Response:
         """
@@ -118,10 +125,13 @@ class EncountersController:
     def create_encounter(self) -> Response:
         """Returns the details of a encounter created.
 
-        This creates a encounter in FHIR, as well as create a custom claims with
+        This creates an account and an encounter in FHIR, as well as create a custom claims with
         Note that this function should only be called
         from the frontend client(by patient) since everything assumes to use Firebase for
         authentication/authorization. Diagnosis should be created after encounter is created.
+
+        The account and the encounter are created in transactionally meaning
+        both will be either created or not created.
 
         Only one encounter can be created per appointment
 
@@ -159,31 +169,54 @@ class EncountersController:
         encounter_search = self.resource_client.search("Encounter", search=search_list)
 
         if encounter_search.total == 0:
-            encounter_jsondict = {
-                "resourceType": "Encounter",
-                "status": "in-progress",
-                "appointment": [{"reference": f"Appointment/{appointment_id}"}],
-                "class": SystemCode.enconuter(),
-                "subject": {"reference": f"Patient/{patient_id}"},
-                "participant": [
-                    {
-                        "individual": {
-                            "reference": f"PractitionerRole/{role_id}",
-                        },
-                    },
-                ],
-            }
-            encounter = construct_fhir_element("Encounter", encounter_jsondict)
-            encounter = self.resource_client.create_resource(encounter)
+            resources = []
+            account_id = f"urn:uuid:{uuid.uuid1()}"
 
-            if (appointment := encounter.dict().get("appointment")) and len(
-                appointment
-            ) > 0:
-                appointment_id = appointment[0]["reference"].split("/")[1]
+            # Create account bundle
+            err, account = self.account_service.create_account(patient_id, account_id)
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+            resources.append(account)
+
+            # Create encounter bundle
+            err, encounter = self.encounter_service.create_encounter(
+                appointment_id, role_id, patient_id, account_id
+            )
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+            resources.append(encounter)
+
+            resp = self.resource_client.create_resources(resources)
+            account = next(
+                filter(
+                    lambda resources: resources.resource.resource_type == "Account",
+                    resp.entry,
+                )
+            )
+            encounter = next(
+                filter(
+                    lambda resources: resources.resource.resource_type == "Encounter",
+                    resp.entry,
+                )
+            )
+
+            # None check for account and encounter
+            if account is not None and encounter is not None:
+                account = account.resource
+                encounter = encounter.resource
+            else:
+                return Response(
+                    status=400, response="Account or Encounter is not created correctly"
+                )
+
+            # Appointment gets fulfilled
+            for appointment in encounter.appointment:
+                appointment_id = appointment.reference.split("/")[1]
                 value = [{"op": "add", "path": "/status", "value": "fulfilled"}]
                 appointment = self.resource_client.patch_resource(
                     appointment_id, "Appointment", value
                 )
+
             return Response(
                 status=201,
                 response=json.dumps(
@@ -191,6 +224,7 @@ class EncountersController:
                         "data": [
                             json.loads(encounter.json()),
                             json.loads(appointment.json()),
+                            json.loads(account.json()),
                         ]
                     },
                     default=json_serial,

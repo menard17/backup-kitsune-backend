@@ -23,6 +23,11 @@ class Code(TypedDict):
     display: str
 
 
+class ExtensionContent(TypedDict):
+    url: ServiceURL
+    valueString: str
+
+
 def create_coding_clause(url: ServiceURL, code: str, display: str = None) -> Code:
     result = {
         "system": url,
@@ -35,6 +40,11 @@ def create_coding_clause(url: ServiceURL, code: str, display: str = None) -> Cod
 
 def create_token(url: ServiceURL, code: str):
     return f"{url}|{code}"
+
+
+def create_extension(url: ServiceURL, value_string: str) -> ExtensionContent:
+    result = {"url": url, "valueString": value_string}
+    return result
 
 
 class ServiceType:
@@ -168,3 +178,13 @@ class SystemCode:
     @staticmethod
     def enconuter():
         return create_coding_clause(ServiceURL.encounter_code, "HH", "home health")
+
+    @staticmethod
+    def billing():
+        return create_coding_clause(
+            ServiceURL.encounter_code, "PBILLACCT", "patient billing account"
+        )
+
+    @staticmethod
+    def payment_intent(payment_intent_id: str):
+        return create_extension(ServiceURL.payment_url, payment_intent_id)

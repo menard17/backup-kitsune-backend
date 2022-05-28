@@ -1,7 +1,15 @@
+import logging
+
 import stripe
 from flask import Blueprint, Response, json, request
 
-from utils.middleware import jwt_authenticated
+from adapters.fhir_store import ResourceClient
+from services.account_service import AccountService
+from services.invoice_service import InvoiceService
+from services.payment_service import PaymentService
+from utils.middleware import jwt_authenticated, jwt_authorized
+
+log = logging.getLogger(__name__)
 
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 
@@ -22,6 +30,18 @@ def get_customer(customer_id: str):
 @jwt_authenticated()
 def create_payment_intent():
     return PaymentsController().create_payment_intent(request)
+
+
+@payments_blueprint.route("/", methods=["POST"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/*")
+def create_payment():
+    request.get_json()
+    manual = request.args.get("manual")
+    if (manual is not None and manual == "false") is None:
+        return PaymentsController().create_payment(request)
+    else:
+        return PaymentsController().create_payment_manually(request)
 
 
 @payments_blueprint.route("/setup-intent", methods=["POST"])
@@ -61,6 +81,18 @@ def get_payment_intent(payment_intent_id: str):
 
 
 class PaymentsController:
+    def __init__(
+        self,
+        resource_client=None,
+        account_service=None,
+        invoice_service=None,
+        payment_service=None,
+    ):
+        self.resource_client = resource_client or ResourceClient()
+        self.account_service = account_service or AccountService(self.resource_client)
+        self.invoice_service = invoice_service or InvoiceService(self.resource_client)
+        self.payment_service = payment_service or PaymentService(self.resource_client)
+
     def create_customer(self, request) -> Response:
         body = json.loads(request.data)
         email = body["email"]
@@ -219,3 +251,75 @@ class PaymentsController:
         return Response(
             status=200, response=json.dumps(payment_intent), mimetype="application/json"
         )
+
+    def create_payment(self, request) -> tuple:
+        """Returns the details of a invoice created.
+
+        This creates a invoice in FHIR and payment request to stripe.
+        Status of invoice and account is updated accordingly.
+
+        :param request: the request for this operation
+        :rtype: tuple
+        """
+        body = json.loads(request.data)
+        customer_id = body["customerId"]
+        payment_method_id = body["paymentMethodId"]
+        amount = body["amount"]
+        currency = "jpy"
+        account_id = body["accountId"]
+
+        err, account = self.account_service.get_account(account_id)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        patient_id = account.subject[0].reference.split("/")[1]
+
+        err, invoice = self.invoice_service.create_invoice(
+            account_id, patient_id, amount, currency
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        err, payment_intent_id = self.payment_service.create_payment(
+            amount, currency, customer_id, payment_method_id
+        )
+        if err is not None:
+            self.invoice_service.update_invoice_status(
+                payment_intent_id, invoice.id, False, "CC payment failed"
+            )
+            return Response(
+                status=500,
+                response=json.dumps("Stripe did not proceed correctly"),
+                mimetype="application/json",
+            )
+        self.invoice_service.update_invoice_status(payment_intent_id, invoice.id, True)
+        self.account_service.inactivate_account(account_id)
+        return Response(status=201)
+
+    def create_payment_manually(self, request) -> tuple:
+        """Returns the details of a invoice created.
+
+        This creates another invoice in FHIR in addition to the cancelled ones
+        Status of invoice and account is updated accordingly.
+        Payment is not processed within the function.
+
+        :param request: the request for this operation
+        :rtype: tuple
+        """
+        body = json.loads(request.data)
+        payment_intent_id = body["payment_intent_id"]
+        amount = body["amount"]
+        currency = "jpy"
+        account_id = body["accountId"]
+        err, account = self.account_service.get_account(account_id)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        patient_id = account.subject[0].reference.split("/")[1]
+
+        err, invoice = self.invoice_service.create_invoice(
+            account_id, patient_id, amount, currency
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        self.invoice_service.update_invoice_status(payment_intent_id, invoice.id, True)
+        self.account_service.inactivate_account(account_id)
+        return Response(status=201)

@@ -74,7 +74,8 @@ class AppointmentService:
     def update_appointment_status(
         self, appointment_id: uuid, status: str, cancel_reason: str = "patient"
     ):
-        if not (status == "noshow" or status == "cancelled"):
+        cancel_status = ["noshow", "cancelled"]
+        if status not in cancel_status:
             return (
                 Exception(f"Status can only be noshow or cancelled. status: {status}"),
                 None,
@@ -83,6 +84,12 @@ class AppointmentService:
         appointment_response = self.resource_client.get_resource(
             appointment_id, "Appointment"
         )
+        if appointment_response.status in cancel_status:
+            return (
+                Exception(f"Status is already set to: {appointment_response.status}"),
+                None,
+            )
+
         appointment_response.status = status
         if status == "cancelled":
             appointment_response.cancelationReason = {
