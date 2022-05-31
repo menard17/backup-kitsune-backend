@@ -7,7 +7,6 @@ from services.invoice_service import InvoiceService
 from services.payment_service import PaymentService
 from utils.middleware import jwt_authenticated, jwt_authorized
 
-
 payments_blueprint = Blueprint("payments", __name__, url_prefix="/payments")
 
 
@@ -29,9 +28,10 @@ def create_payment_intent():
     return PaymentsController().create_payment_intent(request)
 
 
+# TODO: AB#812
 @payments_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
-@jwt_authorized("/Practitioner/*")
+@jwt_authorized("/Patient/*")
 def create_payment():
     request.get_json()
     manual = request.args.get("manual")

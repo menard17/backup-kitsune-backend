@@ -248,7 +248,7 @@ class AppointmentController:
         :returns: Json list of appointments
         :rtype: Response
         """
-        date = request.args.get("date")  # deprecated, use start_date instead.
+        date = request.args.get("date")  # deprecated, use start_date instead. AB#775
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
 

@@ -82,15 +82,17 @@ def get_account(account_id: str):
     return AccountController().get_account(request, account_id)
 
 
+# TODO: AB#812
 @account_blueprint.route("/<account_id>", methods=["DELETE"])
 @jwt_authenticated()
-@jwt_authorized("/Practitioner/*")
+@jwt_authorized("/Patient/*")
 def cancel_account(account_id: str):
     return AccountController().inactivate_account(account_id=account_id)
 
 
+# TODO: AB#812
 @account_blueprint.route("/<account_id>/invoices", methods=["GET"])
 @jwt_authenticated()
-@jwt_authorized("/Practitioner/*")
+@jwt_authorized("/Patient/*")
 def get_account_invoice(account_id: str):
     return AccountController().get_invoice_by_account_id(account_id=account_id)

@@ -30,6 +30,7 @@ class PractitionerController:
         search_clause = []
         search_clause.append(("_summary", "data"))
 
+        # TODO: AB#773
         if email := request.args.get("email"):
             search_clause.append(("email", email))
         else:
@@ -110,6 +111,7 @@ class PractitionerController:
         )
         return slot_search.entry
 
+    # TODO: Deprecate AB#761
     def create_practitioner(self, request) -> Practitioner:
         """Returns the details of a doctor created.
         This creates a practitioner in FHIR, as well as create a custom claims with it
