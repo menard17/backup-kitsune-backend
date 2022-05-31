@@ -132,7 +132,7 @@ def create_appointment(
     patient: Patient,
     days=0,
     service="online",
-):
+) -> Appointment:
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
     start = (now - timedelta(days=days)).isoformat()

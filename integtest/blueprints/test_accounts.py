@@ -52,7 +52,9 @@ def get_staff(client: Client) -> Practitioner:
 
 
 @given("an appointment", target_fixture="appointment")
-def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
+def book_appointment(
+    client: Client, practitioner: Practitioner, patient: Patient
+) -> Appointment:
     return create_appointment(client, practitioner, patient)
 
 

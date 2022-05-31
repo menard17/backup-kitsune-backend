@@ -22,43 +22,44 @@ scenarios("../features/book_appointments.feature")
 
 
 @given("a user", target_fixture="user")
-def get_user():
+def get_user() -> User:
     return create_user()
 
 
 @given("a patient with nurse user", target_fixture="nurse_user")
-def get_patient(client: Client):
+def get_patient(client: Client) -> Patient:
     user = create_user()
     create_patient(client, user)
     return user
 
 
 @given("a doctor", target_fixture="practitioner")
-def get_doctor(client: Client):
+def get_doctor(client: Client) -> Practitioner:
     user = create_user()
     return create_practitioner(client, user, role_type="doctor")
 
 
-@given("patientA", target_fixture="patientA")
-def get_patientA(client: Client, user):
+@given("patient A", target_fixture="patient_a")
+def get_patient_a(client: Client, user) -> Patient:
     return create_patient(client, user)
 
 
 @given(
-    "a doctor is created with the same user as patientA", target_fixture="practitionerA"
+    "a doctor is created with the same user as patient A",
+    target_fixture="practitioner_a",
 )
-def get_doctorA(client: Client, user):
+def get_doctor_a(client: Client, user) -> Practitioner:
     return create_practitioner(client, user, role_type="doctor")
 
 
 @given("a nurse", target_fixture="nurse")
-def get_nurse(client: Client, nurse_user: User):
+def get_nurse(client: Client, nurse_user: User) -> Practitioner:
     return create_practitioner(client, nurse_user, role_type="nurse")
 
 
-@given("patientB", target_fixture="patient")
+@given("patient B", target_fixture="patient")
 @given("a patient", target_fixture="patient")
-def get_patientB(client: Client):
+def get_patient_b(client: Client) -> Patient:
     user = create_user()
     return create_patient(client, user)
 
@@ -97,17 +98,11 @@ def book_another_appointment(
     return create_appointment(client, practitioner, patient, days=int(days))
 
 
-@when("the patient books another free time of the doctor", target_fixture="appointment")
-def book_another_appointment(
-    client: Client, practitioner: Practitioner, patient: Patient
+@when("an appointment is created by patient B")
+def book_new_appointment(
+    client: Client, practitioner_a: Practitioner, patient: Patient
 ):
-    # book in tomorrow
-    return create_appointment(client, practitioner, patient, days=-1)
-
-
-@when("an appointment is created by patientB")
-def book_new_appointment(client: Client, practitionerA: Practitioner, patient: Patient):
-    return create_appointment(client, practitionerA, patient)
+    return create_appointment(client, practitioner_a, patient)
 
 
 @when("an appointment is booked for nurse", target_fixture="visit_appointment")
@@ -438,12 +433,14 @@ def book_canceled_appointment(
 
 
 @then("patientA can check biography of practitioner")
-def get_practitioner_bio(client: Client, patientA: Patient, practitioner: Practitioner):
+def get_practitioner_bio(
+    client: Client, patient_a: Patient, practitioner: Practitioner
+):
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
 
-    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patientA.fhir_data["id"]}&include_practitioner=true'
-    token = get_token(patientA.uid)
+    url = f'/appointments?date={yesterday.date().isoformat()}&actor_id={patient_a.fhir_data["id"]}&include_practitioner=true'
+    token = get_token(patient_a.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
     practitioner = next(
@@ -458,9 +455,9 @@ def appopintment_service_type(visit_appointment: Appointment):
 
 
 @then("the doctor can see list of appointments")
-def get_list_of_appointments(client: Client, patientA: Patient, user: User):
+def get_list_of_appointments(client: Client, patient_a: Patient, user: User):
     practitioner_url = f"/practitioners?email={user.email}"
-    token = get_token(patientA.uid)
+    token = get_token(patient_a.uid)
     resp = client.get(practitioner_url, headers={"Authorization": f"Bearer {token}"})
     practitioner_id = json.loads(resp.data)["data"][0]["id"]
     appointment_url = f"/appointments?actor_id={practitioner_id}"

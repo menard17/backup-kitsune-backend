@@ -29,10 +29,10 @@ Feature: Book Appointment
         And patient can book an appointment
     Scenario: Appointment can be seen by a doctor who is patient
         Given a user
-        And a doctor is created with the same user as patientA
-        And patientA
-        And patientB
-        When an appointment is created by patientB
+        And a doctor is created with the same user as patient A
+        And patient A
+        And patient B
+        When an appointment is created by patient B
         Then the doctor can see list of appointments
     Scenario: Appointment can be booked for time which is a freed slot
         Given a doctor
