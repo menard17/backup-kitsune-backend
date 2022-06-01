@@ -232,6 +232,7 @@ class AppointmentController:
         actor_id = request.args.get("actor_id")
         include_practitioner = to_bool(request.args.get("include_practitioner"))
         include_patient = to_bool(request.args.get("include_patient"))
+        include_encounter = to_bool(request.args.get("include_encounter"))
 
         if start_date is not None and date is not None:
             return Response(
@@ -263,6 +264,9 @@ class AppointmentController:
 
         if include_patient:
             search_clause.append(("_include:iterate", "Appointment:actor:Patient"))
+
+        if include_encounter:
+            search_clause.append(("_revinclude:iterate", "Encounter:appointment"))
 
         if service_request_id:
             search_clause.append(("basedOn", service_request_id))

@@ -1,11 +1,12 @@
 Feature: Book Appointment
-    Scenario: Patient can book an appointment
+    Scenario: Patient can book an appointment and see an encounter
         Given a doctor
         And a patient
         When the patient books a free time of the doctor
         Then an appointment is created
         And the period would be set as busy slots
         And the patient can see his/her own appointment
+        And the encounter is created
         And the doctor can see the appointment being booked
     Scenario: Patient no show
         Given a doctor

@@ -10,6 +10,7 @@ from integtest.characters import Appointment, Patient, Practitioner, User
 from integtest.conftest import Client
 from integtest.utils import (
     create_appointment,
+    create_encounter,
     create_patient,
     create_practitioner,
     create_user,
@@ -247,18 +248,25 @@ def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
     # for new client code, use `start_date` and `end_date` instead.
     # PS. `patient_can_see_appointment_with_list_appointment` function here is using
     # new search params.
-    searchParams = "&".join(
+    search_params = "&".join(
         [
             f"date={yesterday.date().isoformat()}",
             f'actor_id={practitioner.fhir_data["id"]}',
+            "include_encounter=true",
         ]
     )
 
-    url = f"/appointments?{searchParams}"
+    url = f"/appointments?{search_params}"
     token = get_token(practitioner.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
 
-    appointments = json.loads(resp.data)["data"]
+    resources = json.loads(resp.data)["data"]
+    appointments = [
+        resource for resource in resources if resource["resourceType"] == "Appointment"
+    ]
+    encounters = [
+        resource for resource in resources if resource["resourceType"] == "Encounter"
+    ]
 
     found_patient = False
     for participant in appointments[0]["participant"]:
@@ -269,6 +277,11 @@ def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
             found_patient = True
             break
     assert found_patient
+
+    appointment_id_from_encounter = encounters[0]["appointment"][0]["reference"].split(
+        "/"
+    )[1]
+    assert appointments[0]["id"] == appointment_id_from_encounter
 
 
 @when(
@@ -416,6 +429,16 @@ def get_list_of_appointments(client: Client, patientA: Patient, user: User):
         appointment_url, headers={"Authorization": f"Bearer {token}"}
     )
     assert resp_appointment.status_code == 200
+
+
+@then("the encounter is created")
+def get_encounter(
+    client: Client,
+    appointment: Appointment,
+    patient: Patient,
+    practitioner: Practitioner,
+):
+    return create_encounter(client, practitioner, patient, appointment)
 
 
 @then("the patient can book at the same start time")
