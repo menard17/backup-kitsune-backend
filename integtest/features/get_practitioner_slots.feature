@@ -12,4 +12,7 @@ Feature: Get Practitioner Slots
     Scenario: Patient can get available slots apart except busy slots set by doctor
         Given a doctor with defined schedule
         When the practitioner role set the period to busy
-        Then the user can fecth all available slots except busy slots
+        Then the user can fetch all available slots except busy slots
+    Scenario: Patient can get available slots only after minimum delay booking
+        Given a doctor with full schedule
+        Then the user can only fetch slots after minimum delay booking

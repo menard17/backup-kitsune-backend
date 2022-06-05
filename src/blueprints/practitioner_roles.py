@@ -358,7 +358,7 @@ class PractitionerRoleController:
 
         # Handling special case of generating a list of available slots
         if not_status is None and status == "free":
-            start_time = isoparse(start) + MINIMUM_DELAY_BETWEEN_BOOKING
+            start_time = self._get_earliest_start_time_for_free_booking(isoparse(start))
             end_time = isoparse(end)
 
             # Retrieve practitioner's availability
@@ -401,6 +401,23 @@ class PractitionerRoleController:
             ),
             mimetype="application/json",
         )
+
+    # Calculate the start time to call the backend for searching free slots
+    #
+    # This is done so that if the frontend asks for some slots which cannot be
+    # fulfilled (since it's already passed), then we automatically reject it
+    # and only return any slots after the current time + booking delay.
+    #
+    # Note that this would reflect the correct behavior where we have an
+    # automatic slots system: free slots will be marked as unavailable after
+    # the current time + minimum delay booking.
+    def _get_earliest_start_time_for_free_booking(
+        self, start_time: datetime
+    ) -> datetime:
+        current_time_with_booking_delay = (
+            datetime.now().astimezone(start_time.tzinfo) + MINIMUM_DELAY_BETWEEN_BOOKING
+        )
+        return max(start_time, current_time_with_booking_delay)
 
     def update_status(self, request, role_id):
 

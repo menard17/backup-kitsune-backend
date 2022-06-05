@@ -1,8 +1,9 @@
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta, tzinfo
 from urllib.parse import quote
 
 import pytz
+from dateutil.parser import isoparse
 from pytest_bdd import given, scenarios, then, when
 
 from integtest.characters import Practitioner, Slot
@@ -11,6 +12,9 @@ from integtest.utils import create_practitioner, create_user, get_token
 
 scenarios("../features/get_practitioner_slots.feature")
 
+MINIMUM_DELAY_BETWEEN_BOOKING = timedelta(minutes=15)
+POTENTIAL_CLOCK_DRIFT = timedelta(minutes=1)
+
 
 # Note that this doctor have the following schedule:
 # {
@@ -18,22 +22,44 @@ scenarios("../features/get_practitioner_slots.feature")
 #     "availableStartTime": "09:00:00",
 #     "availableEndTime": "16:30:00",
 # }
+# Most of the test in this module use next week at the time of test, so that
+# it's easier to write test without inteference from current-time logic.
 @given("a doctor with defined schedule", target_fixture="practitioner")
 def get_doctor(client: Client):
     user = create_user()
     return create_practitioner(client, user)
 
 
+# There is a special case where we want to test the minimum delay between
+# booking mechanism, so use a doctor with full schedule in order to have more
+# available slots and prevent flaky tests.
+@given("a doctor with full schedule", target_fixture="practitioner")
+def get_doctor_full_schedule(client: Client):
+    user = create_user()
+    return create_practitioner(
+        client,
+        user,
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                "availableStartTime": "00:00:00",
+                "availableEndTime": "23:59:59",
+            }
+        ],
+    )
+
+
 @when("the practitioner role set the period to busy", target_fixture="slot")
 def set_busy_slots(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    # Block the time slot on Monday, from 11:10 to 11:50
+    timezone = pytz.timezone("Asia/Tokyo")
+    # Block the time slot tomorrow, from 11:10 to 11:50.
     # Use a non-15 minutes rounding to test rounding logic as well
     # The result should be the same as blocking from 11:00 to 12:00
-    start = tokyo_timezone.localize(datetime(2022, 5, 16, 11, 10)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 16, 11, 50)).isoformat()
+    next_monday = _next_weekday(datetime.today(), 0)
+    start = _localize(next_monday, time(11, 10), timezone).isoformat()
+    end = _localize(next_monday, time(11, 50), timezone).isoformat()
 
     request_body = {
         "start": start,
@@ -61,11 +87,10 @@ def set_busy_slots(client: Client, practitioner: Practitioner):
 def get_busy_slots(client: Client, practitioner: Practitioner, slot: Slot):
     token = get_token(practitioner.uid)
 
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    time_at_test = tokyo_timezone.localize(datetime(2022, 5, 16, 11))
-    start = (time_at_test - timedelta(hours=1)).isoformat()
-    end = (time_at_test + timedelta(hours=1)).isoformat()
-
+    timezone = pytz.timezone("Asia/Tokyo")
+    next_monday = _next_weekday(datetime.today(), 0)
+    start = _localize(next_monday, time(0, 0), timezone).isoformat()
+    end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=busy'
 
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
@@ -81,40 +106,63 @@ def get_busy_slots(client: Client, practitioner: Practitioner, slot: Slot):
 def get_available_slots(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    # Practitioner schedule on Monday, from 9:00 to 16:30, and each slot is
+    timezone = pytz.timezone("Asia/Tokyo")
+    # Practitioner schedule on any day, from 9:00 to 16:30, and each slot is
     # 15 minutes, so there should be a total of 30 slots in a whole day.
-    # However, we have a rule to not let the patient book an appointment within
-    # 15 minutes delay, so if a patient is trying to book at 9:10, then only
-    # appointments from 9:30 to 16:30 is returned (9:10 + 15 min delay
-    # and 5 min round up to nearest 15 minutes). Hence there should be 28 slots.
-    # The "start" should be used as the current time on the frontend system.
-    start = tokyo_timezone.localize(datetime(2022, 5, 16, 9, 10)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 17, 0)).isoformat()
+    next_monday = _next_weekday(datetime.today(), 0)
+    start = _localize(next_monday, time(0, 0), timezone).isoformat()
+    end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
 
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
 
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]
     assert slots is not None
-    assert len(slots) == 28
-    assert slots[0]["start"] == "2022-05-16T09:30:00+09:00"
-    assert slots[0]["end"] == "2022-05-16T09:45:00+09:00"
-    assert slots[-1]["start"] == "2022-05-16T16:15:00+09:00"
-    assert slots[-1]["end"] == "2022-05-16T16:30:00+09:00"
+    assert len(slots) == 30
+    assert slots[0]["start"] == _localize(next_monday, time(9, 0), timezone).isoformat()
+    assert slots[0]["end"] == _localize(next_monday, time(9, 15), timezone).isoformat()
+    assert (
+        slots[-1]["start"] == _localize(next_monday, time(16, 15), timezone).isoformat()
+    )
+    assert (
+        slots[-1]["end"] == _localize(next_monday, time(16, 30), timezone).isoformat()
+    )
 
 
 @then("the user cannot fetch available slots outside doctor's schedule")
 def get_available_slots_outside_schedule(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    timezone = pytz.timezone("Asia/Tokyo")
+
     # Practitioner schedule on Monday, Tuesday and Wednesday from 9:00 to 16:30
     # The below tests should not return any results
 
     # From start of Thursday to end of Sunday
-    start = tokyo_timezone.localize(datetime(2022, 5, 19, 0, 0)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 23, 0, 0)).isoformat()
+    next_thursday = _next_weekday(datetime.today(), 4)
+    start = _localize(next_thursday, time(0, 0), timezone).isoformat()
+    end = _localize(next_thursday + timedelta(days=1), time(0, 0), timezone).isoformat()
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    slots = json.loads(resp.data)["data"]
+    assert slots is not None
+    assert len(slots) == 0
+
+    # During Monday but before office hours (before 9:00)
+    next_monday = _next_weekday(datetime.today(), 0)
+    start = _localize(next_monday, time(0, 0), timezone).isoformat()
+    end = _localize(next_monday, time(9, 0), timezone).isoformat()
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    slots = json.loads(resp.data)["data"]
+    assert slots is not None
+    assert len(slots) == 0
+
+    # During Monday but after office hours (after 16:30)
+    start = _localize(next_monday, time(17, 0), timezone).isoformat()
+    end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
 
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
 
@@ -123,52 +171,79 @@ def get_available_slots_outside_schedule(client: Client, practitioner: Practitio
     assert slots is not None
     assert len(slots) == 0
 
-    # During Monday but out of office hours
-    start = tokyo_timezone.localize(datetime(2022, 5, 16, 0, 0)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 16, 9, 0)).isoformat()
 
-    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
-
-    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
-    slots = json.loads(resp.data)["data"]
-    assert slots is not None
-    assert len(slots) == 0
-
-    start = tokyo_timezone.localize(datetime(2022, 5, 16, 16, 30)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 17, 0, 0)).isoformat()
-
-    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
-
-    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
-    slots = json.loads(resp.data)["data"]
-    assert slots is not None
-    assert len(slots) == 0
-
-
-@then("the user can fecth all available slots except busy slots")
+@then("the user can fetch all available slots except busy slots")
 def get_available_slots_except_busy_slots(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
-    tokyo_timezone = pytz.timezone("Asia/Tokyo")
-    # Same as the available_slots scenario, there should be 28 slots from
-    # 9:30 to 16:30 if a patient try to book at 9:10. However, since there is
-    # a busy slot from 11:00 to 12:00, there should only be 24 slots left
-    # (9:30 - 11:00 and 12:00 to 16:30).
-    start = tokyo_timezone.localize(datetime(2022, 5, 16, 9, 10)).isoformat()
-    end = tokyo_timezone.localize(datetime(2022, 5, 17, 0)).isoformat()
+    timezone = pytz.timezone("Asia/Tokyo")
+    # Same as the available_slots scenario, there should be 30 slots from
+    # 9:00 to 16:30. However, since there is a busy slot from 11:00 to 12:00,
+    # there should only be 26 slots left (9:00 - 11:00 and 12:00 to 16:30).
+    next_monday = _next_weekday(datetime.today(), 0)
+    start = _localize(next_monday, time(0, 0), timezone).isoformat()
+    end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
 
     url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
 
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]
     assert slots is not None
-    assert len(slots) == 24
-    assert slots[0]["start"] == "2022-05-16T09:30:00+09:00"
-    assert slots[0]["end"] == "2022-05-16T09:45:00+09:00"
-    assert slots[5]["start"] == "2022-05-16T10:45:00+09:00"
-    assert slots[5]["end"] == "2022-05-16T11:00:00+09:00"
+    assert len(slots) == 26
+    assert slots[0]["start"] == _localize(next_monday, time(9, 0), timezone).isoformat()
+    assert slots[0]["end"] == _localize(next_monday, time(9, 15), timezone).isoformat()
+    assert (
+        slots[7]["start"] == _localize(next_monday, time(10, 45), timezone).isoformat()
+    )
+    assert slots[7]["end"] == _localize(next_monday, time(11, 0), timezone).isoformat()
     # busy slot gap from 11:00 to 12:00
-    assert slots[6]["start"] == "2022-05-16T12:00:00+09:00"
-    assert slots[6]["end"] == "2022-05-16T12:15:00+09:00"
-    assert slots[-1]["start"] == "2022-05-16T16:15:00+09:00"
-    assert slots[-1]["end"] == "2022-05-16T16:30:00+09:00"
+    assert (
+        slots[8]["start"] == _localize(next_monday, time(12, 0), timezone).isoformat()
+    )
+    assert slots[8]["end"] == _localize(next_monday, time(12, 15), timezone).isoformat()
+    assert (
+        slots[-1]["start"] == _localize(next_monday, time(16, 15), timezone).isoformat()
+    )
+    assert (
+        slots[-1]["end"] == _localize(next_monday, time(16, 30), timezone).isoformat()
+    )
+
+
+@then("the user can only fetch slots after minimum delay booking")
+def get_available_slots_after_minimum_delay(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+
+    timezone = pytz.timezone("Asia/Tokyo")
+    # This is a special test case, where we want to make sure that the user
+    # cannot book a slot given a minimum delay between booking. For example if
+    # the current clock is 10:00, and the minimum delay booking is 15 mins, then
+    # only available slots from 10:15 is present.
+    # Due to the fact that the backend logic uses datetime.now() and it's hard
+    # to mock the time inside integration test, we run this test for today and
+    # dynamically check if the first slot (if present) is inside the range.
+    # Also add a potential clock drift so that it's more tolerant to system
+    # time.
+    now = datetime.now()
+    today = now.date()
+    start = _localize(today, time(0, 0), timezone).isoformat()
+    end = _localize(today + timedelta(days=1), time(0, 0), timezone).isoformat()
+
+    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
+    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    slots = json.loads(resp.data)["data"]
+    assert slots is not None
+    assert len(slots) == 0 or isoparse(slots[0]["start"]) > (
+        now.astimezone(timezone) + MINIMUM_DELAY_BETWEEN_BOOKING - POTENTIAL_CLOCK_DRIFT
+    )
+
+
+def _localize(date: date, time: time, timezone: tzinfo):
+    return timezone.localize(datetime.combine(date, time))
+
+
+# weekday is a number from 0 to 6, where 0 is Monday and 6 is Sunday
+def _next_weekday(d: date, weekday: int):
+    days_ahead = weekday - d.weekday()
+    if days_ahead <= 0:  # Target day already happened this week
+        days_ahead += 7
+    return d + timedelta(days_ahead)

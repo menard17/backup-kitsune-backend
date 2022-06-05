@@ -65,6 +65,13 @@ def create_practitioner(
     language=["en"],
     role_type="doctor",
     practitioner_name: Tuple = ("Last Name", "Given Name"),
+    available_time: list = [
+        {
+            "daysOfWeek": ["mon", "tue", "wed"],
+            "availableStartTime": "09:00:00",
+            "availableEndTime": "16:30:00",
+        },
+    ],
 ):
     base64_prefix = "data:image/png;base64,"
     with open("artifact/image_base64") as f:
@@ -88,13 +95,7 @@ def create_practitioner(
             param_data["bio_ja"]
         param_data["zoom_password"] = "zoom password"
         param_data["zoom_id"] = "zoom id"
-        param_data["available_time"] = [
-            {
-                "daysOfWeek": ["mon", "tue", "wed"],
-                "availableStartTime": "09:00:00",
-                "availableEndTime": "16:30:00",
-            },
-        ]
+        param_data["available_time"] = available_time
 
     resp = client.post(
         "/practitioner_roles",
