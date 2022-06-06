@@ -19,6 +19,8 @@ from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
 
+DEFAULT_PAGE_COUNT = "300"
+
 appointment_blueprint = Blueprint("appointments", __name__, url_prefix="/appointments")
 
 
@@ -220,6 +222,26 @@ class AppointmentController:
             self._send_notification(appointment, True)
         return Response(status=200, response=resp.json())
 
+    def link(self, link: str) -> Response:
+        ok, err_resp = self.appointment_service.check_link(request, link)
+        if not ok:
+            return err_resp
+
+        result = self.resource_client.link(link)
+        resp_dict = {
+            "data": [
+                json.loads(datetime_encoder(e.resource.json())) for e in result.entry
+            ],
+        }
+        for link in result.link:
+            if link.relation == "next":
+                resp_dict["next_link"] = link.url
+
+        return Response(
+            status=200,
+            response=json.dumps(resp_dict, default=json_serial),
+        )
+
     def search_appointments(self, request, service_request_id: str = None) -> Response:
         """Returns list of appointments matching searching query
         :returns: Json list of appointments
@@ -233,6 +255,9 @@ class AppointmentController:
         include_practitioner = to_bool(request.args.get("include_practitioner"))
         include_patient = to_bool(request.args.get("include_patient"))
         include_encounter = to_bool(request.args.get("include_encounter"))
+
+        count = request.args.get("count", DEFAULT_PAGE_COUNT)
+        count = int(count)
 
         if start_date is not None and date is not None:
             return Response(
@@ -285,26 +310,31 @@ class AppointmentController:
             search_clause.append(("date", "le" + end_date))
 
         search_clause.append(("actor", actor_id))
+        search_clause.append(("_count", f"{count}"))
 
         result = self.resource_client.search(
             "Appointment",
             search=search_clause,
         )
-        if result.entry is None:
+        entries = result.entry
+        if entries is None:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
+
+        resp_dict = {
+            "data": [json.loads(datetime_encoder(e.resource.json())) for e in entries],
+        }
+
+        # if there is next page, add to `next_link`
+        # see: https://www.hl7.org/fhir/http.html#paging
+        for link in result.link:
+            if link.relation == "next":
+                resp_dict["next_link"] = link.url
+
         return Response(
             status=200,
-            response=json.dumps(
-                {
-                    "data": [
-                        json.loads(datetime_encoder(e.resource.json()))
-                        for e in result.entry
-                    ]
-                },
-                default=json_serial,
-            ),
+            response=json.dumps(resp_dict, default=json_serial),
         )
 
     def _send_notification(self, appointment, cancellation=False):
@@ -402,6 +432,13 @@ def search():
     * include_practitioner: optional. With this argument, practitoner details are added for each appointment
     * include_patient: optional. With this argument, patient details are added for each appointment
     """
+
+    # This is for pagination. FHIR will return a link for the next page.
+    # And we proxy the result of the link.
+    next_link = request.args.get("next_link")
+    if next_link:
+        return AppointmentController().link(next_link)
+
     encounter_id = request.args.get("encounter_id")
     patient_id = request.args.get("actor_id")
     data = json.loads(
@@ -410,6 +447,7 @@ def search():
     service_request_id = None
     if len(data["data"]) > 0:
         service_request_id = data["data"][0]["id"]
+
     return AppointmentController().search_appointments(request, service_request_id)
 
 

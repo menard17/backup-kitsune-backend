@@ -39,3 +39,13 @@ Feature: Book Appointment
         And a patient
         When a time has been blocked by doctor and then freed
         Then the patient can book at the same start time
+    Scenario: Appointments can be paginated
+        Given a doctor
+        And a patient
+        When the patient books a free time of the doctor
+        Then an appointment is created
+        When the patient books another free time of the doctor
+        Then an appointment is created
+        When pagination count being 1
+        Then the doctor can see the first appointment page
+        And the doctor can see the next appointment page

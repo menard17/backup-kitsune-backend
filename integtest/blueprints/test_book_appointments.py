@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 import pytz
 from pytest_bdd import scenarios, then, when
@@ -65,6 +65,14 @@ def get_patientB(client: Client):
 @when("the patient books a free time of the doctor", target_fixture="appointment")
 def book_appointment(client: Client, practitioner: Practitioner, patient: Patient):
     return create_appointment(client, practitioner, patient)
+
+
+@when("the patient books another free time of the doctor", target_fixture="appointment")
+def book_another_appointment(
+    client: Client, practitioner: Practitioner, patient: Patient
+):
+    # book in tomorrow
+    return create_appointment(client, practitioner, patient, days=-1)
 
 
 @when("an appointment is created by patientB")
@@ -217,7 +225,7 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
     yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
     today = tokyo_timezone.localize(datetime.now())
 
-    searchParams = "&".join(
+    search_params = "&".join(
         [
             f"start_date={yesterday.date().isoformat()}",
             f"end_date={today.date().isoformat()}",
@@ -226,7 +234,7 @@ def patient_can_see_appointment_with_list_appointment(client: Client, patient: P
         ]
     )
 
-    url = f"/appointments?{searchParams}"
+    url = f"/appointments?{search_params}"
     token = get_token(patient.uid)
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     appointments = json.loads(resp.data)["data"]
@@ -268,15 +276,15 @@ def doctor_can_see_appointment_being_booked(client, practitioner: Practitioner):
         resource for resource in resources if resource["resourceType"] == "Encounter"
     ]
 
-    found_patient = False
+    found_doctor = False
     for participant in appointments[0]["participant"]:
         if (
             participant["actor"]["reference"]
             == f"PractitionerRole/{practitioner.fhir_data['id']}"
         ):
-            found_patient = True
+            found_doctor = True
             break
-    assert found_patient
+    assert found_doctor
 
     appointment_id_from_encounter = encounters[0]["appointment"][0]["reference"].split(
         "/"
@@ -473,3 +481,74 @@ def book_at_start_time_of_freed_slot(
     )
 
     assert resp.status_code == 201
+
+
+@when("pagination count being 1", target_fixture="count")
+def pagination_count_set_to_one():
+    return 1
+
+
+@then("the doctor can see the first appointment page", target_fixture="next_link")
+def doctor_can_see_first_appointment_page(
+    client, practitioner: Practitioner, count: int
+):
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    yesterday = tokyo_timezone.localize(datetime.now() - timedelta(days=1))
+
+    # also checks if include patient and practitioner will work
+    search_params = {
+        "start_date": yesterday.date().isoformat(),
+        "actor_id": practitioner.fhir_data["id"],
+        "count": count,
+        "include_practitioner": True,
+        "include_patient": True,
+    }
+
+    url = f"/appointments?{urlencode(search_params)}"
+    token = get_token(practitioner.uid)
+    resp_raw = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    resp = json.loads(resp_raw.data)
+
+    data = resp["data"]
+    next_link = resp["next_link"]
+
+    appointments = [d for d in data if d["resourceType"] == "Appointment"]
+    assert len(appointments) == count
+
+    patients = [d for d in data if d["resourceType"] == "Patient"]
+    assert len(patients) == 1
+
+    practitioners = [d for d in data if d["resourceType"] == "Practitioner"]
+    assert len(practitioners) == 1
+
+    assert next_link != ""
+
+    return next_link
+
+
+@then("the doctor can see the next appointment page")
+def doctor_can_see_next_appointment_page(
+    client,
+    practitioner: Practitioner,
+    count: int,
+    next_link: str,
+):
+    search_params = {"next_link": next_link}
+
+    url = f"/appointments?{urlencode(search_params)}"
+    token = get_token(practitioner.uid)
+    resp_raw = client.get(url, headers={"Authorization": f"Bearer {token}"})
+    resp = json.loads(resp_raw.data)
+
+    # last page of the pagination
+    assert "next_link" not in resp
+
+    data = resp["data"]
+    appointments = [d for d in data if d["resourceType"] == "Appointment"]
+    assert len(appointments) == count
+
+    patients = [d for d in data if d["resourceType"] == "Patient"]
+    assert len(patients) == 1
+
+    practitioners = [d for d in data if d["resourceType"] == "Practitioner"]
+    assert len(practitioners) == 1

@@ -448,3 +448,52 @@ def test_search_appointment_actor_id_is_required():
 
     assert resp.status_code == 400
     assert resp_data == "missing param: actor_id"
+
+
+def test_search_appointment_pagination_returns_next_link():
+    patient_id = "dummy-patient-id"
+
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    expected_search_date = now.date().isoformat()  # defaults to current date
+    expected_count = 1  # page size
+    expected_url = "https://healthcare.googleapis.com/v1/projects/dummy-fhir-path/fhirStores/phat-fhir-store-id/fhir/Appointment/?_count=1&actor=9e477534-b74a-4139-9338-90977e81bc34&date=ge2021-08-25&page_token=Cjj3YokQdv%2F%2F%2F%2F%2BABd%2BH721RFgD%2FAf%2F%2BNWM4NDM2YmQ3ZWExOTZiYTE5NzAyMDQ4Njc4NjMyOWUAARABIZRNcFwxQ70GOQAAAACJ73adSAFQAFoLCbs%2BeLJbiDrKEANg2qiOZGgB"  # noqa: E501
+
+    def mock_search(resource_type, search):
+        assert resource_type == "Appointment"
+        assert ("date", "ge" + expected_search_date) in search
+        assert ("actor", patient_id) in search
+        assert ("_count", f"{expected_count}") in search
+
+        # add next page link search result
+        APPOINTMENT_SEARCH_DATA["link"].append(
+            {
+                "relation": "next",
+                "url": expected_url,
+            }
+        )
+        return construct_fhir_element("Bundle", APPOINTMENT_SEARCH_DATA)
+
+    resource_client = MockResourceClient()
+    resource_client.search = mock_search
+
+    request = FakeRequest(
+        args={
+            "actor_id": patient_id,
+            "start_date": expected_search_date,
+            "count": expected_count,
+        },
+        claims={
+            "roles": {
+                "Patient": {
+                    "id": patient_id,
+                },
+            },
+        },
+    )
+    controller = AppointmentController(resource_client)
+    resp = controller.search_appointments(request)
+    resp_data = resp.data.decode("utf-8")
+
+    assert resp.status_code == 200
+    assert json.loads(resp_data)["next_link"] == expected_url

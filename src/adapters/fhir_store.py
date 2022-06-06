@@ -145,6 +145,12 @@ class ResourceClient:
 
         return construct_fhir_element("Bundle", response.json())
 
+    def link(self, url: str) -> DomainResource:
+        response = self._session.get(url, headers=self._headers)
+        response.raise_for_status()
+
+        return construct_fhir_element("Bundle", response.json())
+
     def search(self, resource_type: str, search: ResourceSearchArgs) -> DomainResource:
         """Search all resources with given type and search condition from FHIR store.
         The data retrieved from FHIR store is a JSON object,
