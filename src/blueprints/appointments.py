@@ -18,6 +18,7 @@ from services.slots_service import SlotService
 from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated
+from utils.string_manipulation import to_bool
 
 DEFAULT_PAGE_COUNT = "300"
 
@@ -449,9 +450,3 @@ def search():
         service_request_id = data["data"][0]["id"]
 
     return AppointmentController().search_appointments(request, service_request_id)
-
-
-def to_bool(item: str) -> bool:
-    if not item:
-        return False
-    return item.lower() == "true"

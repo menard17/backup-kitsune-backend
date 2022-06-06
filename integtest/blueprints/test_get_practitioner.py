@@ -97,3 +97,19 @@ def get_nurse_details(
         filter(lambda item: item["id"] == nurse.practitioner_id, data["data"])
     )
     assert filtered_nurse["extension"][0]["valueString"] == "My background ..."
+
+
+@then("practitioner can be included in practitioner role")
+def get_practitioner(client: Client, doctor: Practitioner):
+    token = get_token(doctor.uid)
+    role_id = doctor.fhir_data["id"]
+    resp = client.get(
+        f"/practitioner_roles?role_id={role_id}&role_type=doctor&include_practitioner=true",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    practitioners = [
+        item for item in json.loads(resp.data) if item["resourceType"] == "Practitioner"
+    ]
+    assert len(practitioners) == 1
+    assert practitioners[0]["id"] == doctor.practitioner_id

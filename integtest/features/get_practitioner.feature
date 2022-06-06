@@ -5,6 +5,7 @@ Feature: Get Practitioner Roles
         And a patient
         Then the patient can fetch all doctors info
         And the patient can fetch all nurses info
+        And practitioner can be included in practitioner role
     Scenario: Patient cannot get inactive doctors
         Given a doctor
         And a patient

@@ -17,6 +17,7 @@ from services.slots_service import SlotService
 from utils.datetime_encoder import datetime_encoder
 from utils.file_size import size_from_base64
 from utils.middleware import jwt_authenticated, jwt_authorized, role_auth
+from utils.string_manipulation import to_bool
 
 # The minimum delay between booking time and the actual appointment
 # This is done so that the doctor can have some time to prepare for the
@@ -26,11 +27,6 @@ MINIMUM_DELAY_BETWEEN_BOOKING = timedelta(minutes=15)
 practitioner_roles_blueprint = Blueprint(
     "practitioner_roles", __name__, url_prefix="/practitioner_roles"
 )
-
-
-def to_bool(item: str) -> bool:
-    true_set = {"true", "1"}
-    return item.lower() in true_set
 
 
 class PractitionerRoleController:
@@ -62,10 +58,7 @@ class PractitionerRoleController:
         """
         search_clause = []
 
-        if (role_type := request.args.get("role_type")) and role_type in {
-            "nurse",
-            "doctor",
-        }:
+        if role_type := request.args.get("role_type"):
             search_clause.append(("role", role_type))
 
         if practitoner_id := request.args.get("practitioner_id"):
@@ -73,9 +66,16 @@ class PractitionerRoleController:
         else:
             search_clause.append(("active", "true"))
 
+        if (role_id := request.args.get("role_id")) is not None:
+            search_clause.append(("_id", role_id))
+
+        if to_bool(request.args.get("include_practitioner")):
+            search_clause.append(
+                ("_include:iterate", "PractitionerRole:practitioner:Practitioner")
+            )
+
         if search_clause:
             roles = self.resource_client.search("PractitionerRole", search_clause)
-
         else:
             roles = self.resource_client.get_resources("PractitionerRole")
 
@@ -83,7 +83,7 @@ class PractitionerRoleController:
             return Response(status=200, response=json.dumps([]))
 
         resp = json.dumps(
-            [r.resource.dict() for r in roles.entry],
+            [json.loads(datetime_encoder(e.resource.json())) for e in roles.entry],
             default=json_serial,
         )
         return Response(status=200, response=resp)
