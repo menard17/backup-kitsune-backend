@@ -120,7 +120,7 @@ class PractitionerRoleController:
         start = request_body.get("start")
         end = request_body.get("end")
         email = request_body.get("email")
-        photo = request_body.get("photo")
+        photo = request_body.get("photo", "")
         role_type = request_body.get("role_type")
         gender = request_body.get("gender")
 
@@ -139,7 +139,7 @@ class PractitionerRoleController:
 
         PIXEL_SIZE = 104  # Max size of image in pixel
         byte_size = (PIXEL_SIZE**2) * 3
-        if (image_size := size_from_base64(photo)) > byte_size:
+        if photo and (image_size := size_from_base64(photo)) > byte_size:
             return Response(
                 status=400,
                 response=f"photo is: {image_size} and expected to be less than {byte_size}",
@@ -201,7 +201,7 @@ class PractitionerRoleController:
 
         if role_type == "staff":
             roles = role_auth.extract_roles(request.claims)
-            if "Staff" not in roles:
+            if not roles or "Staff" not in roles:
                 return Response(status=404, response="Insufficient permission")
             resp = self.resource_client.create_resources(resources)
             practitioner = list(

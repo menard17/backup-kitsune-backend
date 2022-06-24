@@ -90,7 +90,7 @@ class PractitionerService:
     ):
         communication = SystemCode.communication("ja")
         base64_prefix = "data:image/png;base64,"
-        if not photo.startswith(base64_prefix):
+        if photo and not photo.startswith(base64_prefix):
             return Exception("Wrong photo format"), None
 
         bio_extensions = [bio.get_bio_with_lang() for bio in biographies]
@@ -103,10 +103,13 @@ class PractitionerService:
             "gender": gender,
             "communication": [{"coding": [communication]}],
             "extension": bio_extensions,
-            "photo": [
-                {"contentType": "image/png", "data": photo[len(base64_prefix) :]}
-            ],
+            "photo": [],
         }
+
+        if photo:
+            practitioner_jsondict["photo"].append(
+                {"contentType": "image/png", "data": photo[len(base64_prefix) :]}
+            )
 
         practitioner = construct_fhir_element("Practitioner", practitioner_jsondict)
         practitioner = self.resource_client.get_post_bundle(practitioner, identity)
