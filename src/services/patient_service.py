@@ -95,7 +95,7 @@ class PatientService:
 
         if address:
             modified = True
-            patient.address = address
+            patient.address = remove_empty_string_from_address(address)
 
         if modified:
             patient = construct_fhir_element("Patient", patient)
@@ -122,3 +122,15 @@ class PatientService:
             return False, Response(status=400, response="not link for patient")
 
         return True, None
+
+
+def remove_empty_string_from_address(addresses: list) -> list:
+    lines = [address["line"] for address in addresses]
+    modified_lines = [[item for item in line if item != ""] for line in lines]
+    modified_addresses = []
+    for idx, address in enumerate(addresses):
+        # Create a Deep copy
+        modified_address = address.copy()
+        modified_address["line"] = modified_lines[idx]
+        modified_addresses.append(modified_address)
+    return modified_addresses

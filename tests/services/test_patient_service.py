@@ -3,7 +3,7 @@ import json
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
 
-from services.patient_service import PatientService
+from services.patient_service import PatientService, remove_empty_string_from_address
 
 
 class MockPatientClient:
@@ -70,6 +70,45 @@ def test_get_patient_name_normal():
 
     # Then
     assert expected_name == actual_name
+
+
+def test_remove_empty_string_from_address_contains_empty_string():
+    # Given
+    addresses = [{"line": ["", "line2"], "country": "JP"}]
+    expected_output = [{"line": ["line2"], "country": "JP"}]
+
+    # When
+    actual_addresses = remove_empty_string_from_address(addresses)
+
+    # Then
+    assert expected_output == actual_addresses
+
+    # Check if original address list is not modified
+    assert addresses == [{"line": ["", "line2"], "country": "JP"}]
+
+
+def test_remove_empty_string_from_address_contains_without_empty_string():
+    # Given
+    addresses = [{"line": ["abc", "def"]}]
+    expected_output = [{"line": ["abc", "def"]}]
+
+    # When
+    actual_addresses = remove_empty_string_from_address(addresses)
+
+    # Then
+    assert expected_output == actual_addresses
+
+
+def test_remove_empty_string_from_address_contains_with_no_item():
+    # Given
+    addresses = [{"line": []}]
+    expected_output = [{"line": []}]
+
+    # When
+    actual_addresses = remove_empty_string_from_address(addresses)
+
+    # Then
+    assert expected_output == actual_addresses
 
 
 def test_check_link_success():
