@@ -9,24 +9,25 @@ from blueprints.patients import PatientController
 
 
 def test_get_patient(mocker, resource_client, test_patient_data):
-    mocker.patch.object(resource_client, "get_resource", return_value=test_patient_data)
+    search_output = SearchOutput(test_patient_data)
+    mocker.patch.object(resource_client, "search", return_value=search_output)
     controller = PatientController(resource_client)
-
-    result = controller.get_patient("test-patient-id")
-
+    request = FakeRequest()
+    result = controller.get_patient(request, "test-patient-id")
     assert json.loads(result.data)["data"] == test_patient_data
-    resource_client.get_resource.assert_called_once_with("test-patient-id", "Patient")
+    resource_client.search.assert_called_once_with(
+        "Patient", [("_id", "test-patient-id")]
+    )
 
 
 def test_get_patients(mocker, resource_client, test_bundle_data):
-    mocker.patch.object(resource_client, "get_resources", return_value=test_bundle_data)
+    mocker.patch.object(resource_client, "search", return_value=test_bundle_data)
     controller = PatientController(resource_client)
-
     request = FakeRequest()
     result = controller.get_patients(request)
 
     assert json.loads(result.data)["data"] == test_bundle_data
-    resource_client.get_resources.assert_called_once_with("Patient", 300)
+    resource_client.search.assert_called_once_with("Patient", [("_count", "300")])
 
 
 def test_link(mocker, resource_client, test_bundle_data):
@@ -150,3 +151,14 @@ def test_bundle_data():
     bundle = Bundle(type="document")
     bundle.id = "test-bundle-id"
     return bundle
+
+
+class Item:
+    def __init__(self, data):
+        self.resource = data
+
+
+class SearchOutput:
+    def __init__(self, data):
+        self.data = data
+        self.entry = [Item(data)]

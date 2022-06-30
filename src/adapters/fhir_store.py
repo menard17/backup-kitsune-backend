@@ -119,7 +119,6 @@ class ResourceClient:
         :rtype: DomainResource
         """
         resource_path = f"{self._url}/{resource_type}/{resource_uid}"
-
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
         result = construct_fhir_element(resource_type, response.json())

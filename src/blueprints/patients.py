@@ -19,7 +19,7 @@ patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 @jwt_authenticated()
 @jwt_authorized("/Patient/{patient_id}")
 def get_patient(patient_id: str) -> Response:
-    return PatientController().get_patient(patient_id)
+    return PatientController().get_patient(request, patient_id)
 
 
 @patients_blueprint.route("/", methods=["GET"])
@@ -66,7 +66,7 @@ class PatientController:
             status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
         )
 
-    def get_patient(self, patient_id: str) -> Response:
+    def get_patient(self, request: Request, patient_id: str) -> Response:
         """Returns details of a patient.
 
         :param patient_id: uuid for patient
@@ -74,12 +74,17 @@ class PatientController:
 
         :rtype: Response
         """
-        patient = self.resource_client.get_resource(patient_id, "Patient")
+        search_clause = [("_id", patient_id)]
+        if (is_active := request.args.get("active")) is not None:
+            search_clause.append(("active", is_active))
+        patient = (
+            self.resource_client.search("Patient", search_clause).entry[0].resource
+        )
         return Response(
             status=200, response=json.dumps({"data": datetime_encoder(patient.dict())})
         )
 
-    def get_patients(self, request) -> Response:
+    def get_patients(self, request: Request) -> Response:
         """
         Returns details of all patients.
         Access to this function should be limited.
@@ -87,8 +92,12 @@ class PatientController:
 
         :rtype: Response
         """
-        count = int(request.args.get("count", DEFAULT_PAGE_COUNT))
-        patients = self.resource_client.get_resources("Patient", count)
+        count = request.args.get("count", DEFAULT_PAGE_COUNT)
+        search_clause = []
+        if (is_active := request.args.get("active")) is not None:
+            search_clause.append(("active", is_active))
+        search_clause.append(("_count", count))
+        patients = self.resource_client.search("Patient", search_clause)
         return Response(
             status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
         )
