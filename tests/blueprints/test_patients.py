@@ -22,10 +22,34 @@ def test_get_patients(mocker, resource_client, test_bundle_data):
     mocker.patch.object(resource_client, "get_resources", return_value=test_bundle_data)
     controller = PatientController(resource_client)
 
-    result = controller.get_patients()
+    request = FakeRequest()
+    result = controller.get_patients(request)
 
     assert json.loads(result.data)["data"] == test_bundle_data
-    resource_client.get_resources.assert_called_once_with("Patient")
+    resource_client.get_resources.assert_called_once_with("Patient", 300)
+
+
+def test_link(mocker, resource_client, test_bundle_data):
+    mocker.patch.object(resource_client, "link", return_value=test_bundle_data)
+    controller = PatientController(resource_client)
+
+    next_link = "https://my.fhir.link/Patient/?_count=1&_page_token=Cjj3YqaT4f%2F%2F%2F%2F%2BABeFKRf0xQQD%2FAf%2F%2BNTk0ZjgxODM1MjM2ZGM1M2IyZTMwNTUxNTUwMWFjODQAARABIZRNcFwxQ70GOQAAAAAebFmdSAFQAFoLCSzWOfWKBujqEANgxd%2BBywc%3D"  # noqa: E501
+    result = controller.link(next_link)
+
+    assert json.loads(result.data)["data"] == test_bundle_data
+    resource_client.link.assert_called_once_with(next_link)
+
+
+def test_link_should_fail_if_check_link_failed(
+    mocker, resource_client, test_bundle_data
+):
+    mocker.patch.object(resource_client, "link", return_value=test_bundle_data)
+    controller = PatientController(resource_client)
+
+    next_link = "https://my.fhir.link/NotPatient/?_count=1&_page_token=Cjj3YqaT4f%2F%2F%2F%2F%2BABeFKRf0xQQD%2FAf%2F%2BNTk0ZjgxODM1MjM2ZGM1M2IyZTMwNTUxNTUwMWFjODQAARABIZRNcFwxQ70GOQAAAAAebFmdSAFQAFoLCSzWOfWKBujqEANgxd%2BBywc%3D"  # noqa: E501
+    result = controller.link(next_link)
+
+    assert result.status_code == 400
 
 
 def test_create_patient_happy_path(mocker, resource_client, test_patient_data):

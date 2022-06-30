@@ -10,6 +10,8 @@ from utils import role_auth
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
 
+DEFAULT_PAGE_COUNT = "300"
+
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
 
 
@@ -24,7 +26,9 @@ def get_patient(patient_id: str) -> Response:
 @jwt_authenticated()
 @jwt_authorized("/Patient/*")
 def get_patients() -> Response:
-    return PatientController().get_patients()
+    if next_link := request.args.get("next_link"):
+        return PatientController().link(next_link)
+    return PatientController().get_patients(request)
 
 
 @patients_blueprint.route("/", methods=["POST"])
@@ -52,6 +56,16 @@ class PatientController:
         self.resource_client = resource_client or ResourceClient()
         self.patient_service = patient_service or PatientService(self.resource_client)
 
+    def link(self, link: str) -> Response:
+        ok, err_resp = self.patient_service.check_link(link)
+        if not ok:
+            return err_resp
+
+        patients = self.resource_client.link(link)
+        return Response(
+            status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
+        )
+
     def get_patient(self, patient_id: str) -> Response:
         """Returns details of a patient.
 
@@ -65,7 +79,7 @@ class PatientController:
             status=200, response=json.dumps({"data": datetime_encoder(patient.dict())})
         )
 
-    def get_patients(self) -> Response:
+    def get_patients(self, request) -> Response:
         """
         Returns details of all patients.
         Access to this function should be limited.
@@ -73,7 +87,8 @@ class PatientController:
 
         :rtype: Response
         """
-        patients = self.resource_client.get_resources("Patient")
+        count = int(request.args.get("count", DEFAULT_PAGE_COUNT))
+        patients = self.resource_client.get_resources("Patient", count)
         return Response(
             status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
         )

@@ -1,4 +1,4 @@
-Feature: Patients
+Feature: Create Patients
     Scenario: Create Patients
         Given a patient
         When patient get call is called

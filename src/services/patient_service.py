@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fhir.resources import construct_fhir_element
+from flask import Response
 
 from adapters.fhir_store import ResourceClient
 
@@ -102,3 +103,22 @@ class PatientService:
 
             return None, patient
         return None, None
+
+    def check_link(self, link: str) -> tuple[bool, Response]:
+        """
+        This sanity checks the link for security reason to disallow arbitrary calls to get
+        proxy result of the FHIR.
+
+        We add validation on the link to check it is related to the Patient search.
+        Note that the format might be coupled with the FHIR provider (GCP for now).
+        Different provider might have different link schema. It is not part of the FHIR protocol.
+
+        A sample URL from GCP:
+        https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/Patient/?_count=1&_page_token=Cjj3YqaT4f%2F%2F%2F%2F%2BABeFKRf0xQQD%2FAf%2F%2BNTk0ZjgxODM1MjM2ZGM1M2IyZTMwNTUxNTUwMWFjODQAARABIZRNcFwxQ70GOQAAAAAebFmdSAFQAFoLCSzWOfWKBujqEANgxd%2BBywc%3D
+        """
+
+        base_url = link.split("?")[0]
+        if "/Patient" not in base_url:
+            return False, Response(status=400, response="not link for patient")
+
+        return True, None

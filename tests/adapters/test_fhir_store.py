@@ -33,7 +33,25 @@ def test_get_resources(mocker, session, url, test_bundle_data):
     assert result.resource_type == "Bundle"
     assert result.id == "bundle-id"
     session.get.assert_called_once_with(
-        "testurl/Patient?_count=300",
+        "testurl/Patient?_count=300",  # default count is 300
+        headers={"Content-Type": "application/fhir+json;charset=utf-8"},
+    )
+    response.raise_for_status.assert_called_once()
+
+
+def test_get_resources_with_count(mocker, session, url, test_bundle_data):
+    response = mocker.Mock()
+    mocker.patch.object(response, "json", return_value=test_bundle_data.json())
+    mocker.patch.object(session, "get", return_value=response)
+    resource_client = ResourceClient(session=session, url=url)
+
+    count = 123
+    result = resource_client.get_resources("Patient", count=count)
+
+    assert result.resource_type == "Bundle"
+    assert result.id == "bundle-id"
+    session.get.assert_called_once_with(
+        f"testurl/Patient?_count={count}",
         headers={"Content-Type": "application/fhir+json;charset=utf-8"},
     )
     response.raise_for_status.assert_called_once()

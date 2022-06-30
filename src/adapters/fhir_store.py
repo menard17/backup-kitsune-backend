@@ -125,7 +125,7 @@ class ResourceClient:
         result = construct_fhir_element(resource_type, response.json())
         return result
 
-    def get_resources(self, resource_type: str) -> DomainResource:
+    def get_resources(self, resource_type: str, count: int = 300) -> DomainResource:
         """Retrieve all resources with given type from FHIR store.
         The data retrieved from FHIR store is a JSON object,
         which will be converted into an DomainResource Python object,
@@ -133,12 +133,14 @@ class ResourceClient:
 
         :param resource_type: The FHIR resource type
         :type resource_type: str
+        :param count: the page count of the results. Default to 300.
+        :type count: int
 
         :rtype: DomainResource
         """
-        count = "?_count=300"
+        count_url_param = f"?_count={count}"
         resource_path = f"{self._url}/{resource_type}"
-        resource_path += count
+        resource_path += count_url_param
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
