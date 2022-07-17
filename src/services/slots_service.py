@@ -10,10 +10,10 @@ from fhir.resources.slot import Slot
 from adapters.fhir_store import ResourceClient
 
 # The default duration for a single appointment
-DEFAULT_SLOT_DURATION = timedelta(minutes=15)
+DEFAULT_SLOT_DURATION = timedelta(minutes=10)
 # The default delta for rounding up time, for example 15 minutes mean
 # 12:05 -> 12:15
-DEFAULT_ROUND_UP_DELTA = timedelta(minutes=15)
+DEFAULT_ROUND_UP_DELTA = timedelta(minutes=10)
 
 
 class SlotService:

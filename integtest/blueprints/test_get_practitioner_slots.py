@@ -54,12 +54,12 @@ def set_busy_slots(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
 
     timezone = pytz.timezone("Asia/Tokyo")
-    # Block the time slot tomorrow, from 11:10 to 11:50.
-    # Use a non-15 minutes rounding to test rounding logic as well
+    # Block the time slot tomorrow, from 11:09 to 11:51.
+    # Use a non-10 minutes rounding to test rounding logic as well
     # The result should be the same as blocking from 11:00 to 12:00
     next_monday = _next_weekday(datetime.today(), 0)
-    start = _localize(next_monday, time(11, 10), timezone).isoformat()
-    end = _localize(next_monday, time(11, 50), timezone).isoformat()
+    start = _localize(next_monday, time(11, 9), timezone).isoformat()
+    end = _localize(next_monday, time(11, 51), timezone).isoformat()
 
     request_body = {
         "start": start,
@@ -108,7 +108,7 @@ def get_available_slots(client: Client, practitioner: Practitioner):
 
     timezone = pytz.timezone("Asia/Tokyo")
     # Practitioner schedule on any day, from 9:00 to 16:30, and each slot is
-    # 15 minutes, so there should be a total of 30 slots in a whole day.
+    # 10 minutes, so there should be a total of 45 slots in a whole day.
     next_monday = _next_weekday(datetime.today(), 0)
     start = _localize(next_monday, time(0, 0), timezone).isoformat()
     end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
@@ -118,11 +118,11 @@ def get_available_slots(client: Client, practitioner: Practitioner):
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]
     assert slots is not None
-    assert len(slots) == 30
+    assert len(slots) == 45
     assert slots[0]["start"] == _localize(next_monday, time(9, 0), timezone).isoformat()
-    assert slots[0]["end"] == _localize(next_monday, time(9, 15), timezone).isoformat()
+    assert slots[0]["end"] == _localize(next_monday, time(9, 10), timezone).isoformat()
     assert (
-        slots[-1]["start"] == _localize(next_monday, time(16, 15), timezone).isoformat()
+        slots[-1]["start"] == _localize(next_monday, time(16, 20), timezone).isoformat()
     )
     assert (
         slots[-1]["end"] == _localize(next_monday, time(16, 30), timezone).isoformat()
@@ -177,9 +177,9 @@ def get_available_slots_except_busy_slots(client: Client, practitioner: Practiti
     token = get_token(practitioner.uid)
 
     timezone = pytz.timezone("Asia/Tokyo")
-    # Same as the available_slots scenario, there should be 30 slots from
+    # Same as the available_slots scenario, there should be 45 slots from
     # 9:00 to 16:30. However, since there is a busy slot from 11:00 to 12:00,
-    # there should only be 26 slots left (9:00 - 11:00 and 12:00 to 16:30).
+    # there should only be 41 slots left (9:00 - 11:00 and 12:00 to 16:30).
     next_monday = _next_weekday(datetime.today(), 0)
     start = _localize(next_monday, time(0, 0), timezone).isoformat()
     end = _localize(next_monday + timedelta(days=1), time(0, 0), timezone).isoformat()
@@ -189,20 +189,22 @@ def get_available_slots_except_busy_slots(client: Client, practitioner: Practiti
     resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
     slots = json.loads(resp.data)["data"]
     assert slots is not None
-    assert len(slots) == 26
+    assert len(slots) == 39
     assert slots[0]["start"] == _localize(next_monday, time(9, 0), timezone).isoformat()
-    assert slots[0]["end"] == _localize(next_monday, time(9, 15), timezone).isoformat()
+    assert slots[0]["end"] == _localize(next_monday, time(9, 10), timezone).isoformat()
     assert (
-        slots[7]["start"] == _localize(next_monday, time(10, 45), timezone).isoformat()
+        slots[11]["start"] == _localize(next_monday, time(10, 50), timezone).isoformat()
     )
-    assert slots[7]["end"] == _localize(next_monday, time(11, 0), timezone).isoformat()
+    assert slots[11]["end"] == _localize(next_monday, time(11, 0), timezone).isoformat()
     # busy slot gap from 11:00 to 12:00
     assert (
-        slots[8]["start"] == _localize(next_monday, time(12, 0), timezone).isoformat()
+        slots[12]["start"] == _localize(next_monday, time(12, 0), timezone).isoformat()
     )
-    assert slots[8]["end"] == _localize(next_monday, time(12, 15), timezone).isoformat()
     assert (
-        slots[-1]["start"] == _localize(next_monday, time(16, 15), timezone).isoformat()
+        slots[12]["end"] == _localize(next_monday, time(12, 10), timezone).isoformat()
+    )
+    assert (
+        slots[-1]["start"] == _localize(next_monday, time(16, 20), timezone).isoformat()
     )
     assert (
         slots[-1]["end"] == _localize(next_monday, time(16, 30), timezone).isoformat()
