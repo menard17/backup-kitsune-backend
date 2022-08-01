@@ -19,6 +19,7 @@ from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
+from blueprints.verifications import verifications_blueprint
 from blueprints.zoom import zoom_blueprint
 from utils.metric import (
     after_request_log_endpoint_metric,
@@ -65,6 +66,7 @@ app.register_blueprint(messaging_blueprint)
 app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(slots_blueprint)
+app.register_blueprint(verifications_blueprint)
 app.register_blueprint(zoom_blueprint)
 
 
@@ -87,6 +89,7 @@ if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])
 else:
     StripeSingleton(stripe)
+
 
 if __name__ == "__main__":
     # Used when running locally only. When deploying to Cloud Run,
