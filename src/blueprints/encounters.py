@@ -173,7 +173,9 @@ class EncountersController:
             account_id = f"urn:uuid:{uuid.uuid1()}"
 
             # Create account bundle
-            err, account = self.account_service.create_account(patient_id, account_id)
+            err, account = self.account_service.create_account_bundle(
+                patient_id, account_id
+            )
             if err is not None:
                 return Response(status=400, response=err.args[0])
             resources.append(account)

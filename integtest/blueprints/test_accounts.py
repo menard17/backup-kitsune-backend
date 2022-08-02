@@ -131,3 +131,43 @@ def check_invoice_status(
     assert resp.status_code == 200
     data = json.loads(resp.data)["data"]
     assert json.loads(data)["status"] == status
+
+
+@when("account can be created by the staff")
+def create_account(client: Client, patient: Patient, staff: Practitioner):
+    token = get_token(staff.uid)
+    patient_id = patient.fhir_data["id"]
+    resp = client.post(
+        "/accounts",
+        data=json.dumps({"patient_id": patient_id, "description": "integ test"}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    account_id = json.loads(resp.data)["id"]
+
+    payment_resp = client.post(
+        "/payments?manual=true",
+        data=json.dumps(
+            {"payment_intent_id": "testid", "amount": "10", "accountId": account_id}
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert payment_resp.status_code == 201
+
+
+@then("all accounts can be searched")
+def fetch_accounts(client: Client, patient: Patient, staff: Practitioner):
+    token = get_token(staff.uid)
+    patient_id = patient.fhir_data["id"]
+    resp = client.get(
+        f"/accounts?patient_id={patient_id}&include_invoice=true",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert len(data) == 4

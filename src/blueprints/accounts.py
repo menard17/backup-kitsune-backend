@@ -8,6 +8,7 @@ from services.account_service import AccountService
 from services.invoice_service import InvoiceService
 from utils import role_auth
 from utils.middleware import jwt_authenticated, jwt_authorized
+from utils.string_manipulation import to_bool
 
 account_blueprint = Blueprint("accounts", __name__, url_prefix="/accounts")
 
@@ -23,6 +24,18 @@ class AccountController:
         self.resource_client = resource_client or ResourceClient()
         self.account_service = account_service or AccountService(self.resource_client)
         self.invoice_service = invoice_service or InvoiceService(self.resource_client)
+
+    def create_account(self, request) -> Response:
+        """Returns created account"""
+        request_body = request.get_json()
+        patient_id = request_body.get("patient_id")
+        description = request_body.get("description")
+        err, account = self.account_service.create_account_resource(
+            patient_id, description
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+        return Response(status=201, response=account.json())
 
     def get_account(self, request, account_id: str) -> Response:
         """Returns details of an account.
@@ -72,6 +85,36 @@ class AccountController:
             ),
         )
 
+    def search(self) -> Response:
+        """Returns list of account matching searching query
+
+        :returns: Json list of appointments
+        :rtype: Response
+        """
+        patient_id = request.args.get("patient_id")
+        status = request.args.get("status")
+        include_invoice = to_bool(request.args.get("include_invoice"))
+        search_clause = []
+
+        if include_invoice:
+            search_clause.append(("_revinclude:iterate", "Invoice:account"))
+        if patient_id:
+            search_clause.append(("patient", patient_id))
+        if status:
+            search_clause.append(("status", status))
+
+        result = self.resource_client.search(
+            "Account",
+            search=search_clause,
+        )
+        if result.total == 0:
+            return Response(status=200, response=json.dumps([]))
+        resp = json.dumps(
+            [json.loads(e.resource.json()) for e in result.entry],
+            default=json_serial,
+        )
+        return Response(status=200, response=resp)
+
 
 @account_blueprint.route("/<account_id>", methods=["GET"])
 @jwt_authenticated()
@@ -96,3 +139,17 @@ def cancel_account(account_id: str):
 @jwt_authorized("/Patient/*")
 def get_account_invoice(account_id: str):
     return AccountController().get_invoice_by_account_id(account_id=account_id)
+
+
+@account_blueprint.route("/", methods=["POST"])
+@jwt_authenticated()
+@jwt_authenticated("/Practitioner/*")
+def create_account():
+    return AccountController().create_account(request)
+
+
+@account_blueprint.route("/", methods=["GET"])
+@jwt_authenticated()
+@jwt_authorized("/Practitioner/*")
+def get_accounts():
+    return AccountController().search()

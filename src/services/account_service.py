@@ -1,3 +1,4 @@
+import string
 import uuid
 from typing import Tuple
 
@@ -31,18 +32,7 @@ class AccountService:
         account = self.resource_client.get_resource(account_id, "Account")
         return None, account
 
-    def create_account(
-        self, patient_id: uuid, identity: uuid = None
-    ) -> Tuple[Exception, ResourceBundle]:
-        """Returns account bundle
-
-        :param patient_id: uuid for patient
-        :type patient_id: uuid
-        :param identity: (optional)uuid for account
-        :type identity: uuid
-
-        :rtype: Tuple[Exception, ResourceBundle]
-        """
+    def _create_account(self, patient_id: uuid, description: string = None):
         account_jsondict = {
             "resourceType": "Account",
             "status": "active",
@@ -54,8 +44,43 @@ class AccountService:
                     "onHold": "false",
                 }
             ],
-            "description": "Created with encounter",
         }
-        account = construct_fhir_element("Account", account_jsondict)
+        if description:
+            account_jsondict["description"] = description
+        account = construct_fhir_element(
+            account_jsondict["resourceType"], account_jsondict
+        )
+        return account
+
+    def create_account_bundle(
+        self,
+        patient_id: uuid,
+        identity: uuid = None,
+        description: string = None,
+    ) -> Tuple[Exception, ResourceBundle]:
+        """Returns account bundle
+
+        :param patient_id: uuid for patient
+        :type patient_id: uuid
+        :param identity: (optional)uuid for account
+        :type identity: uuid
+
+        :rtype: Tuple[Exception, ResourceBundle]
+        """
+        account = self._create_account(patient_id, description)
         account_bundle = self.resource_client.get_post_bundle(account, identity)
         return None, account_bundle
+
+    def create_account_resource(
+        self, patient_id: uuid, description: string
+    ) -> Tuple[Exception, ResourceBundle]:
+        """Returns account
+
+        :param patient_id: uuid for patient
+        :type patient_id: uuid
+
+        :rtype: Tuple[Exception, ResourceBundle]
+        """
+        account = self._create_account(patient_id, description)
+        account_resource = self.resource_client.create_resource(account)
+        return None, account_resource

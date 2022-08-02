@@ -35,7 +35,7 @@ def create_payment_intent():
 def create_payment():
     request.get_json()
     manual = request.args.get("manual")
-    if (manual is not None and manual == "false") is None:
+    if manual is not None and manual == "false":
         return PaymentsController().create_payment(request)
     else:
         return PaymentsController().create_payment_manually(request)

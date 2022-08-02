@@ -18,3 +18,9 @@ Feature: Cancel Account
         And the charging is failed
         And the payment is cancelled
         Then account status is correctly set: inactive
+    Scenario: All accounts can be searched
+        Given a patient
+        And a back-office staff
+        When account can be created by the staff
+        And account can be created by the staff
+        Then all accounts can be searched
