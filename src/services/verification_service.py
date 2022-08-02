@@ -1,4 +1,4 @@
-from utils.twillo_setup import TwilioSingleton
+from utils.twilio_setup import TwilioSingleton
 
 ALLOWED_CHANNELS = ["email", "sms"]
 SUPPORTED_LOCALES = ["en", "ja"]
@@ -6,7 +6,7 @@ SUPPORTED_LOCALES = ["en", "ja"]
 
 class VerificationService:
     def __init__(self, service=None) -> None:
-        self._service = service or TwilioSingleton().client
+        self._service = service or TwilioSingleton.client()
 
     def start_verification(
         self, to: str, channel: str, locale: str
