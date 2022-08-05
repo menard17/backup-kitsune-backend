@@ -22,7 +22,7 @@ class PatientService:
         telecom = patient.get("telecom")
         if telecom:
             patient_email: str = list(
-                filter(lambda x: x["system"] == "email", telecom)
+                filter(lambda x: x["system"] == "email" and x["use"] == "home", telecom)
             )[0]["value"]
             return None, patient_email
         return None, None

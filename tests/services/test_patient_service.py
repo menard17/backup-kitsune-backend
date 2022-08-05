@@ -7,7 +7,7 @@ from services.patient_service import PatientService, remove_empty_string_from_ad
 
 
 class MockPatientClient:
-    def __init__(self, mocker=None, email=None):
+    def __init__(self, mocker=None, email=None, second_email=None):
         self.data = {
             "resourceType": "Patient",
             "id": "example",
@@ -23,6 +23,15 @@ class MockPatientClient:
             self.data["telecom"] = [
                 {"system": "email", "use": "home", "value": email},
             ]
+
+        if second_email:
+            # Insert old email at index 0 and index 2
+            self.data["telecom"].insert(
+                0, {"system": "email", "use": "old", "value": second_email}
+            )
+            self.data["telecom"].append(
+                {"system": "email", "use": "old", "value": second_email}
+            )
 
         self.mocker = mocker
 
@@ -130,3 +139,17 @@ def test_check_link_return_false_when_not_link_for_patient():
     assert not ok
     assert errResp.status_code == 400
     assert errResp.data == b"not link for patient"
+
+
+def test_get_patient_multiple_emails():
+    # Given
+    new_email = "new@umed.jp"
+    old_email = "old@umed.jp"
+    mock_resource_client = MockPatientClient(email=new_email, second_email=old_email)
+    patient_service = PatientService(mock_resource_client)
+
+    # When
+    _, actual_email = patient_service.get_patient_email("1")
+
+    # Then
+    assert new_email == actual_email
