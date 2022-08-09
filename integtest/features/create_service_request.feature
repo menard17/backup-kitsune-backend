@@ -1,7 +1,8 @@
 Feature: Process Serivce Request
-    Scenario: Patient can see in-coming nurse's visit and Nurse can view service request
+    Scenario: Doctor requesting pcr tests
         Given a patient
         And a doctor
-        And a nurse
         And an appointment
         When the doctor creates an encounter
+        And the doctor creates a request for pcr test
+        Then the doctor can fetch service request for the encounter

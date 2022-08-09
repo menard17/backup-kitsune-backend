@@ -44,6 +44,10 @@ class Invoice(TypedDict):
     ...
 
 
+class MedicationRequest(TypedDict):
+    ...
+
+
 class Slot(TypedDict):
     ...
 

@@ -148,12 +148,15 @@ class SystemCode:
             return document_type
 
     @staticmethod
-    def service_request_code():
-        return create_coding_clause(
-            ServiceURL.service_request_code,
-            "103693007",
-            "Diagnostic procedure (procedure)",
-        )
+    def service_request_code(request, display):
+        if not request and not display:
+            return create_coding_clause(
+                ServiceURL.service_request_code,
+                "103693007",
+                "Diagnostic procedure (procedure)",
+            )
+        else:
+            return create_coding_clause("ServiceRequest", request, display)
 
     @staticmethod
     def practitioner_code(practition: str):

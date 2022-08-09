@@ -11,6 +11,7 @@ from blueprints.diagnostic_reports import diagnostic_reports_blueprint
 from blueprints.document_references import document_references_blueprint
 from blueprints.encounters import encounters_blueprint
 from blueprints.invoices import invoices_blueprint
+from blueprints.medication_requests import medication_requests_blueprint
 from blueprints.messaging import messaging_blueprint
 from blueprints.organizations import organization_blueprint
 from blueprints.patients import patients_blueprint
@@ -62,6 +63,7 @@ app.register_blueprint(patients_blueprint)
 app.register_blueprint(payments_blueprint)
 app.register_blueprint(practitioners_blueprint)
 app.register_blueprint(practitioner_roles_blueprint)
+app.register_blueprint(medication_requests_blueprint)
 app.register_blueprint(messaging_blueprint)
 app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)

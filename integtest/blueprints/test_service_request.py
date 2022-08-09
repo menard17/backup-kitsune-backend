@@ -139,6 +139,41 @@ def create_appointment_for_nurse(
     return appointment
 
 
+@when(
+    "the doctor creates a request for pcr test",
+    target_fixture="service_request",
+)
+def create_service_request_for_pcr(
+    client: Client, patient: Patient, doctor: Practitioner, encounter: Encounter
+) -> ServiceRequest:
+    service_request_data = {
+        "patient_id": patient.fhir_data["id"],
+        "requester_id": doctor.fhir_data["id"],
+        "encounter_id": encounter["id"],
+        "service_request": "Allplex SARS-CoV-2 Assay",
+        "request_display": "RT-PCR",
+        "status": "active",
+        "priority": "urgent",
+    }
+    token = get_token(doctor.uid)
+    # First POST call is created with active status
+    # However second POST call updates the status to revoked
+    client.post(
+        "/service_requests",
+        data=json.dumps(service_request_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    resp = client.post(
+        "/service_requests",
+        data=json.dumps(service_request_data),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+    return json.loads(resp.data)
+
+
 @then("patient can fetch next appointment from doctor encounter")
 def get_next_appointment(
     client: Client,
@@ -165,6 +200,24 @@ def get_service_request_by_id(
 
     resp = client.get(
         f"service_requests/{service_request['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+    assert json.loads(resp.data)["data"][0]["id"] == service_request["id"]
+
+
+@then("the doctor can fetch service request for the encounter")
+def get_service_request_by_encounter(
+    client: Client,
+    doctor: Practitioner,
+    encounter: Encounter,
+    service_request: ServiceRequest,
+):
+    token = get_token(doctor.uid)
+    resp = client.get(
+        f"service_requests/?encounter_id={encounter['id']}",
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )

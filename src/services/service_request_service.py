@@ -10,29 +10,41 @@ class ServiceRequestService:
 
     def create_service_request(
         self,
-        service_request_uuid: str,
         patient_id: str,
-        performer_id: str,
         requester_id: str,
         encounter_id: str,
+        service_request: str,
+        request_display: str,
+        service_request_uuid: str = None,
+        performer_id: str = None,
+        status: str = "active",
+        priority: str = "routine",
     ):
         service_request_jsondict = {
             "resourceType": "ServiceRequest",
-            "status": "active",
+            "status": status,
             "intent": "order",
             "code": {
-                "coding": [SystemCode.service_request_code()],
+                "coding": [
+                    SystemCode.service_request_code(service_request, request_display)
+                ],
             },
-            "subject": {"reference": patient_id},
-            "requester": {"reference": requester_id},
-            "performer": [{"reference": performer_id}],
-            "encounter": {"referencec": encounter_id},
+            "subject": {"reference": f"Patient/{patient_id}"},
+            "requester": {"reference": f"PractitionerRole/{requester_id}"},
+            "encounter": {"reference": f"Encounter/{encounter_id}"},
+            "priority": priority,
         }
 
+        if performer_id:
+            service_request_jsondict["performer"] = [{"reference": performer_id}]
+
         request_service = construct_fhir_element(
-            service_request_jsondict["resourceType"], service_request_jsondict
+            "ServiceRequest", service_request_jsondict
         )
-        request_service = self.resource_client.get_post_bundle(
-            request_service, service_request_uuid
-        )
-        return None, request_service
+        if service_request_uuid:
+            result = self.resource_client.get_post_bundle(
+                request_service, service_request_uuid
+            )
+        else:
+            result = self.resource_client.create_resource(request_service)
+        return None, result
