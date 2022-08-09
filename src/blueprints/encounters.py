@@ -97,7 +97,7 @@ class EncountersController:
 
         :rtype: Response
         """
-        search_list = [("id", encounter_id), ("patient", patient_id)]
+        search_list = [("_id", encounter_id), ("patient", patient_id)]
         return self._search_encounters(search_list)
 
     def get_encounters(self, patient_id: str, appointment_id: str = None) -> Response:
