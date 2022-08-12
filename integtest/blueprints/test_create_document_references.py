@@ -71,6 +71,16 @@ def patient_creates_an_appointment(
     return create_appointment(client, doctor_d, patient_a)
 
 
+@when(
+    "patient A creates different appointment with doctor D",
+    target_fixture="another_appointment",
+)
+def patient_creates_another_appointment(
+    client: Client, patient_a: Patient, doctor_d: Practitioner
+) -> Appointment:
+    return create_appointment(client, doctor_d, patient_a, days=5)
+
+
 @when("doctor D creates an encounter", target_fixture="encounter")
 def doctor_creates_encounter(
     client: Client, doctor_d: Practitioner, patient_a: Patient, appointment: Appointment
@@ -78,12 +88,28 @@ def doctor_creates_encounter(
     return create_encounter(client, doctor_d, patient_a, appointment)
 
 
-@when("doctor D creates clinical note for patient A")
+@when("doctor D creates another encounter", target_fixture="another_encounter")
+def doctor_creates_another_encounter(
+    client: Client,
+    doctor_d: Practitioner,
+    patient_a: Patient,
+    another_appointment: Appointment,
+) -> Encounter:
+    return create_encounter(client, doctor_d, patient_a, another_appointment)
+
+
+@when(
+    "doctor D creates three clinical note for patient A", target_fixture="clinical_note"
+)
 def doctor_creates_clinical_note(
-    client: Client, patient_a: Patient, doctor_d: Practitioner, encounter: Encounter
-):
+    client: Client,
+    patient_a: Patient,
+    doctor_d: Practitioner,
+    encounter: Encounter,
+) -> str:
     token = get_token(doctor_d.uid)
     patient_id = patient_a.fhir_data["id"]
+    clinical_note = "PGh0bWw+Cjx0aXRsZT4gVGVzdCBEb2N1bWVudCA8L3RpdGxlPgoKRG9jdW1lbnQgY29udGVudCEKCjwvaHRtbD4="
 
     document_ref = {
         "subject": f"Patient/{patient_id}",
@@ -91,7 +117,7 @@ def doctor_creates_clinical_note(
         "encounter_id": encounter["id"],
         "pages": [
             {
-                "data": "PGh0bWw+Cjx0aXRsZT4gVGVzdCBEb2N1bWVudCA8L3RpdGxlPgoKRG9jdW1lbnQgY29udGVudCEKCjwvaHRtbD4=",
+                "data": clinical_note,
                 "title": "page1",
             }
         ],
@@ -102,7 +128,38 @@ def doctor_creates_clinical_note(
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
+    assert resp.status_code == 201
+    return clinical_note
 
+
+@when("doctor D creates different clinical note for patient A")
+def doctor_creates_different_clinical_note(
+    client: Client,
+    patient_a: Patient,
+    doctor_d: Practitioner,
+    another_encounter: Encounter,
+    clinical_note: str,
+) -> str:
+    token = get_token(doctor_d.uid)
+    patient_id = patient_a.fhir_data["id"]
+
+    document_ref = {
+        "subject": f"Patient/{patient_id}",
+        "document_type": "clinical_note",
+        "encounter_id": another_encounter["id"],
+        "pages": [
+            {
+                "data": clinical_note,
+                "title": "page1",
+            }
+        ],
+    }
+    resp = client.post(
+        "/document_references",
+        data=json.dumps(document_ref),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
     assert resp.status_code == 201
 
 
@@ -184,9 +241,9 @@ def check_access_of_doctor(client: Client, patient_a: Patient, doctor_e: Practit
     assert data["subject"]["reference"] == f"Patient/{patient_id}"
 
 
-@then("doctor D can access")
+@then("doctor D can access two clinical note")
 def doctor_can_access_clinical_note(
-    client: Client, doctor_d: Practitioner, patient_a: Patient
+    client: Client, doctor_d: Practitioner, patient_a: Patient, clinical_note: str
 ):
     token = get_token(doctor_d.uid)
 
@@ -199,10 +256,7 @@ def doctor_can_access_clinical_note(
 
     assert resp.status_code == 200
     data = json.loads(resp.data)
-    assert len(data["data"]) == 1
+    assert len(data["data"]) == 2
 
     data = data["data"][0]
-    assert (
-        data["content"][0]["attachment"]["data"]
-        == "PGh0bWw+Cjx0aXRsZT4gVGVzdCBEb2N1bWVudCA8L3RpdGxlPgoKRG9jdW1lbnQgY29udGVudCEKCjwvaHRtbD4="
-    )
+    assert data["content"][0]["attachment"]["data"] == clinical_note

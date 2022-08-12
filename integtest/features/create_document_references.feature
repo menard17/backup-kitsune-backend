@@ -16,6 +16,10 @@ Feature: Document References
         And patient A
         And doctor D
         When patient A creates an appointment with doctor D
+        And patient A creates different appointment with doctor D
         And doctor D creates an encounter
-        And doctor D creates clinical note for patient A
-        Then doctor D can access
+        And doctor D creates another encounter
+        And doctor D creates three clinical note for patient A
+        And doctor D creates three clinical note for patient A
+        And doctor D creates different clinical note for patient A
+        Then doctor D can access two clinical note

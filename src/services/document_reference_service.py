@@ -60,6 +60,8 @@ class DocumentReferenceService:
         search_clause.append(("subject", subject))
         search_clause.append(("type", SystemCode.document_type_token(document_type)))
         search_clause.append(("status", "current"))
+        if encounter_id:
+            search_clause.append(("encounter", encounter_id))
         existing = self.resource_client.search(
             "DocumentReference",
             search=search_clause,
