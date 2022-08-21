@@ -13,6 +13,7 @@ from blueprints.encounters import encounters_blueprint
 from blueprints.invoices import invoices_blueprint
 from blueprints.medication_requests import medication_requests_blueprint
 from blueprints.messaging import messaging_blueprint
+from blueprints.notion import notion_blueprint
 from blueprints.organizations import organization_blueprint
 from blueprints.patients import patients_blueprint
 from blueprints.payments import payments_blueprint
@@ -69,6 +70,7 @@ app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(slots_blueprint)
 app.register_blueprint(verifications_blueprint)
+app.register_blueprint(notion_blueprint)
 app.register_blueprint(zoom_blueprint)
 
 
