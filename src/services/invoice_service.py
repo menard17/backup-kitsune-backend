@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
@@ -34,10 +34,10 @@ class InvoiceService:
 
     def update_invoice_status(
         self,
-        payment_intent_id: str,
+        payment_intent_id: Optional[str],
         invoice_id: str,
         is_successful: bool,
-        reason: str = None,
+        reason: Optional[str] = None,
     ) -> Tuple[Exception, DomainResource]:
         """Update invoice status
 
@@ -57,10 +57,13 @@ class InvoiceService:
         if is_successful:
             construct_invoice.status = "balanced"
             construct_invoice.extension = [SystemCode.payment_intent(payment_intent_id)]
-        else:
+        elif payment_intent_id is not None:
             construct_invoice.status = "cancelled"
             construct_invoice.cancelledReason = reason
             construct_invoice.extension = [SystemCode.payment_intent(payment_intent_id)]
+        else:  # There is an error where payment_intent_id is not created by Stripe
+            construct_invoice.status = "cancelled"
+            construct_invoice.cancelledReason = reason
         invoice = self.resource_client.put_resource(invoice_id, construct_invoice)
         return None, invoice
 

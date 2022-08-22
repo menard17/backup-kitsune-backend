@@ -39,6 +39,37 @@ class PatientService:
         patient_name: dict = patient.dict()["name"][0]
         return None, patient_name
 
+    def get_patient_payment_details(self, patient_id: str) -> tuple[Exception, tuple]:
+        """Returns patient payment detaisl
+
+        :param patient_id: uuid for patient
+        :type patient_id: str
+
+        :rtype: tuple
+        """
+        patient = self.resource_client.get_resource(patient_id, "Patient")
+        if patient.extension is None:
+            return Exception(f"No extension is added with patient: {patient.id}"), None
+        customer_ids = list(
+            filter(lambda x: (x.url == "stripe-customer-id"), patient.extension)
+        )
+        payment_method_ids = list(
+            filter(lambda x: (x.url == "stripe-payment-method-id"), patient.extension)
+        )
+
+        if not customer_ids or not payment_method_ids:
+            return (
+                Exception(
+                    f"No customer id or payment id is registered with patient: {patient.id}"
+                ),
+                None,
+            )
+
+        customer_id = customer_ids[0].valueString
+        payment_method_id = payment_method_ids[0].valueString
+
+        return None, (customer_id, payment_method_id)
+
     # TODO: AB#788 This does not support multiple langauge for the name or address
     def update(
         self,

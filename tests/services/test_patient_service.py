@@ -7,7 +7,14 @@ from services.patient_service import PatientService, remove_empty_string_from_ad
 
 
 class MockPatientClient:
-    def __init__(self, mocker=None, email=None, second_email=None):
+    def __init__(
+        self,
+        mocker=None,
+        email=None,
+        second_email=None,
+        customer_id=None,
+        payment_id=None,
+    ):
         self.data = {
             "resourceType": "Patient",
             "id": "example",
@@ -31,6 +38,15 @@ class MockPatientClient:
             )
             self.data["telecom"].append(
                 {"system": "email", "use": "old", "value": second_email}
+            )
+
+        if customer_id and payment_id:
+            self.data["extension"] = []
+            self.data["extension"].append(
+                {"url": "stripe-customer-id", "valueString": customer_id}
+            )
+            self.data["extension"].append(
+                {"url": "stripe-payment-method-id", "valueString": payment_id}
             )
 
         self.mocker = mocker
@@ -153,3 +169,37 @@ def test_get_patient_multiple_emails():
 
     # Then
     assert new_email == actual_email
+
+
+def test_get_patient_payment_details():
+    # Given
+    payment_id = "payment id"
+    customer_id = "customer id"
+    mock_resource_client = MockPatientClient(
+        customer_id=customer_id, payment_id=payment_id
+    )
+    patient_service = PatientService(mock_resource_client)
+
+    # When
+    err, (
+        expected_cusotmer_id,
+        expected_payment_id,
+    ) = patient_service.get_patient_payment_details("1")
+
+    # Then
+    assert expected_cusotmer_id == customer_id
+    assert expected_payment_id == payment_id
+    assert err is None
+
+
+def test_get_patient_payment_error():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient_service = PatientService(mock_resource_client)
+
+    # When
+    err, outputs = patient_service.get_patient_payment_details("1")
+
+    # Then
+    assert outputs is None
+    assert err is not None

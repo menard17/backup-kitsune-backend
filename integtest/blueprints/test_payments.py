@@ -171,3 +171,32 @@ def charged_manually(client: Client, staff: Practitioner, account: Account):
         }
     )
     client.post(url, headers={"Authorization": f"Bearer {token}"}, data=body)
+
+
+@then("the patient gets auth error")
+def bulk_charge_by_patient(client, patient: Patient):
+    token = get_token(patient.uid)
+    url = "/payments/bulk"
+    resp = client.post(url, headers={"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 401
+
+
+@then("the doctor does not get auth error")
+def bulk_charge_by_doctor(client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    url = "/payments/bulk"
+    body = json.dumps(
+        {
+            "collection": "1",
+            "collectionId": "2",
+            "contents": ["1", "2"],
+        }
+    )
+    resp = client.post(
+        url,
+        headers={"Authorization": f"Bearer {token}"},
+        data=body,
+        content_type="application/json",
+    )
+    assert resp.status_code == 202

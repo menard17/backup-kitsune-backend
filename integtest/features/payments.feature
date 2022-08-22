@@ -22,3 +22,8 @@ Feature: Create a payment
         And payment is charged manually
         And account status is correctly set: inactive
         And invoice status is correctly set: any balanced
+    Scenario: Only practiitoner can bulk charge patient
+        Given a patient
+        And a doctor
+        Then the patient gets auth error
+        Then the doctor does not get auth error

@@ -20,6 +20,10 @@ PATIENT_DATA = {
             "country": "US",
         }
     ],
+    "extension": [
+        {"url": "stripe-payment-method-id", "valueString": "payment id"},
+        {"url": "stripe-customer-id", "valueString": "customer id"},
+    ],
     "telecom": [
         {"system": "email", "use": "home", "value": "example@umed.jp"},
         {"system": "phone", "use": "mobile", "value": "00000000000"},
