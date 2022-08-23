@@ -17,4 +17,4 @@ class StorageClient:
         encoded_blob_path = urllib.parse.quote(f"{object_name}/{file_name}", safe="")
         df = pd.read_json(json.dumps(output))
         blob.upload_from_string(data=df.to_csv(), content_type="text/csv")
-        return f"{BASE_STORAGE_URL}/b/{bucket}/o/{encoded_blob_path}"
+        return f"{BASE_STORAGE_URL}/b/{bucket_name}/o/{encoded_blob_path}"
