@@ -312,14 +312,19 @@ class PaymentsController:
         )
 
     def _create_payment(
-        self, amount: str, currency: str, account_id: str, description: str = None
+        self,
+        amount: str,
+        currency: str,
+        account_id: str,
+        description: str = None,
+        patient_id: str = None,
     ) -> tuple[Exception, str]:
-
-        # Get Active Account
-        err_account, account = self.account_service.get_account(account_id, True)
-        if err_account is not None:
-            return err_account, None
-        patient_id = account.subject[0].reference.split("/")[1]
+        if patient_id is None:
+            # Get Active Account
+            err_account, account = self.account_service.get_account(account_id, True)
+            if err_account is not None:
+                return err_account, None
+            patient_id = account.subject[0].reference.split("/")[1]
 
         # Create Invoice
         err_invoice, invoice = self.invoice_service.create_invoice(
@@ -499,6 +504,7 @@ class PaymentsController:
                 payment_obj.currency,
                 payment_obj.account,
                 payment_obj.description,
+                payment_obj.patient,
             )
             if err_payment is not None:
                 payment_obj.error = err_payment
