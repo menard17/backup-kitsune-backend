@@ -9,6 +9,7 @@ jobs:
 - job: Validation
   variables:
   - group: ValidationCI
+  - group: infra-dev
   steps:
   - script: |
       sudo mkdir /secrets
@@ -36,7 +37,11 @@ jobs:
   - script: |
       export PYTHONPATH=src/
       export FCM_TOKEN=$(FCM_TOKEN)
-      export ENV=dev
+      export ENV=$(env)
+      export PROJECT=$(project-id)
+      export LOCATION=$(region)
+      export FHIR_DATASET=hdb-kitsune-$(env)-$(region)
+      export FHIR_STORE=fhr-kitsune-$(env)-$(region)
       poetry run pytest --reruns 3 --reruns-delay 1 . --junitxml=junit/test-results.xml --cov=. --cov-report=xml
     displayName: pytest
     env:
