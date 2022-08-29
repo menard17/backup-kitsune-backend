@@ -1,8 +1,9 @@
 import json
 import os
 
-from flask import Blueprint, Response
+from flask import Blueprint, Response, request
 
+from json_serialize import json_serial
 from utils.middleware import jwt_authenticated
 
 address_blueprint = Blueprint("address", __name__, url_prefix="/address")
@@ -484,7 +485,7 @@ class AddressController:
             "area": area,
             "street": street,
         }
-        return Response(status=200, response=output)
+        return Response(status=200, response=json.dumps(output, default=json_serial))
 
 
 def get_region_by_id(region_id: str) -> dict:
@@ -511,13 +512,15 @@ def get_validated_processed_code(code: str):
     return result
 
 
-@address_blueprint.route("/<zipcode>", methods=["GET"])
+@address_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
-def get_address(zipcode: str):
+def get_address():
     """
-    Get address based on the zipcode provided
+    Get address based on the zipcode provided in param
+
     """
     try:
+        zipcode = request.args.get("zipcode")
         code = get_validated_processed_code(zipcode)
     except Exception as err:
         return Response(status=400, response=err.message)

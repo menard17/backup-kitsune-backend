@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 
 from pytest import raises
@@ -112,10 +113,10 @@ class TestGetAddressByZip:
         }
 
         # When
-        actual_output = AddressController.get_address_by_zip(zipcode).response
+        actual_output = AddressController.get_address_by_zip(zipcode).response[0]
 
         # Then
-        TestCase().assertDictEqual(expected_output, actual_output)
+        assert expected_output == json.loads(actual_output)
 
     def test_four_items_get_address_by_zip(self):
         # Given
@@ -129,7 +130,7 @@ class TestGetAddressByZip:
         }
 
         # When
-        actual_output = AddressController.get_address_by_zip(zipcode).response
+        actual_output = AddressController.get_address_by_zip(zipcode).response[0]
 
         # Then
-        TestCase().assertDictEqual(expected_output, actual_output)
+        assert expected_output == json.loads(actual_output)
