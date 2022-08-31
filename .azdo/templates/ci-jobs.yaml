@@ -16,6 +16,10 @@ jobs:
       sudo touch /secrets/stripe_key
       sudo chmod 777 /secrets/stripe_key
       sudo echo "key" > /secrets/stripe_key
+      sudo mkdir /notion_key
+      sudo touch /notion_key/notion_key
+      sudo chmod 777 /notion_key/notion_key
+      sudo echo "key" > /notion_key/notion_key
     displayName: 'Create secrets file'
   - task: DownloadSecureFile@1
     name: googleApplicationCredentials
@@ -48,6 +52,7 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)
   - script: |
       sudo rm /secrets/stripe_key
+      sudo rm /notion_key/notion_key
     displayName: 'Delete a secret'
   - task: PublishTestResults@2
     condition: succeededOrFailed()

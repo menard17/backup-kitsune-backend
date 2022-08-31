@@ -14,12 +14,12 @@ from blueprints.encounters import encounters_blueprint
 from blueprints.invoices import invoices_blueprint
 from blueprints.medication_requests import medication_requests_blueprint
 from blueprints.messaging import messaging_blueprint
-from blueprints.notion import notion_blueprint
 from blueprints.organizations import organization_blueprint
 from blueprints.patients import patients_blueprint
 from blueprints.payments import payments_blueprint
 from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
+from blueprints.pubsub import pubsub_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
 from blueprints.verifications import verifications_blueprint
@@ -29,6 +29,7 @@ from utils.metric import (
     before_request_add_start_time,
     teardown_request_log_endpoint_metric,
 )
+from utils.notion_setup import NotionSingleton
 from utils.stripe_setup import StripeSingleton
 
 dictConfig(
@@ -72,7 +73,7 @@ app.register_blueprint(diagnostic_reports_blueprint)
 app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(slots_blueprint)
 app.register_blueprint(verifications_blueprint)
-app.register_blueprint(notion_blueprint)
+app.register_blueprint(pubsub_blueprint)
 app.register_blueprint(zoom_blueprint)
 
 
@@ -93,8 +94,10 @@ def teardown_request(err=None):
 
 if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])
+    NotionSingleton.client(os.environ[base_path])
 else:
     StripeSingleton(stripe)
+    NotionSingleton.client()
 
 
 if __name__ == "__main__":
