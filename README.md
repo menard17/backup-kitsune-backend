@@ -5,9 +5,9 @@
 
 ## Prerequisite
 
-* [python](https://www.python.org/downloads/)
-* [poetry](https://python-poetry.org/docs/#installation)
-* [pre-commit](https://pre-commit.com/)
+- [python](https://www.python.org/downloads/)
+- [poetry](https://python-poetry.org/docs/#installation)
+- [pre-commit](https://pre-commit.com/)
 
 ## Development
 
@@ -72,6 +72,30 @@ docker build --target development -t sample001:1.0 -f docker/Dockerfile .
 docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file local.env sample001:1.0
 ```
 
+#### If you are using VSCode
+
+- Click on the "Open Remote Window" button on the bottom left
+- Click on "Reopen in container"
+- This will open the project in a docker container
+- Once that loads
+- run this command
+
+```
+mkdir /secrets && echo <Your Stripe Key> > /secrets/stripe_key
+```
+
+- this should create a secrets/stripe_key folder in the root directory
+- Then go back to the workspace kitsune-backend
+- Then run
+
+```
+poetry install
+export the environment variables into the terminal
+poetry run python srs/app.py
+```
+
+You should have your endpoint running at `http://localhost:8080`
+
 #### Running unit tests and coverage
 
 ```shell
@@ -129,10 +153,10 @@ There are number of tests you can conduct before raising PR to save everyone's t
 
 ### Unittest and Code Coverage
 
-* Code Coverage has not decreased since you added new code
-* All unittests have passed
+- Code Coverage has not decreased since you added new code
+- All unittests have passed
 
 ### Make sure pre-commit is installed before commit
 
-* If it's not installed or edited ```.pre-commit-config.yaml```, you can run ```pre-commit install```
-* If you have already commited code, you can also run ```pre-commit run --all-files```
+- If it's not installed or edited `.pre-commit-config.yaml`, you can run `pre-commit install`
+- If you have already commited code, you can also run `pre-commit run --all-files`
