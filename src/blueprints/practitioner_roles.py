@@ -39,7 +39,9 @@ class PractitionerRoleController:
         slot_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
-        self.schdule_service = schedule_service or ScheduleService(self.resource_client)
+        self.schedule_service = schedule_service or ScheduleService(
+            self.resource_client
+        )
         self.practitioner_service = practitioner_service or PractitionerService(
             self.resource_client
         )
@@ -194,7 +196,7 @@ class PractitionerRoleController:
         resources.append(practitioner_role)
 
         # Create a schedule
-        err, schedule = self.schdule_service.create_schedule(role_id, name, start, end)
+        err, schedule = self.schedule_service.create_schedule(role_id, name, start, end)
         if err is not None:
             return Response(status=400, response=err.args[0])
         resources.append(schedule)
@@ -367,8 +369,11 @@ class PractitionerRoleController:
 
         # Handling special case of generating a list of available slots
         if not_status is None and status == "free":
-            start_time = self._get_earliest_start_time_for_free_booking(isoparse(start))
-            end_time = isoparse(end)
+            start_time = self._get_earliest_start_time_for_free_booking(
+                isoparse(start),
+                schedule.planningHorizon.start,
+            )
+            end_time = min(isoparse(end), schedule.planningHorizon.end)
 
             # Retrieve practitioner's availability
             role = self.resource_client.get_resource(role_id, "PractitionerRole")
@@ -421,12 +426,18 @@ class PractitionerRoleController:
     # automatic slots system: free slots will be marked as unavailable after
     # the current time + minimum delay booking.
     def _get_earliest_start_time_for_free_booking(
-        self, start_time: datetime
+        self,
+        start_time: datetime,
+        schedule_start_time: datetime,
     ) -> datetime:
         current_time_with_booking_delay = (
             datetime.now().astimezone(start_time.tzinfo) + MINIMUM_DELAY_BETWEEN_BOOKING
         )
-        return max(start_time, current_time_with_booking_delay)
+        return max(
+            start_time,
+            schedule_start_time,
+            current_time_with_booking_delay,
+        )
 
     def update_status(self, request, role_id):
 
