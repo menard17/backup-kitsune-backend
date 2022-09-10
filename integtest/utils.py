@@ -80,7 +80,7 @@ def create_practitioner(
     param_data = {
         "role_type": role_type,
         "start": "2021-08-15T13:55:57.967345+09:00",
-        "end": "2099-08-15T14:55:57.967345+09:00",
+        "end": "2021-08-15T14:55:57.967345+09:00",
         "family_name_en": practitioner_name[0],
         "given_name_en": practitioner_name[1],
         "bio_en": "My background ...",

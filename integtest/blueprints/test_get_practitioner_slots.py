@@ -172,46 +172,6 @@ def get_available_slots_outside_schedule(client: Client, practitioner: Practitio
     assert len(slots) == 0
 
 
-@then("the user cannot fetch available slots before the doctor's serving date range")
-def get_available_slots_before_serving_date_range_should_fail(
-    client: Client, practitioner: Practitioner
-):
-    token = get_token(practitioner.uid)
-
-    timezone = pytz.timezone("Asia/Tokyo")
-    before_serving_range = isoparse("1990-08-15T13:55:57.967345+09:00")
-    start = _localize(
-        before_serving_range - timedelta(days=1), time(0, 0), timezone
-    ).isoformat()
-    end = _localize(before_serving_range, time(0, 0), timezone).isoformat()
-    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
-
-    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
-    slots = json.loads(resp.data)["data"]
-    assert slots is not None
-    assert len(slots) == 0
-
-
-@then("the user cannot fetch available slots after the doctor's serving date range")
-def get_available_slots_after_serving_date_range_should_fail(
-    client: Client, practitioner: Practitioner
-):
-    token = get_token(practitioner.uid)
-
-    timezone = pytz.timezone("Asia/Tokyo")
-    after_serving_range = isoparse("2992-08-15T13:55:57.967345+09:00")
-    start = _localize(after_serving_range, time(0, 0), timezone).isoformat()
-    end = _localize(
-        after_serving_range + timedelta(days=1), time(0, 0), timezone
-    ).isoformat()
-    url = f'/practitioner_roles/{practitioner.fhir_data["id"]}/slots?start={quote(start)}&end={quote(end)}&status=free'
-
-    resp = client.get(url, headers={"Authorization": f"Bearer {token}"})
-    slots = json.loads(resp.data)["data"]
-    assert slots is not None
-    assert len(slots) == 0
-
-
 @then("the user can fetch all available slots except busy slots")
 def get_available_slots_except_busy_slots(client: Client, practitioner: Practitioner):
     token = get_token(practitioner.uid)
