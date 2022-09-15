@@ -82,7 +82,7 @@ class TestGetValidatedProcessedCode:
 
     def test_dash_and_spaces(self):
         # Given
-        zipcode = "  123-00 21"
+        zipcode = "１２３ー-vmao$#@００２１"
         expected_output = "1230021"
 
         # When

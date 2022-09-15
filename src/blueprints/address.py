@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from flask import Blueprint, Response, request
 
@@ -501,10 +502,9 @@ def get_prefecture_by_id(pref_id: str) -> dict:
 
 
 def get_validated_processed_code(code: str):
-    result = code
-    if "-" in code:
-        result = result.replace("-", "")
-        result = result.replace(" ", "")
+    table = dict(zip(map(ord, "０１２３４５６７８９"), map(ord, "0123456789")))
+    result = code.translate(table)
+    result = re.sub("[^0-9]", "", result)
     if len(result) != 7:
         raise Exception(response=f"code needs to be length of 7: {len(result)}")
     if not result.isnumeric():
