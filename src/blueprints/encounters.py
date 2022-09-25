@@ -255,4 +255,14 @@ class EncountersController:
             encounter_id, "Encounter", value
         )
 
+        # inactivate account
+        if status == "cancelled":
+            for account in new_encounter.account:
+                account_id = account.reference.split("/")[1]
+                err, account = self.account_service.inactivate_account(account_id)
+
+                # Currently err will always be None.
+                if err is not None:
+                    return Response(status=400, response=err.args[0])
+
         return Response(status=200, response=new_encounter.json())
