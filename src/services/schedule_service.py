@@ -24,7 +24,12 @@ class ScheduleService:
         schedule = self.resource_client.get_post_bundle(schedule)
         return None, schedule
 
-    def get_shcedule(self, role_id):
-        search_clause = [("actor", role_id)]
-        schedule = self.resource_client.search("Schedule", search_clause)
-        return None, schedule
+    def get_active_schedules(self, role_id):
+        search_clause = [
+            ("actor", role_id),
+            (
+                "active",
+                str(True),
+            ),
+        ]
+        return self.resource_client.search("Schedule", search_clause)

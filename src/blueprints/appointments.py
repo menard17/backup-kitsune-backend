@@ -100,12 +100,10 @@ class AppointmentController:
 
         resources = []
 
-        # Get a schedule
-        err, schedule = self.schedule_service.get_shcedule(role_id)
-        if err is not None:
-            return Response(status=400, response=err.args[0])
+        # Get an active schedule
+        schedules = self.schedule_service.get_active_schedules(role_id)
 
-        if schedule.total == 0:
+        if schedules.total == 0:
             return Response(status=400, response="No schedule is created")
 
         # Create New Slot Bundle

@@ -39,7 +39,9 @@ class PractitionerRoleController:
         slot_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
-        self.schdule_service = schedule_service or ScheduleService(self.resource_client)
+        self.schedule_service = schedule_service or ScheduleService(
+            self.resource_client
+        )
         self.practitioner_service = practitioner_service or PractitionerService(
             self.resource_client
         )
@@ -194,7 +196,7 @@ class PractitionerRoleController:
         resources.append(practitioner_role)
 
         # Create a schedule
-        err, schedule = self.schdule_service.create_schedule(role_id, name, start, end)
+        err, schedule = self.schedule_service.create_schedule(role_id, name, start, end)
         if err is not None:
             return Response(status=400, response=err.args[0])
         resources.append(schedule)
@@ -299,6 +301,21 @@ class PractitionerRoleController:
         if pracititioner_bundle:
             resources.append(pracititioner_bundle)
 
+        # Modify Schedule
+        if start is not None or end is not None:
+            err, schedules = self.schedule_service.get_active_schedules(role_id)
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+
+            # assume we only have 1 active schedule at once
+            schedule = schedules.entry[0].resource
+            if start is not None:
+                schedule.planningHorizon.start = start
+            if end is not None:
+                schedule.planningHorizon.end = end
+            schedule_bundle = self.resource_client.get_put_bundle(schedule, schedule.id)
+            resources.append(schedule_bundle)
+
         # Call bulk process
         if resources:
             resp = self.resource_client.create_resources(resources)
@@ -349,26 +366,37 @@ class PractitionerRoleController:
         status = request.args.get("status", "free")
         not_status = request.args.get("not_status")
 
-        schedule_search = self.resource_client.search(
-            "Schedule",
-            search=[
-                ("actor", role_id),
-                (
-                    "active",
-                    str(True),
-                ),  # assumes we only have one active schedule at the period
-            ],
-        )
-
-        if schedule_search.entry is None:
+        schedules = self.schedule_service.get_active_schedules(role_id)
+        if schedules.entry is None:
             return {"data": []}
 
-        schedule = schedule_search.entry[0].resource
+        # assume we only have 1 active schedule at once
+        schedule = schedules.entry[0].resource
 
         # Handling special case of generating a list of available slots
         if not_status is None and status == "free":
-            start_time = self._get_earliest_start_time_for_free_booking(isoparse(start))
-            end_time = isoparse(end)
+            # the FHIR resource package will decode the start/end time to
+            # either date or datetime depending on the saved input.
+            # e.g., "2022-09-02" -> date and "2021-08-15 13:55:57.967345+09:00" -> datetime.
+            # this is to ensure we are using datetime.
+            schedule_start = datetime.fromisoformat(
+                schedule.planningHorizon.start.isoformat()
+            )
+            schedule_end = datetime.fromisoformat(
+                schedule.planningHorizon.end.isoformat()
+            )
+
+            # add timezone
+            if schedule_start.tzinfo is None:
+                schedule_start = tokyo_timezone.localize(schedule_start)
+            if schedule_end.tzinfo is None:
+                schedule_end = tokyo_timezone.localize(schedule_end)
+
+            start_time = self._get_earliest_start_time_for_free_booking(
+                isoparse(start),
+                schedule_start,
+            )
+            end_time = min(isoparse(end), schedule_end)
 
             # Retrieve practitioner's availability
             role = self.resource_client.get_resource(role_id, "PractitionerRole")
@@ -421,12 +449,18 @@ class PractitionerRoleController:
     # automatic slots system: free slots will be marked as unavailable after
     # the current time + minimum delay booking.
     def _get_earliest_start_time_for_free_booking(
-        self, start_time: datetime
+        self,
+        start_time: datetime,
+        schedule_start_time: datetime,
     ) -> datetime:
         current_time_with_booking_delay = (
             datetime.now().astimezone(start_time.tzinfo) + MINIMUM_DELAY_BETWEEN_BOOKING
         )
-        return max(start_time, current_time_with_booking_delay)
+        return max(
+            start_time,
+            schedule_start_time,
+            current_time_with_booking_delay,
+        )
 
     def update_status(self, request, role_id):
 
