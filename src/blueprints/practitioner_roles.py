@@ -303,10 +303,7 @@ class PractitionerRoleController:
 
         # Modify Schedule
         if start is not None or end is not None:
-            err, schedules = self.schedule_service.get_active_schedules(role_id)
-            if err is not None:
-                return Response(status=400, response=err.args[0])
-
+            schedules = self.schedule_service.get_active_schedules(role_id)
             # assume we only have 1 active schedule at once
             schedule = schedules.entry[0].resource
             if start is not None:
