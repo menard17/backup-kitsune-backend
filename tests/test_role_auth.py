@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from utils import role_auth
 
 
@@ -58,6 +60,80 @@ def test_grant_role_without_role_id():
             mock_auth.set_custom_user_claims.assert_called_once_with(
                 "test-uid", {"roles": {"Admin": {}}}
             )
+
+
+def test_delegate_role():
+    main_role_id = "primary-patient-id"
+    delegate_role_id = "secondary-patient-id"
+    current_claims = {
+        "uid": "test-uid",
+        "roles": {
+            "Patient": {
+                "id": main_role_id,
+            },
+        },
+    }
+    expected_updated_roles = current_claims["roles"].copy()
+    expected_updated_roles["Patient"]["delegates"] = [delegate_role_id]
+
+    with patch("utils.role_auth.auth") as mock_auth:
+        with patch("utils.role_auth.auth.get_user", return_value=UserObject):
+            role_auth.delegate_role(
+                current_claims, "Patient", main_role_id, delegate_role_id
+            )
+
+            mock_auth.set_custom_user_claims.assert_called_once_with(
+                "test-uid", {"roles": expected_updated_roles}
+            )
+
+
+def test_delegate_role_fail_when_role_not_existing():
+    main_role_id = "primary-patient-id"
+    delegate_role_id = "secondary-patient-id"
+    current_claims = {
+        "uid": "test-uid",
+    }
+
+    with pytest.raises(Exception):
+        role_auth.delegate_role(
+            current_claims, "Patient", main_role_id, delegate_role_id
+        )
+
+
+def test_delegate_role_fail_when_main_role_id_not_existing():
+    delegate_role_id = "secondary-patient-id"
+
+    # only have practitioner role, not able to delegate for patient
+    current_claims = {
+        "uid": "test-uid",
+        "roles": {
+            "Practitioner": {
+                "id": "doctor-id",
+            },
+        },
+    }
+
+    with pytest.raises(Exception):
+        role_auth.delegate_role(
+            current_claims, "Patient", "patient-id", delegate_role_id
+        )
+
+
+def test_delegate_role_fail_when_main_role_id_mismatch():
+    delegate_role_id = "secondary-patient-id"
+    current_claims = {
+        "uid": "test-uid",
+        "roles": {
+            "Patient": {
+                "id": "patient-id",
+            },
+        },
+    }
+
+    with pytest.raises(Exception):
+        role_auth.delegate_role(
+            current_claims, "Patient", "wrong-patient-id", delegate_role_id
+        )
 
 
 def test_extract_roles():
@@ -182,3 +258,17 @@ def test_is_authorized_multiple_roles():
     assert role_auth.is_authorized(claims_roles, "Staff", "*") is False
     assert role_auth.is_authorized(claims_roles, "Practitioner", "*") is False
     assert role_auth.is_authorized(claims_roles, "Admin", None) is False
+
+
+def test_is_authorized_with_delegate_role():
+    secondary_patient_1 = "secondary-patient-1"
+    secondary_patient_2 = "secondary-patient-2"
+    claim_roles = {
+        "Patient": {
+            "id": "primary-patient-id",
+            "delegates": [secondary_patient_1, secondary_patient_2],
+        },
+    }
+
+    assert role_auth.is_authorized(claim_roles, "Patient", secondary_patient_1)
+    assert role_auth.is_authorized(claim_roles, "Patient", secondary_patient_2)

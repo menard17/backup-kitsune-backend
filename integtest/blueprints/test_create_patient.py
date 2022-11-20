@@ -62,7 +62,7 @@ def patch_birthday(client: Client, patient: Patient, updated: str) -> json:
 
 
 @when("patient get call is called", target_fixture="patient_json")
-def get_birthday(client: Client, patient: Patient) -> json:
+def call_get_patient(client: Client, patient: Patient) -> json:
     token = get_token(patient.uid)
     patient_resp = client.get(
         f"/patients/{patient.fhir_data['id']}",

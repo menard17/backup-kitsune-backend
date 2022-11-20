@@ -269,14 +269,12 @@ class AppointmentController:
         if actor_id is None and "Staff" not in claims_roles:
             return Response(status=400, response="missing param: actor_id")
 
-        if (
-            "Practitioner" not in claims_roles
-            and "Patient" in claims_roles
-            and claims_roles["Patient"]["id"] != actor_id
+        if actor_id is not None and not role_auth.is_authorized(
+            claims_roles, "Patient", actor_id
         ):
             return Response(
                 status=401,
-                response="patient can only search appointment for him/herself",
+                response="Unauthorized for the actor_id",
             )
 
         if status and not self.is_valid_appointment_status(status=status):

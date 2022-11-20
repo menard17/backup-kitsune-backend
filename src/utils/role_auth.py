@@ -1,6 +1,32 @@
 from firebase_admin import auth
 
 
+def delegate_role(
+    request_claims: dict, role: str, main_role_id: str, delegate_role_id: str
+):
+    """Delegate a role access to another role
+
+    This is to support secondary accounts. The primary account would have
+    access to the secondary accounts.
+
+    Warn: this function assumes that the role for the main_role_id already exists.
+    Otherwise it will raise Exception.
+    """
+    current_roles = extract_roles(request_claims)
+    if role not in current_roles:
+        raise Exception("role does not exists for the main account")
+    if current_roles[role]["id"] != main_role_id:
+        raise Exception("main_role_id mismatch")
+
+    delegates = current_roles[role].get("delegates", [])
+    if delegate_role_id not in delegates:
+        delegates.append(delegate_role_id)
+    current_roles[role]["delegates"] = delegates
+
+    uid = request_claims["uid"]
+    auth.set_custom_user_claims(uid, {"roles": current_roles})
+
+
 def grant_role(request_claims: dict, role: str, role_id: str = None):
     """Grant a role to a specific customer.
 
@@ -17,7 +43,8 @@ def grant_role(request_claims: dict, role: str, role_id: str = None):
     Below are all the supported role types and the underlying structure:
     {
         "Patient": {
-            "id": "patient-id"
+            "id": "patient-id",
+            "delegates": ["secondary-patient-id",...]
         },
         "Practitioner": {
             "id": "practitioner-id"
@@ -82,8 +109,14 @@ def is_authorized(claims_roles: dict, scope_role: str, scope_role_id: str) -> bo
         if "Practitioner" in claims_roles or "Staff" in claims_roles:
             return True
 
-        if "Patient" in claims_roles and claims_roles["Patient"]["id"] == scope_role_id:
-            return True
+        # It must either be the primary patient ID or the
+        # delegated secondary patient ID(s)
+        if "Patient" in claims_roles:
+            patient_role = claims_roles["Patient"]
+            if patient_role["id"] == scope_role_id:
+                return True
+            if scope_role_id in patient_role.get("delegates", []):
+                return True
 
     if scope_role == "Practitioner":
         if "Staff" in claims_roles:

@@ -399,7 +399,7 @@ def test_search_appointment_patient_cannot_see_other_people_data():
     resp_data = resp.data.decode("utf-8")
 
     assert resp.status_code == 401
-    assert resp_data == "patient can only search appointment for him/herself"
+    assert resp_data == "Unauthorized for the actor_id"
 
 
 def test_search_appointment_patiets_if_both_practitioner_and_patient_present():

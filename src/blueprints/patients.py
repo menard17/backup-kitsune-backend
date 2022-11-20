@@ -1,5 +1,6 @@
 import json
 
+from fhir.resources.consent import Consent
 from fhir.resources.patient import Patient
 from flask import Blueprint, Request, Response, request
 
@@ -74,12 +75,14 @@ class PatientController:
 
         :rtype: Response
         """
+
         search_clause = [("_id", patient_id)]
         if (is_active := request.args.get("active")) is not None:
             search_clause.append(("active", is_active))
         patient = (
             self.resource_client.search("Patient", search_clause).entry[0].resource
         )
+
         return Response(
             status=200, response=json.dumps({"data": datetime_encoder(patient.dict())})
         )
@@ -116,6 +119,7 @@ class PatientController:
         :param request: the request for this operation
         :rtype: (dict, int)
         """
+
         # Only allow user with verified email to create patient
         if (
             "email_verified" not in request.claims
@@ -130,8 +134,60 @@ class PatientController:
         patient = Patient.parse_obj(request.get_json())
         patient = self.resource_client.create_resource(patient)
 
-        # Then grant the custom claim for the caller in Firebase
-        role_auth.grant_role(request.claims, "Patient", patient.id)
+        # First time creation -> the primary account
+        role = role_auth.extract_roles(request.claims)
+        if role is None or "Patient" not in role:
+            role_auth.grant_role(request.claims, "Patient", patient.id)
+        else:
+            # delegate the Firebase auth
+            primary_patient_id = request.claims["roles"]["Patient"]["id"]
+            role_auth.delegate_role(
+                request.claims, "Patient", primary_patient_id, patient.id
+            )
+
+            # create the consent resource
+            # ref: http://hl7.org/fhir/2021Mar/consent.html
+            consent_data = {
+                "resourceType": "Consent",
+                "status": "active",
+                "patient": {
+                    "reference": f"Patient/{patient.id}",
+                },
+                "scope": {
+                    "text": "all access",
+                },
+                "policyRule": {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                            "code": "ACALL",
+                        }
+                    ]
+                },
+                "provision": {
+                    "type": "permit",
+                    "actor": [
+                        {
+                            "role": {
+                                "text": "grantee",
+                            },
+                            "reference": {"reference": f"Patient/{primary_patient_id}"},
+                        }
+                    ],
+                },
+                "category": [
+                    {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                                "code": "ACALL",  # All access
+                            }
+                        ]
+                    }
+                ],
+            }
+            consent = Consent.parse_obj(consent_data)
+            self.resource_client.create_resource(consent)
 
         return patient.dict(), 201
 

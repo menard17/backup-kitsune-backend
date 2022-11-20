@@ -126,6 +126,25 @@ def create_patient(client: Client, user: User):
     return Patient(user.uid, json.loads(resp.data))
 
 
+def create_secondary_patient(client: Client, patient: Patient):
+    """
+    If there is a patient ID attached to the Firebase token already,
+    the further call to create the patient will be treat as creating
+    the secondary patient(s).
+    """
+    token = get_token(patient.uid)
+    resp = client.post(
+        "/patients",
+        data=json.dumps(PATIENT_DATA),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201
+    # secondary patient does not have firebase id
+    return Patient(None, json.loads(resp.data))
+
+
 def create_appointment(
     client: Client,
     practitioner: Practitioner,
