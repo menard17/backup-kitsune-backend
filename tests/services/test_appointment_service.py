@@ -191,3 +191,23 @@ def test_status_valid(status, expected):
 
     # Then
     assert is_valid_status == expected
+
+
+def test_get_start_time():
+    # Given
+    datetime_format = "%Y-%m-%dT%H:%M:%S+00:00"
+    expected_datetime_format = "%Y-%m-%d %H:%M:%S+00:00"
+    start_time = datetime.now(timezone.utc)
+    start_time_input = start_time.strftime(datetime_format)
+    expected_start_time = start_time.strftime(expected_datetime_format)
+    end_time = (datetime.now(timezone.utc) + timedelta(minutes=15)).strftime(
+        datetime_format
+    )
+
+    # When
+    appointment = construct_fhir_element(
+        "Appointment", get_appointment(start_time_input, end_time)
+    )
+
+    # Then
+    assert AppointmentService.get_start_time(appointment) == expected_start_time

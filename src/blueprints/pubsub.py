@@ -1,18 +1,21 @@
 import base64
 import logging
-import re
 import os
+import re
 
 from fhir.resources.bundle import Bundle
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
+from services.firestore_service import FireStoreService
 from services.notion_service import NotionService
 
 pubsub_blueprint = Blueprint("pubsub", __name__, url_prefix="/pubsub")
 
 log = logging.getLogger(__name__)
 
+
+# TODO: AB#1211, this flag is used to enable firestore as well.
 IS_SYNCING_TO_NOTION_ENABLED = os.getenv("IS_SYNCING_TO_NOTION_ENABLED")
 
 
@@ -27,12 +30,14 @@ class PubsubController:
         resource_client: ResourceClient = None,
         notion_service: NotionService = None,
         is_syncing_to_notion_enabled: str = None,
+        firestore_service: FireStoreService = None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.notion_service = notion_service or NotionService()
         self.is_syncing_to_notion_enabled = (
             is_syncing_to_notion_enabled or IS_SYNCING_TO_NOTION_ENABLED
         )
+        self.firestore_service = firestore_service or FireStoreService()
 
     def fhir(self, request) -> Response:
         """Receive Pub/Sub message"""
@@ -166,6 +171,14 @@ class PubsubController:
             medication_request=medication_request,
             service_request=service_request,
             insurance_card=insurance_card,
+        )
+
+        self.firestore_service.sync_encounter_to_firestore(
+            appointment=appointment,
+            encounter=encounter,
+            patient=patient,
+            medication_request=medication_request,
+            service_request=service_request,
         )
 
         return Response(

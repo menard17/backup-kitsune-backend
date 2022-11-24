@@ -1,7 +1,10 @@
 from fhir.resources import construct_fhir_element
+from fhir.resources.domainresource import DomainResource
 
 from adapters.fhir_store import ResourceClient
 from utils.system_code import SystemCode
+
+SERVICE_REQUEST = "ServiceRequest"
 
 
 class ServiceRequestService:
@@ -48,3 +51,17 @@ class ServiceRequestService:
         else:
             result = self.resource_client.create_resource(request_service)
         return None, result
+
+    @staticmethod
+    def get_service_request(service_request: DomainResource) -> list:
+        output = []
+        for request in service_request.code.coding:
+            if request.system == SERVICE_REQUEST:
+                output.append(
+                    {
+                        "display": request.display,
+                        "value": request.code,
+                        "verified": "false",
+                    }
+                )
+        return output

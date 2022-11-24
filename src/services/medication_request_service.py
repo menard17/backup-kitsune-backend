@@ -1,4 +1,5 @@
 from fhir.resources import construct_fhir_element
+from fhir.resources.domainresource import DomainResource
 
 from adapters.fhir_store import ResourceClient
 
@@ -42,3 +43,12 @@ class MedicationRequestService:
         )
         result = self.resource_client.get_post_bundle(medication_request)
         return None, result
+
+    @staticmethod
+    def get_medications(medication: DomainResource) -> list:
+        output = []
+        for med in medication.medicationCodeableConcept.coding:
+            output.append(
+                {"display": med.display, "value": med.code, "verified": "false"}
+            )
+        return output

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fhir.resources import construct_fhir_element
+from fhir.resources.domainresource import DomainResource
 from flask import Response
 
 from adapters.fhir_store import ResourceClient
@@ -153,6 +154,43 @@ class PatientService:
             return False, Response(status=400, response="not link for patient")
 
         return True, None
+
+    @staticmethod
+    def get_name(patient: DomainResource) -> str:
+        if patient.name and len(names := patient.name) > 0:
+            for name in names:
+                if name.use == "official":
+                    return name.family + " " + " ".join(name.given)
+        return ""
+
+    # TODO: AB#1207
+    @staticmethod
+    def get_kana(patient: DomainResource) -> str:
+        return ""
+
+    @staticmethod
+    def get_phone(patient: DomainResource) -> str:
+        if patient.telecom and len(telecoms := patient.telecom) > 0:
+            for telecom in telecoms:
+                if telecom.use == "mobile":
+                    return telecom.value
+        return ""
+
+    @staticmethod
+    def get_address(patient: DomainResource) -> str:
+        if patient.address and len(patient.address) > 0:
+            return (
+                patient.address[0].state
+                + patient.address[0].city
+                + " ".join(patient.address[0].line)
+            )
+        return ""
+
+    @staticmethod
+    def get_zip(patient: DomainResource) -> str:
+        if patient.address and len(patient.address) > 0:
+            return patient.address[0].postalCode
+        return ""
 
 
 def remove_empty_string_from_address(addresses: list) -> list:

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fhir.resources import construct_fhir_element
+from fhir.resources.domainresource import DomainResource
 from flask import Response
 from flask.wrappers import Request
 
@@ -155,3 +156,7 @@ class AppointmentService:
             return False, Response(status=400, response="not link for appointment")
 
         return True, None
+
+    @staticmethod
+    def get_start_time(appointment: DomainResource) -> str:
+        return str(appointment.start)

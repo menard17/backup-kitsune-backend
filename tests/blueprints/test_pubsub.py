@@ -5,9 +5,9 @@ from unittest.mock import Mock
 
 import pytest
 from fhir.resources.bundle import Bundle
-from tests.blueprints.helper import FakeRequest, MockResourceClient
 
 from blueprints.pubsub import PubsubController
+from tests.blueprints.helper import FakeRequest, MockResourceClient
 
 ENCOUNTER_BUNDLE_DATA = {
     "entry": [
@@ -501,7 +501,9 @@ TEST_PATIENT_ID = "02989bec-b084-47d9-99fd-259ac6f3360c"
 TEST_ENCOUNTER_PAGE_ID = "test-encounter-page-id"
 
 
-def test_fhir_when_no_envelope_then_return_400(resource_client, notion_service):
+def test_fhir_when_no_envelope_then_return_204(
+    resource_client, notion_service, firestore_service
+):
     request = FakeRequest(
         data=_generate_pubsub_message(
             action="CreateResource",
@@ -511,7 +513,10 @@ def test_fhir_when_no_envelope_then_return_400(resource_client, notion_service):
         )
     )
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled=None
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="false",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -519,28 +524,15 @@ def test_fhir_when_no_envelope_then_return_400(resource_client, notion_service):
     assert response.status_code == 204
 
 
-def test_fhir_when_no_envelope_then_return_204(resource_client, notion_service):
-    request = FakeRequest(
-        data=_generate_pubsub_message(
-            action="CreateResource",
-            payload_type="NameOnly",
-            resource_type="Appointment",
-            resource_id="test-resource-id",
-        )
-    )
-    controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="false"
-    )
-
-    response = controller.fhir(request)
-
-    assert response.status_code == 204
-
-
-def test_fhir_when_no_envelope_then_return_400(resource_client, notion_service):
+def test_fhir_when_no_envelope_then_return_400(
+    resource_client, notion_service, firestore_service
+):
     request = FakeRequest(data={})
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -549,11 +541,14 @@ def test_fhir_when_no_envelope_then_return_400(resource_client, notion_service):
 
 
 def test_fhir_when_no_message_in_envelope_then_return_400(
-    resource_client, notion_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={"invalid": "data"})
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -562,11 +557,14 @@ def test_fhir_when_no_message_in_envelope_then_return_400(
 
 
 def test_fhir_when_no_attributes_in_message_then_return_400(
-    resource_client, notion_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={"message": {"data": "data"}})
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -574,10 +572,15 @@ def test_fhir_when_no_attributes_in_message_then_return_400(
     assert response.status_code == 400
 
 
-def test_fhir_when_no_data_in_message_then_return_400(resource_client, notion_service):
+def test_fhir_when_no_data_in_message_then_return_400(
+    resource_client, notion_service, firestore_service
+):
     request = FakeRequest(data={"message": {"attributes": "attributes"}})
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -585,7 +588,9 @@ def test_fhir_when_no_data_in_message_then_return_400(resource_client, notion_se
     assert response.status_code == 400
 
 
-def test_fhir_when_no_operation_match_then_return_204(resource_client, notion_service):
+def test_fhir_when_no_operation_match_then_return_204(
+    resource_client, notion_service, firestore_service
+):
     request = FakeRequest(
         data=_generate_pubsub_message(
             action="CreateResource",
@@ -595,7 +600,10 @@ def test_fhir_when_no_operation_match_then_return_204(resource_client, notion_se
         )
     )
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -604,7 +612,7 @@ def test_fhir_when_no_operation_match_then_return_204(resource_client, notion_se
 
 
 def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
-    resource_client, notion_service
+    resource_client, notion_service, firestore_service
 ):
     notion_service.query_encounter_page.return_value = {"results": []}
     notion_service.create_encounter_page.return_value = {"id": TEST_ENCOUNTER_PAGE_ID}
@@ -617,7 +625,10 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
         )
     )
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -643,9 +654,17 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
         insurance_card=mock.ANY,
     )
 
+    firestore_service.sync_encounter_to_firestore.assert_called_once_with(
+        appointment=mock.ANY,
+        encounter=mock.ANY,
+        patient=mock.ANY,
+        medication_request=mock.ANY,
+        service_request=mock.ANY,
+    )
+
 
 def test_post_encounter_when_page_exists_then_update_page_and_return_200(
-    resource_client, notion_service
+    resource_client, notion_service, firestore_service
 ):
     notion_service.query_encounter_page.return_value = {
         "results": [{"id": TEST_ENCOUNTER_PAGE_ID}]
@@ -659,7 +678,10 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
         )
     )
     controller = PubsubController(
-        resource_client, notion_service, is_syncing_to_notion_enabled="true"
+        resource_client,
+        notion_service,
+        is_syncing_to_notion_enabled="true",
+        firestore_service=firestore_service,
     )
 
     response = controller.fhir(request)
@@ -681,6 +703,14 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
         medication_request=mock.ANY,
         service_request=mock.ANY,
         insurance_card=mock.ANY,
+    )
+
+    firestore_service.sync_encounter_to_firestore.assert_called_once_with(
+        appointment=mock.ANY,
+        encounter=mock.ANY,
+        patient=mock.ANY,
+        medication_request=mock.ANY,
+        service_request=mock.ANY,
     )
 
 
@@ -735,4 +765,9 @@ def resource_client(mocker):
 
 @pytest.fixture
 def notion_service(mocker):
+    yield Mock()
+
+
+@pytest.fixture
+def firestore_service(mocker):
     yield Mock()

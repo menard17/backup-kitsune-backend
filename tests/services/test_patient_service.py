@@ -14,6 +14,9 @@ class MockPatientClient:
         second_email=None,
         customer_id=None,
         payment_id=None,
+        address=None,
+        zip=None,
+        phone=None,
     ):
         self.data = {
             "resourceType": "Patient",
@@ -49,6 +52,37 @@ class MockPatientClient:
                 {"url": "stripe-payment-method-id", "valueString": payment_id}
             )
 
+        if address:
+            self.data["address"] = [
+                {
+                    "city": address[1],
+                    "country": "JP",
+                    "line": [address[2], address[3]],
+                    "postalCode": "1000000",
+                    "state": address[0],
+                    "type": "both",
+                    "use": "home",
+                }
+            ]
+
+        if zip:
+            self.data["address"] = [{"postalCode": zip}]
+
+        if phone:
+            self.data["telecom"] = [
+                {
+                    "extension": [{"url": "verified", "valueString": "true"}],
+                    "system": "phone",
+                    "use": phone[0],
+                    "value": phone[1],
+                },
+                {
+                    "extension": [{"url": "verified", "valueString": "true"}],
+                    "system": "email",
+                    "use": "old",
+                    "value": "abc@umed.com",
+                },
+            ]
         self.mocker = mocker
 
     def get_resource(self, id: str, resource_type: str) -> DomainResource:
@@ -203,3 +237,122 @@ def test_get_patient_payment_error():
     # Then
     assert outputs is None
     assert err is not None
+
+
+# TODO: AB#1207
+def test_get_kana():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = ""
+
+    # When
+    actual = PatientService.get_kana(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_name():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+
+    # When
+    actual = PatientService.get_name(patient)
+
+    # Then
+    assert actual == "Chalmers Peter James"
+
+
+def test_get_address_when_empty():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = ""
+
+    # When
+    actual = PatientService.get_address(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_address():
+    # Given
+    mock_resource_client = MockPatientClient(
+        address=["Tokyo", "Shinagawa", "123", "23523"]
+    )
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = "TokyoShinagawa123 23523"
+
+    # When
+    actual = PatientService.get_address(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_zip_empty():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = ""
+
+    # When
+    actual = PatientService.get_zip(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_zip():
+    # Given
+    expected = "123"
+    mock_resource_client = MockPatientClient(zip=expected)
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+
+    # When
+    actual = PatientService.get_zip(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_phone_empty():
+    # Given
+    mock_resource_client = MockPatientClient()
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = ""
+
+    # When
+    actual = PatientService.get_phone(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_no_mobile_phone():
+    # Given
+    mock_resource_client = MockPatientClient(phone=["home", "123"])
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = ""
+
+    # When
+    actual = PatientService.get_phone(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_phone():
+    # Given
+    expected = "123"
+    mock_resource_client = MockPatientClient(phone=["mobile", expected])
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+
+    # When
+    actual = PatientService.get_phone(patient)
+
+    # Then
+    assert actual == expected
