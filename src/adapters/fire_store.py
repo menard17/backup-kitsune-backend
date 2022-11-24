@@ -13,4 +13,4 @@ class FireStoreClient:
         if id == "":
             self.client.collection(collection).add(value)
         else:
-            self.client.collection(collection).doc(id).set(value)
+            self.client.collection(collection).document(id).set(value)
