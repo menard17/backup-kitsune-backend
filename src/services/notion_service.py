@@ -69,7 +69,7 @@ class NotionService:
             if patient is None
             else next(x for x in patient.telecom if x.system == "phone").value
         )
-        gender = "" if patient is None else patient.gender
+        gender = "" if patient is None or patient.gender is None else patient.gender
         address = "" if patient is None else self._render_address(patient)
         emr = "" if clinical_note is None else self._render_emr(clinical_note)
         # We use PractitionerRole instead of the Practitioner since the result

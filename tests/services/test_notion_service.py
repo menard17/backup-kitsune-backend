@@ -184,6 +184,65 @@ PATIENT_DATA = {
     ],
 }
 
+PATIENT_DATA_WITHOUT_DOB_AND_GENDER = {
+    "address": [
+        {
+            "city": "港区",
+            "country": "JP",
+            "line": ["1-1-1"],
+            "postalCode": "111-1111",
+            "state": "東京都",
+            "type": "both",
+            "use": "home",
+        },
+        {
+            "city": "港区",
+            "country": "JP",
+            "line": ["2-2-2"],
+            "postalCode": "222-2222",
+            "state": "東京都",
+            "type": "both",
+            "use": "work",
+        },
+    ],
+    "extension": [
+        {"url": "stripe-customer-id", "valueString": "test-customer-id"},
+        {
+            "url": "stripe-payment-method-id",
+            "valueString": "test-payment-method-id",
+        },
+        {
+            "url": "fcm-token",
+            "valueString": "test-fcm-token",
+        },
+    ],
+    "id": "02989bec-b084-47d9-99fd-259ac6f3360c",
+    "meta": {
+        "lastUpdated": "2022-09-15T14:04:19.651495+00:00",
+        "versionId": "MTY2MzI1MDY1OTY1MTQ5NTAwMA",
+    },
+    "name": [
+        {"family": "Official", "given": ["Name"], "use": "official"},
+        {"family": "Unofficial", "given": ["Name"], "use": "temp"},
+    ],
+    "resourceType": "Patient",
+    "telecom": [
+        {
+            "extension": [{"url": "verified", "valueString": "true"}],
+            "system": "email",
+            "use": "home",
+            "value": "home-email@gmail.com",
+        },
+        {
+            "extension": [{"url": "verified", "valueString": "true"}],
+            "system": "email",
+            "use": "work",
+            "value": "work-email@gmail.com",
+        },
+        {"system": "phone", "use": "mobile", "value": "08011111111"},
+    ],
+}
+
 PRACTITIONER_ROLE_DATA = {
     "active": False,
     "availableTime": [
@@ -385,6 +444,52 @@ def test_create_encounter_page_happy_path(notion_client):
             "encounter_id": {
                 "title": [{"type": "text", "text": {"content": TEST_ENCOUNTER_ID}}]
             }
+        },
+    )
+
+
+def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
+    notion_service = NotionService(notion_client, TEST_ENCOUNTER_DATABASE_ID)
+    TEST_PATIENT_WITHOUT_DOB_AND_GENDER = Patient(**PATIENT_DATA_WITHOUT_DOB_AND_GENDER)
+    notion_service.sync_encounter_to_notion(
+        encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
+        encounter=TEST_ENCOUNTER,
+        account=TEST_ACCOUNT,
+        appointment=TEST_APPOINTMENT,
+        patient=TEST_PATIENT_WITHOUT_DOB_AND_GENDER,
+        practitioner_role=TEST_PRACTITIONER_ROLE,
+        clinical_note=TEST_CLINICAL_NOTE,
+        medication_request=TEST_MEDICATION_REQUEST,
+        service_request=TEST_SERIVCE_REQUEST,
+        insurance_card=TEST_INSURANCE_CARD,
+    )
+
+    notion_client.pages.update.assert_called_once_with(
+        page_id="test-encounter-page-id",
+        properties={
+            "delivery_date": {"date": {"start": "2022-09-05T10:28:00+09:00"}},
+            "email": {"rich_text": [{"text": {"content": "home-email@gmail.com"}}]},
+            "user_name": {"rich_text": [{"text": {"content": "Official Name"}}]},
+            "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
+            "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
+            "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},
+            "prescription": {
+                "rich_text": [{"text": {"content": "ロキソニン&セルベックス\nトランサミン"}}]
+            },
+            "tests": {"rich_text": [{"text": {"content": "PCR検査施行"}}]},
+            "doctor": {"rich_text": [{"text": {"content": "Taro Yamada"}}]},
+            "insurance_card_front": {
+                "rich_text": [{"text": {"content": "https://test-back-url"}}]
+            },
+            "insurance_card_back": {
+                "rich_text": [{"text": {"content": "https://test-front-url"}}]
+            },
+            "gender": {"rich_text": [{"text": {"content": ""}}]},
+            "account_id": {
+                "rich_text": [
+                    {"text": {"content": "393631e9-7a1d-48ac-a733-0bd649ca3d68"}}
+                ]
+            },
         },
     )
 
