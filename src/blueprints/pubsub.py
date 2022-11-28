@@ -89,7 +89,12 @@ class PubsubController:
         resource_id = re.findall(rf".*\/fhir\/{resource_type}\/(.*)", data)[0]
 
         if (
-            resource_type == "Encounter"
+            (
+                resource_type == "Encounter"
+                or resource_type == "DocumentReference"
+                or resource_type == "MedicationRequest"
+                or resource_type == "ServiceRequest"
+            )
             and (action == "CreateResource" or action == "PatchResource")
             and payload_type == "NameOnly"
         ):

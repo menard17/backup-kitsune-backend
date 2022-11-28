@@ -588,14 +588,17 @@ def test_fhir_when_no_data_in_message_then_return_400(
     assert response.status_code == 400
 
 
+@pytest.mark.parametrize(
+    "resource", ["Appointment", "Patient", "Practitioner", "PractitionerRole"]
+)
 def test_fhir_when_no_operation_match_then_return_204(
-    resource_client, notion_service, firestore_service
+    resource_client, notion_service, firestore_service, resource
 ):
     request = FakeRequest(
         data=_generate_pubsub_message(
             action="CreateResource",
             payload_type="NameOnly",
-            resource_type="Appointment",
+            resource_type=resource,
             resource_id="test-resource-id",
         )
     )
@@ -611,8 +614,12 @@ def test_fhir_when_no_operation_match_then_return_204(
     assert response.status_code == 204
 
 
+@pytest.mark.parametrize(
+    "resource",
+    ["Encounter", "MedicationRequest", "ServiceRequest", "DocumentReference"],
+)
 def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
-    resource_client, notion_service, firestore_service
+    resource_client, notion_service, firestore_service, resource
 ):
     notion_service.query_encounter_page.return_value = {"results": []}
     notion_service.create_encounter_page.return_value = {"id": TEST_ENCOUNTER_PAGE_ID}
@@ -620,7 +627,7 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
         data=_generate_pubsub_message(
             action="CreateResource",
             payload_type="NameOnly",
-            resource_type="Encounter",
+            resource_type=resource,
             resource_id=TEST_ENCOUNTER_ID,
         )
     )
@@ -663,8 +670,12 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
     )
 
 
+@pytest.mark.parametrize(
+    "resource",
+    ["Encounter", "MedicationRequest", "ServiceRequest", "DocumentReference"],
+)
 def test_post_encounter_when_page_exists_then_update_page_and_return_200(
-    resource_client, notion_service, firestore_service
+    resource_client, notion_service, firestore_service, resource
 ):
     notion_service.query_encounter_page.return_value = {
         "results": [{"id": TEST_ENCOUNTER_PAGE_ID}]
@@ -673,7 +684,7 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
         data=_generate_pubsub_message(
             action="CreateResource",
             payload_type="NameOnly",
-            resource_type="Encounter",
+            resource_type=resource,
             resource_id=TEST_ENCOUNTER_ID,
         )
     )
