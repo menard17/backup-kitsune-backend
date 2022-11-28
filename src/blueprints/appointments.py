@@ -89,7 +89,7 @@ class AppointmentController:
         if (
             "Practitioner" not in claims_roles
             and "Patient" in claims_roles
-            and claims_roles["Patient"]["id"] != patient_id
+            and not role_auth.is_authorized(claims_roles, "Patient", patient_id)
         ):
             return Response(
                 status=401, response="only book appointment for the patient"

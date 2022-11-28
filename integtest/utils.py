@@ -151,6 +151,7 @@ def create_appointment(
     patient: Patient,
     days=0,
     service="online",
+    auth_token: str = "",
 ) -> Appointment:
     tokyo_timezone = pytz.timezone("Asia/Tokyo")
     now = tokyo_timezone.localize(datetime.now())
@@ -167,7 +168,7 @@ def create_appointment(
         "email_notification": "false",
     }
 
-    token = get_token(patient.uid)
+    token = auth_token or get_token(patient.uid)
     resp = client.post(
         "/appointments",
         data=json.dumps(appointment_data),
@@ -206,15 +207,17 @@ def create_encounter(
     return encounter
 
 
-def create_document_reference(client: Client, patient: Patient) -> DocumentReference:
-    token = get_token(patient.uid)
-
+def create_document_reference(
+    client: Client,
+    auth_token: str,
+    patient: Patient,
+) -> DocumentReference:
     patient_id = patient.fhir_data["id"]
     DOCUMENT_REFERENCE_DATA["subject"] = f"Patient/{patient_id}"
     resp = client.post(
         "/document_references",
         data=json.dumps(DOCUMENT_REFERENCE_DATA),
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {auth_token}"},
         content_type="application/json",
     )
 

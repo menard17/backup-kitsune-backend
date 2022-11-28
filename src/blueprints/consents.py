@@ -17,8 +17,11 @@ consent_blueprint = Blueprint("consents", __name__, url_prefix="/consents")
 def search_consents() -> Response:
     """
     Search the consents. Currently it accepts the following search parameters:
-    * grantee: the ID that is granted the consent. For instance, the primary patient ID.
-    * patient: the subject of the consent (if it is a patient). For instance, the secondary patient ID.
+    * grantee (optional): the ID that is granted the consent. For instance, the primary patient ID.
+        One of the `grantee` or `patient` parameter must be supplied.
+    * patient (optional): the subject of the consent (if it is a patient). For instance, the secondary patient ID.
+        One of the `grantee` or `patient` parameter must be supplied.
+    * include_patient (optional): include the patient data as part of the response.
     """
     return ConsentsController().search(request)
 
@@ -30,6 +33,7 @@ class ConsentsController:
     def search(self, request) -> Response:
         grantee_id = request.args.get("grantee")
         patient_id = request.args.get("patient")
+        include_patient = request.args.get("include_patient")
 
         if patient_id is None and grantee_id is None:
             return Response(status=400, response="grantee or patient must be provided")
@@ -58,11 +62,15 @@ class ConsentsController:
                 )
 
         # see: http://hl7.org/fhir/2021Mar/consent.html#search
+        # note that this is not the latest version of FHIR and the search parameters
+        # are not the same.
         search_clause = []
         if patient_id is not None:
             search_clause.append(("patient", patient_id))
         if grantee_id is not None:
             search_clause.append(("actor", grantee_id))
+        if include_patient:
+            search_clause.append(("_include:iterate", "Consent:patient:Patient"))
         return self._search(search_clause)
 
     def _search(self, search_clause) -> Response:

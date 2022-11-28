@@ -61,7 +61,7 @@ def get_another_doctor(client: Client, user: User) -> Practitioner:
 def patient_creates_document_reference(
     client: Client, patient_a: Patient
 ) -> DocumentReference:
-    return create_document_reference(client, patient_a)
+    return create_document_reference(client, get_token(patient_a.uid), patient_a)
 
 
 @when("patient A creates an appointment with doctor D", target_fixture="appointment")
