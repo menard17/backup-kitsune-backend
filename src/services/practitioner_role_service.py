@@ -80,9 +80,12 @@ class PractitionerRoleService:
         available_time: list = None,
     ):
         modified = False
-        if start and end:
+        if start:
             modified = True
-            practitioner_role.period = {"start": start, "end": end}
+            practitioner_role.period.start = start
+        if end:
+            modified = True
+            practitioner_role.period.end = end
         if available_time is not None:
             modified = True
             if not available_time:

@@ -18,6 +18,11 @@ ALWAYS_WORKING_HOUR = [
 
 UPDATED_ENGLISH_BIO = "English bio is updated"
 
+NEW_START_DATE = "2022-11-28"
+NEW_END_DATE = "2022-11-30"
+ORIGINAL_START_DATE = "2021-08-15"
+ORIGINAL_END_DATE = "2099-08-15"
+
 
 @given("a user", target_fixture="user")
 def get_user(client: Client) -> User:
@@ -85,6 +90,45 @@ def update_role_type(client: Client, practitioner: Practitioner):
     assert resp.status_code == 200
 
 
+@when("the doctor updates the start and end dates")
+def update_schedule(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps({"start": NEW_START_DATE, "end": NEW_END_DATE}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@when("the doctor updates the start date")
+def update_schedule_start(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps({"start": NEW_START_DATE}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@when("the doctor updates the end date")
+def update_schedule_end(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps({"end": NEW_END_DATE}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
 @then("the doctor is converted to have prefix for nurse")
 def check_prefix(client: Client, user: User):
     resp = client.get(
@@ -140,3 +184,42 @@ def check_working_hour_empty(client: Client, practitioner: Practitioner):
     role = json.loads(resp.data)
     assert resp.status_code == 200
     assert role["availableTime"] == [{}]
+
+
+@then("the start and end dates are updated")
+def check_schedule(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    role = json.loads(resp.data)
+    assert resp.status_code == 200
+    assert role["period"]["start"] == NEW_START_DATE
+    assert role["period"]["end"] == NEW_END_DATE
+
+
+@then("the start date is updated but not the end date")
+def check_schedule_start(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    role = json.loads(resp.data)
+    assert resp.status_code == 200
+    assert role["period"]["start"] == NEW_START_DATE
+    assert role["period"]["end"] == ORIGINAL_END_DATE
+
+
+@then("the end date is updated but not the start date")
+def check_schedule_end(client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    role = json.loads(resp.data)
+    assert resp.status_code == 200
+    assert role["period"]["end"] == NEW_END_DATE
+    assert role["period"]["start"] == ORIGINAL_START_DATE

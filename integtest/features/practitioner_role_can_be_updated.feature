@@ -19,3 +19,18 @@ Feature: Practitioner Role can be updated
         And a doctor
         When the doctor updates to nurse
         Then the doctor is converted to have prefix for nurse
+    Scenario: Doctor can change their start and end dates
+        Given a user
+        And a doctor
+        When the doctor updates the start and end dates
+        Then the start and end dates are updated
+    Scenario: Doctor can change their start date without changing end date
+        Given a user
+        And a doctor
+        When the doctor updates the start date
+        Then the start date is updated but not the end date
+    Scenario: Doctor can change their end date without changing start date
+        Given a user
+        And a doctor
+        When the doctor updates the end date
+        Then the end date is updated but not the start date
