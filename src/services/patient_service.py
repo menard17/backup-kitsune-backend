@@ -163,9 +163,16 @@ class PatientService:
                     return name.family + " " + " ".join(name.given)
         return ""
 
-    # TODO: AB#1207
     @staticmethod
     def get_kana(patient: DomainResource) -> str:
+        if patient.name and len(names := patient.name) > 0:
+            for name in names:
+                if (
+                    name.use != "official"
+                    and name.extension
+                    and name.extension[0].valueString == "SYL"
+                ):
+                    return name.family + " " + " ".join(name.given)
         return ""
 
     @staticmethod

@@ -17,6 +17,7 @@ class MockPatientClient:
         address=None,
         zip=None,
         phone=None,
+        kana=None,
     ):
         self.data = {
             "resourceType": "Patient",
@@ -83,6 +84,20 @@ class MockPatientClient:
                     "value": "abc@umed.com",
                 },
             ]
+
+        if kana:
+            self.data["name"].append(
+                {
+                    "extension": [
+                        {
+                            "url": "http://hl7.org/fhir/StructureDefinition/iso21090-EN-representation",
+                            "valueString": "SYL",
+                        }
+                    ],
+                    "family": kana[0],
+                    "given": [kana[1]],
+                }
+            )
         self.mocker = mocker
 
     def get_resource(self, id: str, resource_type: str) -> DomainResource:
@@ -174,21 +189,21 @@ def test_check_link_success():
     valid_link = "https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/Patient/?_count=1&_page_token=Cjj3YqaT4f%2F%2F%2F%2F%2BABeFKRf0xQQD%2FAf%2F%2BNTk0ZjgxODM1MjM2ZGM1M2IyZTMwNTUxNTUwMWFjODQAARABIZRNcFwxQ70GOQAAAAAebFmdSAFQAFoLCSzWOfWKBujqEANgxd%2BBywc%3D"  # noqa: E501
     service = PatientService(None)
 
-    ok, errResp = service.check_link(valid_link)
+    ok, err_resp = service.check_link(valid_link)
 
     assert ok
-    assert errResp is None
+    assert err_resp is None
 
 
 def test_check_link_return_false_when_not_link_for_patient():
     appointment_link = "https://my.fhir.link/Appointment?_count=1&actor=87c802f0-c486-438d-b2e9-e06543303b4c&date=ge2022-05-21&_page_token=Cjj3YokQdv%2F%2F%2F%2F%2BABd%2BH721RFgD%2FAf%2F%2BNWM4NDM2YmQ3ZWExOTZiYTE5NzAyMDQ4Njc4NjMyOWUAARABIZRNcFwxQ70GOQAAAACJ73adSAFQAFoLCbs%2BeLJbiDrKEANg2qiOZGgB"  # noqa: E501
     service = PatientService(None)
 
-    ok, errResp = service.check_link(appointment_link)
+    ok, err_resp = service.check_link(appointment_link)
 
     assert not ok
-    assert errResp.status_code == 400
-    assert errResp.data == b"not link for patient"
+    assert err_resp.status_code == 400
+    assert err_resp.data == b"not link for patient"
 
 
 def test_get_patient_multiple_emails():
@@ -239,12 +254,26 @@ def test_get_patient_payment_error():
     assert err is not None
 
 
-# TODO: AB#1207
-def test_get_kana():
+def test_get_kana_empty():
     # Given
     mock_resource_client = MockPatientClient()
     patient = construct_fhir_element("Patient", mock_resource_client.data)
     expected = ""
+
+    # When
+    actual = PatientService.get_kana(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_get_kana():
+    # Given
+    first_name_kana = "タロウ"
+    last_name_kana = "ヤマダ"
+    mock_resource_client = MockPatientClient(kana=[last_name_kana, first_name_kana])
+    patient = construct_fhir_element("Patient", mock_resource_client.data)
+    expected = last_name_kana + " " + first_name_kana
 
     # When
     actual = PatientService.get_kana(patient)
