@@ -103,8 +103,6 @@ class NotionService:
 
         return self._client.pages.update(
             page_id=encounter_page_id,
-            # Following are manual:
-            # emr_number, user_name_kana, visit_status, area, delivery_staff
             properties={
                 "delivery_date": {"date": {"start": delivery_date}},
                 "email": {"rich_text": [{"text": {"content": email}}]},

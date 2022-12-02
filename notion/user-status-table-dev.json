@@ -1,0 +1,131 @@
+{
+    "title": [
+        {
+            "text": {
+                "content": "User Status Table Dev"
+            }
+        }
+    ],
+    "description": [
+        {
+            "type": "text",
+            "text": {
+                "content": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.",
+                "link": null
+            },
+            "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+            },
+            "plain_text": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.",
+            "href": null
+        }
+    ],
+    "properties": {
+        "delivery_staff": null,
+        "prescription": {
+            "id": "IK%5BF",
+            "name": "prescription",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "doctor": {
+            "id": "PubG",
+            "name": "doctor",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "account_id": {
+            "id": "QVU~",
+            "name": "account_id",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "address": {
+            "id": "TClb",
+            "name": "address",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "gender": {
+            "id": "TCzX",
+            "name": "gender",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "user_name_kana": null,
+        "email": {
+            "id": "W%5D%5CV",
+            "name": "email",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "insurance_card_back": {
+            "id": "X%3F%7C%7B",
+            "name": "insurance_card_back",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "tests": {
+            "id": "%60%7C%3CW",
+            "name": "tests",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "emr": {
+            "id": "clcw",
+            "name": "emr",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "user_name": {
+            "id": "gTFg",
+            "name": "user_name",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "insurance_card_front": {
+            "id": "g_p%7B",
+            "name": "insurance_card_front",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "area": null,
+        "phone_number": {
+            "id": "noUf",
+            "name": "phone_number",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "visit_status": null,
+        "delivery_date": {
+            "id": "qOCx",
+            "name": "delivery_date",
+            "type": "date",
+            "date": {}
+        },
+        "Last edited by": {
+            "id": "tH%3Bn",
+            "name": "Last edited by",
+            "type": "last_edited_by",
+            "last_edited_by": {}
+        },
+        "Last edited time": {
+            "id": "xAL%3B",
+            "name": "Last edited time",
+            "type": "last_edited_time",
+            "last_edited_time": {}
+        },
+        "emr_number": null,
+        "encounter_id": {
+            "id": "title",
+            "name": "encounter_id",
+            "type": "title",
+            "title": {}
+        }
+    }
+}
