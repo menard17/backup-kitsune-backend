@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Tuple
 
@@ -114,10 +115,15 @@ def create_practitioner(
     )
 
 
-def create_patient(client: Client, user: User):
+def create_patient(client: Client, user: User, override_name: list = []):
+    if override_name:
+        patient_data = deepcopy(PATIENT_DATA)
+        patient_data["name"] = override_name
+    else:
+        patient_data = PATIENT_DATA
     resp = client.post(
         "/patients",
-        data=json.dumps(PATIENT_DATA),
+        data=json.dumps(patient_data),
         headers={"Authorization": f"Bearer {user.token}"},
         content_type="application/json",
     )

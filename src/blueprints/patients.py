@@ -99,6 +99,8 @@ class PatientController:
         search_clause = []
         if (is_active := request.args.get("active")) is not None:
             search_clause.append(("active", is_active))
+        if (name := request.args.get("name")) is not None:
+            search_clause.append(("name", name))
         search_clause.append(("_count", count))
         patients = self.resource_client.search("Patient", search_clause)
         return Response(
