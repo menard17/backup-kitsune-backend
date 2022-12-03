@@ -113,7 +113,7 @@ class PractitionerRoleController:
         :rtype: Response
         """
         request_body = request.get_json()
-        REQUIRED_FIELDS = ["start", "end", "email", "photo", "role_type", "gender"]
+        REQUIRED_FIELDS = ["start", "end", "email", "photo", "role_type", "gender", "family_name_en", "given_name_en"]
         for field in REQUIRED_FIELDS:
             if request_body.get(field) is None:
                 error_msg = f"{field} is missing in the request body"
