@@ -17,7 +17,7 @@ class TwilioSingleton:
         raise Exception("Twilio is already initialiazed")
 
     @classmethod
-    def client(cls, base_path="/secrets"):
+    def client(cls, base_path="/"):
         if cls._instance is None:
             fs_twilio_account_sid = open(
                 f"{base_path}/twilio_account_sid/twilio_account_sid", "r"
@@ -37,7 +37,7 @@ class TwilioSingleton:
         return cls._instance
 
     @classmethod
-    def token(cls, base_path="/secrets"):
+    def token(cls, base_path="/"):
         if cls._sid is None or cls._secret is None or cls._acc_id is None:
             fs_twilio_video_sid = open(
                 f"{base_path}/twilio_video_sid/twilio_video_sid", "r"
