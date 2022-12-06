@@ -13,10 +13,9 @@ SID = "Sid"
 
 
 class MockTwilioObject:
-    def __init__(self, acc_sid, secret, sid):
-        self.acc_sid = acc_sid
-        self.secret = secret
-        self.sid = sid
+    @staticmethod
+    def token():
+        return SID, SECRET, ACCID
 
 
 def test_twilio_token_before_meeting():
@@ -30,7 +29,7 @@ def test_twilio_token_before_meeting():
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
 
-    twilio_object = MockTwilioObject(ACCID, SECRET, SID)
+    twilio_object = MockTwilioObject.token()
 
     controller = TwilioTokenController(resource_client, twilio_object=twilio_object)
     req = FakeRequest(
@@ -57,7 +56,7 @@ def test_twilio_token_after_meeting():
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
 
-    twilio_object = MockTwilioObject(ACCID, SECRET, SID)
+    twilio_object = MockTwilioObject.token()
 
     controller = TwilioTokenController(resource_client, twilio_object=twilio_object)
     req = FakeRequest(
@@ -83,7 +82,7 @@ def test_not_participant():
 
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
-    twilio_object = MockTwilioObject(ACCID, SECRET, SID)
+    twilio_object = MockTwilioObject.token()
     controller = TwilioTokenController(resource_client, twilio_object=twilio_object)
     req = FakeRequest(
         args={
@@ -107,7 +106,7 @@ def test_on_time():
 
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
-    twilio_object = MockTwilioObject(ACCID, SECRET, SID)
+    twilio_object = MockTwilioObject.token()
 
     controller = TwilioTokenController(resource_client, twilio_object=twilio_object)
 

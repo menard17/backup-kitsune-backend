@@ -40,7 +40,6 @@ class VerficationController:
             )
             if err is not None:
                 return Response(status=400, response=err.args[0], mimetype="text/plain")
-
             return Response(
                 status=200,
                 response=json.dumps({"status": verification_status}),

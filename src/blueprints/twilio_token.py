@@ -32,7 +32,7 @@ class TwilioTokenController:
         self.appointment_service = appointment_service or AppointmentService(
             self.resource_client
         )
-        self.twilio_object = twilio_object or TwilioSingleton()
+        self.twilio_object = twilio_object or TwilioSingleton.token()
 
     def get_twilio_token(self, request) -> Response:
         """Get jwt from api key and sec. It should be authenticated with token from firebase.
@@ -67,10 +67,7 @@ class TwilioTokenController:
 
     def _get_access_token(self, appointmend_id: str, identity_id: str) -> AccessToken:
         exp = time.mktime((datetime.now() + timedelta(hours=1)).timetuple())
-        acc_id = self.twilio_object.acc_sid
-        secret = self.twilio_object.secret
-        sid = self.twilio_object.sid
-
+        sid, secret, acc_id = self.twilio_object
         access_token = AccessToken(
             acc_id,
             sid,
