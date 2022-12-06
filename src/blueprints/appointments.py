@@ -178,7 +178,7 @@ class AppointmentController:
         :returns: Appointment object conformed with FHIR
         :rtype: Response
         """
-        appointment = self.resource_client.get_resource(appointment_id, "Appointment")
+        appointment = self.appointment_service.get_appointment_by_id(appointment_id)
         return Response(
             status=200,
             response=json.dumps({"data": datetime_encoder(appointment.dict())}),

@@ -15,6 +15,13 @@ class AppointmentService:
     def __init__(self, resource_client: ResourceClient) -> None:
         self.resource_client = resource_client
 
+    def get_appointment_by_id(self, appointment_id: str) -> DomainResource:
+        """Get appointment information by the ID.
+
+        :returns: Appointment object conformed with FHIR
+        """
+        return self.resource_client.get_resource(appointment_id, "Appointment")
+
     def create_appointment_for_practitioner_role(
         self,
         role_id,

@@ -82,6 +82,13 @@ docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file lo
 
 ```
 mkdir /secrets && echo <Your Stripe Key> > /secrets/stripe_key
+mkdir /secrets/notion_key && echo <Your notion Key>  > /secrets/notion_key/notion_key
+
+mkdir /secrets/twilio_account_sid && echo  <Your account id> > /secrets/twilio_account_sid/twilio_account_sid
+
+mkdir /secrets/twilio_auth_token && echo  <Your account id> > /secrets/twilio_auth_token/twilio_auth_token
+
+mkdir /secrets/twilio_verify_service_sid && echo  <Your account id> > /secrets/twilio_verify_service_sid/twilio_verify_service_sid
 ```
 
 - this should create a secrets/stripe_key folder in the root directory
