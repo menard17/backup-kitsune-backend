@@ -16,4 +16,5 @@ Feature: Secondary Patients
         And a doctor
         Then primary patient can update secondary patient information
         And primary patient can create insurance for the secondary patient
+        And primary patient can access the insurance for the secondary patient
         And primary patient can book appointment for the seondary patient

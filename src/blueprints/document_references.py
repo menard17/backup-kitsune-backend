@@ -96,8 +96,8 @@ class DocumentReferenceController:
             "Patient" in claims_roles
             and "Practitioner" not in claims_roles
             and (
-                role_type
-                == "Practitioner"  # Patient should not create role for Practitioner
+                # Patient should not create role for Practitioner
+                role_type == "Practitioner"
                 or not role_auth.is_authorized(claims_roles, "Patient", role_id)
             )
         ):
@@ -172,7 +172,8 @@ class DocumentReferenceController:
             "Patient" in claims_roles
             and "Practitioner" not in claims_roles
             and (
-                role_type == "Practitioner" or claims_roles["Patient"]["id"] != role_id
+                role_type == "Practitioner"
+                or not role_auth.is_authorized(claims_roles, "Patient", role_id)
             )
         ):
             return Response(

@@ -177,6 +177,30 @@ def primary_patient_creates_secondary_patient_document_reference(
     return create_document_reference(client, primary_patient_token, secondary_patient)
 
 
+@then("primary patient can access the insurance for the secondary patient")
+def primary_patient_acess_secondary_patient_document_reference(
+    client: Client,
+    patient: Patient,
+    secondary_patient: Patient,
+):
+    token = get_token(patient.uid)
+
+    secondary_patient_id = secondary_patient.fhir_data["id"]
+    resp_a = client.get(
+        f"/document_references?subject=Patient/{secondary_patient_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp_a.status_code == 200
+
+    data = json.loads(resp_a.data)
+    assert len(data["data"]) == 1
+
+    data = data["data"][0]
+    assert data["subject"]["reference"] == f"Patient/{secondary_patient_id}"
+
+
 @then("primary patient can book appointment for the seondary patient")
 def primary_patient_book_appointment_for_secondary_patient(
     client: Client,
