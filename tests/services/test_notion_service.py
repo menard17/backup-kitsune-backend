@@ -9,6 +9,7 @@ from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.patient import Patient
 from fhir.resources.practitionerrole import PractitionerRole
 from fhir.resources.servicerequest import ServiceRequest
+from pydantic import AnyUrl
 
 from services.notion_service import NotionService
 
@@ -163,8 +164,38 @@ PATIENT_DATA = {
         "versionId": "MTY2MzI1MDY1OTY1MTQ5NTAwMA",
     },
     "name": [
-        {"family": "Official", "given": ["Name"], "use": "official"},
-        {"family": "Unofficial", "given": ["Name"], "use": "temp"},
+        {
+            "family": "Official",
+            "given": ["Name"],
+            "use": "official",
+            "extension": [
+                {
+                    "url": "http://hl7.org/fhir/StructureDefinition/iso21090-EN-representation",
+                    "valueString": "IDE",
+                },
+            ],
+        },
+        {
+            "family": "Unofficial",
+            "given": ["Name"],
+            "use": "temp",
+            "extension": [
+                {
+                    "url": "http://hl7.org/fhir/StructureDefinition/iso21090-EN-representation",
+                    "valueString": "ABC",
+                },
+            ],
+        },
+        {
+            "family": "kanaFamilyName",
+            "given": ["kanaGivenName"],
+            "extension": [
+                {
+                    "url": "http://hl7.org/fhir/StructureDefinition/iso21090-EN-representation",
+                    "valueString": "SYL",
+                },
+            ],
+        },
     ],
     "resourceType": "Patient",
     "telecom": [
@@ -470,6 +501,7 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
             "delivery_date": {"date": {"start": "2022-09-05T10:28:00+09:00"}},
             "email": {"rich_text": [{"text": {"content": "home-email@gmail.com"}}]},
             "user_name": {"rich_text": [{"text": {"content": "Official Name"}}]},
+            "user_name_kana": {"rich_text": [{"text": {"content": ""}}]},
             "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
             "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
             "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},
@@ -479,10 +511,32 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
             "tests": {"rich_text": [{"text": {"content": "PCR検査施行"}}]},
             "doctor": {"rich_text": [{"text": {"content": "Taro Yamada"}}]},
             "insurance_card_front": {
-                "rich_text": [{"text": {"content": "https://test-back-url"}}]
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": AnyUrl(
+                                "https://test-back-url",
+                                scheme="https",
+                                host="test-back-url",
+                                host_type="int_domain",
+                            )
+                        }
+                    }
+                ]
             },
             "insurance_card_back": {
-                "rich_text": [{"text": {"content": "https://test-front-url"}}]
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": AnyUrl(
+                                "https://test-front-url",
+                                scheme="https",
+                                host="test-front-url",
+                                host_type="int_domain",
+                            )
+                        }
+                    }
+                ]
             },
             "gender": {"rich_text": [{"text": {"content": ""}}]},
             "account_id": {
@@ -516,6 +570,9 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
             "delivery_date": {"date": {"start": "2022-09-05T10:28:00+09:00"}},
             "email": {"rich_text": [{"text": {"content": "home-email@gmail.com"}}]},
             "user_name": {"rich_text": [{"text": {"content": "Official Name"}}]},
+            "user_name_kana": {
+                "rich_text": [{"text": {"content": "kanaFamilyName kanaGivenName"}}]
+            },
             "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
             "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
             "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},

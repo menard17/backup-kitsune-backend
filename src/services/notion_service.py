@@ -64,6 +64,7 @@ class NotionService:
         )
         email = "" if patient is None else self._render_email(patient)
         user_name = "" if patient is None else self._render_full_name(patient)
+        user_name_kana = "" if patient is None else self._render_kana_name(patient)
         phone_number = (
             ""
             if patient is None
@@ -107,6 +108,9 @@ class NotionService:
                 "delivery_date": {"date": {"start": delivery_date}},
                 "email": {"rich_text": [{"text": {"content": email}}]},
                 "user_name": {"rich_text": [{"text": {"content": user_name}}]},
+                "user_name_kana": {
+                    "rich_text": [{"text": {"content": user_name_kana}}]
+                },
                 "phone_number": {"rich_text": [{"text": {"content": phone_number}}]},
                 "address": {"rich_text": [{"text": {"content": address}}]},
                 "emr": {"rich_text": [{"text": {"content": emr}}]},
@@ -143,6 +147,23 @@ class NotionService:
         last_name = name.family
         full_name = f"{last_name} {first_name}"
         return full_name
+
+    def _render_kana_name(self, patient: Patient):
+        kana_name = next(
+            (
+                x
+                for x in patient.name
+                if x.extension and x.extension[0].valueString == "SYL"
+            ),
+            None,
+        )
+        if kana_name is None:
+            return ""
+
+        kana_first_name = "" if len(kana_name.given) == 0 else kana_name.given[0]
+        kana_last_name = kana_name.family
+        kana_full_name = f"{kana_last_name} {kana_first_name}"
+        return kana_full_name
 
     def _render_address(self, patient: Patient):
         address = next((x for x in patient.address if x.use == "home"), None)
