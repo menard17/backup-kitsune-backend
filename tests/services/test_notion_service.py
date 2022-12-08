@@ -4,7 +4,6 @@ import pytest
 from fhir.resources.account import Account
 from fhir.resources.appointment import Appointment
 from fhir.resources.documentreference import DocumentReference
-from fhir.resources.encounter import Encounter
 from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.patient import Patient
 from fhir.resources.practitionerrole import PractitionerRole
@@ -12,31 +11,6 @@ from fhir.resources.servicerequest import ServiceRequest
 from pydantic import AnyUrl
 
 from services.notion_service import NotionService
-
-ENCOUNTER_DATA = {
-    "account": [{"reference": "Account/393631e9-7a1d-48ac-a733-0bd649ca3d68"}],
-    "appointment": [{"reference": "Appointment/8ed8a19a-e04e-43f2-8da1-beaae3dd4d97"}],
-    "class": {
-        "code": "HH",
-        "display": "home health",
-        "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-    },
-    "id": "579fa116-251d-4a9b-9a69-3ab03b573452",
-    "meta": {
-        "lastUpdated": "2022-09-05T13:15:57.277240+00:00",
-        "versionId": "MTY2MjM4Mzc1NzI3NzI0MDAwMA",
-    },
-    "participant": [
-        {
-            "individual": {
-                "reference": "PractitionerRole/9de70669-1d0d-4d54-a241-3cb4047631e0"
-            }
-        }
-    ],
-    "resourceType": "Encounter",
-    "status": "in-progress",
-    "subject": {"reference": "Patient/02989bec-b084-47d9-99fd-259ac6f3360c"},
-}
 
 ACCOUNT_DATA = {
     "guarantor": [
@@ -437,7 +411,6 @@ INSURANCE_CARD_DATA = {
     },
 }
 
-TEST_ENCOUNTER = Encounter(**ENCOUNTER_DATA)
 TEST_ACCOUNT = Account(**ACCOUNT_DATA)
 TEST_APPOINTMENT = Appointment(**APPOINTMENT_DATA)
 TEST_PATIENT = Patient(**PATIENT_DATA)
@@ -484,7 +457,6 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
     TEST_PATIENT_WITHOUT_DOB_AND_GENDER = Patient(**PATIENT_DATA_WITHOUT_DOB_AND_GENDER)
     notion_service.sync_encounter_to_notion(
         encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
-        encounter=TEST_ENCOUNTER,
         account=TEST_ACCOUNT,
         appointment=TEST_APPOINTMENT,
         patient=TEST_PATIENT_WITHOUT_DOB_AND_GENDER,
@@ -502,6 +474,7 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
             "email": {"rich_text": [{"text": {"content": "home-email@gmail.com"}}]},
             "user_name": {"rich_text": [{"text": {"content": "Official Name"}}]},
             "user_name_kana": {"rich_text": [{"text": {"content": ""}}]},
+            "dob": {"rich_text": [{"text": {"content": ""}}]},
             "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
             "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
             "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},
@@ -515,9 +488,9 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
                     {
                         "text": {
                             "content": AnyUrl(
-                                "https://test-back-url",
+                                "https://test-front-url",
                                 scheme="https",
-                                host="test-back-url",
+                                host="test-front-url",
                                 host_type="int_domain",
                             )
                         }
@@ -529,9 +502,9 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
                     {
                         "text": {
                             "content": AnyUrl(
-                                "https://test-front-url",
+                                "https://test-back-url",
                                 scheme="https",
-                                host="test-front-url",
+                                host="test-back-url",
                                 host_type="int_domain",
                             )
                         }
@@ -553,7 +526,6 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
 
     notion_service.sync_encounter_to_notion(
         encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
-        encounter=TEST_ENCOUNTER,
         account=TEST_ACCOUNT,
         appointment=TEST_APPOINTMENT,
         patient=TEST_PATIENT,
@@ -573,6 +545,7 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
             "user_name_kana": {
                 "rich_text": [{"text": {"content": "kanaFamilyName kanaGivenName"}}]
             },
+            "dob": {"rich_text": [{"text": {"content": "2020-08-20"}}]},
             "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
             "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
             "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},
@@ -582,10 +555,10 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
             "tests": {"rich_text": [{"text": {"content": "PCR検査施行"}}]},
             "doctor": {"rich_text": [{"text": {"content": "Taro Yamada"}}]},
             "insurance_card_front": {
-                "rich_text": [{"text": {"content": "https://test-back-url"}}]
+                "rich_text": [{"text": {"content": "https://test-front-url"}}]
             },
             "insurance_card_back": {
-                "rich_text": [{"text": {"content": "https://test-front-url"}}]
+                "rich_text": [{"text": {"content": "https://test-back-url"}}]
             },
             "gender": {"rich_text": [{"text": {"content": "female"}}]},
             "account_id": {

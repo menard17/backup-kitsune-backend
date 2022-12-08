@@ -1,10 +1,11 @@
 import base64
 import os
+from enum import Enum, auto
+from typing import Optional
 
 from fhir.resources.account import Account
 from fhir.resources.appointment import Appointment
 from fhir.resources.documentreference import DocumentReference
-from fhir.resources.encounter import Encounter
 from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.patient import Patient
 from fhir.resources.practitionerrole import PractitionerRole
@@ -16,6 +17,14 @@ from utils.notion_setup import NotionSingleton
 ENCOUNTER_DATABASE_ID = os.getenv("NOTION_ENCOUNTER_DATABASE_ID")
 
 
+class NotionClientDoesNotExistException(Exception):
+    pass
+
+
+class NotionDBDoesNotExistException(Exception):
+    pass
+
+
 class NotionService:
     def __init__(
         self,
@@ -24,10 +33,12 @@ class NotionService:
     ) -> None:
         self._client = client or NotionSingleton.client()
         if self._client is None:
-            raise Exception("Notion client cannot be None")
+            raise NotionClientDoesNotExistException("Notion client cannot be None")
         self._encounter_database_id = encounter_database_id or ENCOUNTER_DATABASE_ID
         if self._encounter_database_id is None:
-            raise Exception("Notion encounter database ID cannot be None")
+            raise NotionDBDoesNotExistException(
+                "Notion encounter database ID cannot be None"
+            )
 
     def query_encounter_page(self, encounter_id: str):
         return self._client.databases.query(
@@ -48,7 +59,6 @@ class NotionService:
     def sync_encounter_to_notion(
         self,
         encounter_page_id: str,
-        encounter: Encounter = None,
         account: Account = None,
         appointment: Appointment = None,
         patient: Patient = None,
@@ -59,20 +69,36 @@ class NotionService:
         insurance_card: DocumentReference = None,
     ):
         # Have to add a default date
+        properties = {}
+
         delivery_date = (
             "1994-04-04" if appointment is None else appointment.start.isoformat()
         )
-        email = "" if patient is None else self._render_email(patient)
-        user_name = "" if patient is None else self._render_full_name(patient)
-        user_name_kana = "" if patient is None else self._render_kana_name(patient)
+        properties["delivery_date"] = get_propery_value(
+            delivery_date, PropertyType.Date
+        )
+        properties["email"] = get_propery_value(self._render_email(patient))
+        properties["user_name"] = get_propery_value(self._render_full_name(patient))
+        properties["user_name_kana"] = get_propery_value(
+            self._render_kana_name(patient)
+        )
         phone_number = (
             ""
             if patient is None
             else next(x for x in patient.telecom if x.system == "phone").value
         )
+        properties["phone_number"] = get_propery_value(phone_number)
         gender = "" if patient is None or patient.gender is None else patient.gender
-        address = "" if patient is None else self._render_address(patient)
-        emr = "" if clinical_note is None else self._render_emr(clinical_note)
+        properties["gender"] = get_propery_value(gender)
+        dob = (
+            ""
+            if patient is None or patient.birthDate is None
+            else str(patient.birthDate)
+        )
+        properties["dob"] = get_propery_value(dob)
+        properties["address"] = get_propery_value(self._render_address(patient))
+        properties["emr"] = get_propery_value(self._render_emr(clinical_note))
+
         # We use PractitionerRole instead of the Practitioner since the result
         # from the search bundle is only PractitionerRole. The "practitioner"
         # field in this resource is a reference type which has the "display"
@@ -80,55 +106,36 @@ class NotionService:
         doctor = (
             "" if practitioner_role is None else practitioner_role.practitioner.display
         )
+        properties["doctor"] = get_propery_value(doctor)
         insurance_card_front = (
             ""
             if insurance_card is None
             else self._find_attachment(insurance_card, "front").url
         )
+        properties["insurance_card_front"] = get_propery_value(insurance_card_front)
         insurance_card_back = (
             ""
             if insurance_card is None
             else self._find_attachment(insurance_card, "back").url
         )
+        properties["insurance_card_back"] = get_propery_value(insurance_card_back)
         account_id = "" if account is None else account.id
-        prescription = (
-            ""
-            if medication_request is None
-            else self._render_medication_codes(medication_request)
+        properties["account_id"] = get_propery_value(account_id)
+        properties["prescription"] = get_propery_value(
+            self._render_medication_codes(medication_request)
         )
-        tests = (
-            ""
-            if service_request is None
-            else self._render_service_codes(service_request)
+        properties["tests"] = get_propery_value(
+            self._render_service_codes(service_request)
         )
 
         return self._client.pages.update(
-            page_id=encounter_page_id,
-            properties={
-                "delivery_date": {"date": {"start": delivery_date}},
-                "email": {"rich_text": [{"text": {"content": email}}]},
-                "user_name": {"rich_text": [{"text": {"content": user_name}}]},
-                "user_name_kana": {
-                    "rich_text": [{"text": {"content": user_name_kana}}]
-                },
-                "phone_number": {"rich_text": [{"text": {"content": phone_number}}]},
-                "address": {"rich_text": [{"text": {"content": address}}]},
-                "emr": {"rich_text": [{"text": {"content": emr}}]},
-                "prescription": {"rich_text": [{"text": {"content": prescription}}]},
-                "tests": {"rich_text": [{"text": {"content": tests}}]},
-                "doctor": {"rich_text": [{"text": {"content": doctor}}]},
-                "insurance_card_front": {
-                    "rich_text": [{"text": {"content": insurance_card_back}}]
-                },
-                "insurance_card_back": {
-                    "rich_text": [{"text": {"content": insurance_card_front}}]
-                },
-                "gender": {"rich_text": [{"text": {"content": gender}}]},
-                "account_id": {"rich_text": [{"text": {"content": account_id}}]},
-            },
+            page_id=encounter_page_id, properties=properties
         )
 
-    def _render_email(self, patient: Patient):
+    def _render_email(self, patient: Optional[Patient]):
+        if patient is None:
+            return ""
+
         email = next(
             (x for x in patient.telecom if x.system == "email" and x.use == "home"),
             None,
@@ -138,7 +145,10 @@ class NotionService:
 
         return email.value
 
-    def _render_full_name(self, patient: Patient):
+    def _render_full_name(self, patient: Optional[Patient]):
+        if patient is None:
+            return ""
+
         name = next((x for x in patient.name if x.use == "official"), None)
         if name is None:
             return ""
@@ -148,7 +158,9 @@ class NotionService:
         full_name = f"{last_name} {first_name}"
         return full_name
 
-    def _render_kana_name(self, patient: Patient):
+    def _render_kana_name(self, patient: Optional[Patient]):
+        if patient is None:
+            return ""
         kana_name = next(
             (
                 x
@@ -165,7 +177,10 @@ class NotionService:
         kana_full_name = f"{kana_last_name} {kana_first_name}"
         return kana_full_name
 
-    def _render_address(self, patient: Patient):
+    def _render_address(self, patient: Optional[Patient]):
+        if patient is None:
+            return ""
+
         address = next((x for x in patient.address if x.use == "home"), None)
         if address is None:
             return ""
@@ -174,7 +189,10 @@ class NotionService:
             [address.postalCode, address.state, address.city] + address.line
         )
 
-    def _render_emr(self, clinical_note: DocumentReference):
+    def _render_emr(self, clinical_note: Optional[DocumentReference]):
+        if clinical_note is None:
+            return ""
+
         attachment_content_list = clinical_note.content
         return "\n".join(
             [
@@ -194,10 +212,34 @@ class NotionService:
         )
         return attachment
 
-    def _render_medication_codes(self, medication_request: MedicationRequest):
+    def _render_medication_codes(self, medication_request: Optional[MedicationRequest]):
+        if (
+            medication_request is None
+            or medication_request.medicationCodeableConcept is None
+            or medication_request.medicationCodeableConcept.coding is None
+        ):
+            return ""
+
         coding_list = medication_request.medicationCodeableConcept.coding
         return "\n".join([x.display for x in coding_list])
 
     def _render_service_codes(self, service_request: ServiceRequest):
+        if (
+            service_request is None
+            or service_request.code is None
+            or service_request.code.coding is None
+        ):
+            return ""
         coding_list = service_request.code.coding
         return "\n".join([x.display for x in coding_list])
+
+
+class PropertyType(Enum):
+    Text = auto()
+    Date = auto()
+
+
+def get_propery_value(value: str, type: PropertyType = PropertyType.Text):
+    if type == PropertyType.Date:
+        return {"date": {"start": value}}
+    return {"rich_text": [{"text": {"content": value}}]}

@@ -167,7 +167,6 @@ class PubsubController:
 
         self.notion_service.sync_encounter_to_notion(
             encounter_page_id=encounter_page["id"],
-            encounter=encounter,
             account=account,
             appointment=appointment,
             patient=patient,

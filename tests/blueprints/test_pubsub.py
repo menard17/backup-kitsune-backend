@@ -650,7 +650,6 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
     )
     notion_service.sync_encounter_to_notion.assert_called_once_with(
         encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
-        encounter=mock.ANY,
         account=mock.ANY,
         appointment=mock.ANY,
         patient=mock.ANY,
@@ -705,7 +704,6 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
     assert not notion_service.create_encounter_page.called
     notion_service.sync_encounter_to_notion.assert_called_once_with(
         encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
-        encounter=mock.ANY,
         account=mock.ANY,
         appointment=mock.ANY,
         patient=mock.ANY,
