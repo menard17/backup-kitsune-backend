@@ -1,8 +1,11 @@
 import json
+from typing import Union
+from uuid import UUID
 
 from fhir.resources.consent import Consent
 from fhir.resources.patient import Patient
-from flask import Blueprint, Request, Response, request
+from flask import Blueprint, request
+from flask.wrappers import Request, Response
 
 from adapters.fhir_store import ResourceClient
 from json_serialize import json_serial
@@ -34,21 +37,21 @@ def get_patients() -> Response:
 
 @patients_blueprint.route("/", methods=["POST"])
 @jwt_authenticated()
-def create_patient() -> tuple:
+def create_patient() -> Union[Response, tuple]:
     return PatientController().create_patient(request)
 
 
 @patients_blueprint.route("/<patient_id>", methods=["PATCH"])
 @jwt_authenticated()
 @jwt_authorized("/Patient/{patient_id}")
-def patch_patient(patient_id: str) -> tuple:
+def patch_patient(patient_id: UUID) -> tuple:
     return PatientController().patch_patient(request, patient_id)
 
 
 @patients_blueprint.route("/<patient_id>", methods=["PUT"])
 @jwt_authenticated()
 @jwt_authorized("/Patient/{patient_id}")
-def put_patients(patient_id: str) -> Response:
+def put_patients(patient_id: UUID) -> Response:
     return PatientController().update_patient(request, patient_id)
 
 
@@ -107,7 +110,7 @@ class PatientController:
             status=200, response=json.dumps({"data": datetime_encoder(patients.dict())})
         )
 
-    def create_patient(self, request) -> tuple:
+    def create_patient(self, request) -> Union[Response, tuple]:
         """Returns the details of a patient created.
 
         This creates a patient in FHIR, as well as create a custom claims with
@@ -193,7 +196,7 @@ class PatientController:
 
         return patient.dict(), 201
 
-    def patch_patient(self, request, patient_id: str) -> tuple:
+    def patch_patient(self, request, patient_id: UUID) -> tuple:
         """Returns the details of an updated patient.
 
         This updates a patient in FHIR
@@ -208,7 +211,7 @@ class PatientController:
 
         return datetime_encoder(patient.dict()), 200
 
-    def update_patient(self, request: Request, patient_id: str) -> Response:
+    def update_patient(self, request: Request, patient_id: UUID) -> Response:
         """Returns the response of the updated patient.
 
         This updates a patient in FHIR
@@ -216,7 +219,7 @@ class PatientController:
         :param request: the request for this operation including body of put calls
         :type request: Request from flask
         :param patient_id: uuid for patient
-        :type patient_id: str
+        :type patient_id: UUID
 
         :rtype: Response
 
@@ -237,9 +240,10 @@ class PatientController:
         gender = request_body.get("gender")
         dob = request_body.get("dob")
         address = request_body.get("address")
+        orca_id = request_body.get("orca_id")
 
         err, patient = self.patient_service.update(
-            patient_id, family_name, given_name, gender, phone, dob, address
+            patient_id, family_name, given_name, gender, phone, dob, address, orca_id
         )
         if err is not None:
             return Response(status=400, response=err.args[0])

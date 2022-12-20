@@ -223,7 +223,7 @@ class ResourceClient:
         return construct_fhir_element(resource_type, response.json())
 
     def put_resource(
-        self, resource_uid: str, resource: DomainResource
+        self, resource_uid: UUID, resource: DomainResource
     ) -> DomainResource:
         """Updates a resource with put. Returns updated resource
         in DomainResource Python object.

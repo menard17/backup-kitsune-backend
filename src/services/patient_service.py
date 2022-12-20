@@ -1,8 +1,21 @@
 from datetime import datetime
+from typing import Optional
+from uuid import UUID
 
-from fhir.resources import construct_fhir_element
-from fhir.resources.domainresource import DomainResource
-from flask import Response
+from fhir.resources.address import Address
+from fhir.resources.contactpoint import ContactPoint
+from fhir.resources.extension import Extension
+from fhir.resources.fhirtypes import (
+    AddressType,
+    Code,
+    ContactPointType,
+    Date,
+    ExtensionType,
+    Uri,
+)
+from fhir.resources.humanname import HumanName
+from fhir.resources.patient import Patient
+from flask.wrappers import Response
 
 from adapters.fhir_store import ResourceClient
 
@@ -11,11 +24,11 @@ class PatientService:
     def __init__(self, resource_client: ResourceClient) -> None:
         self.resource_client = resource_client
 
-    def get_patient_email(self, patient_id: str) -> tuple:
+    def get_patient_email(self, patient_id: UUID) -> tuple:
         """Returns patient email
 
         :param patient_id: uuid for patient
-        :type patient_id: str
+        :type patient_id: uuid
 
         :rtype: tuple
         """
@@ -28,11 +41,11 @@ class PatientService:
             return None, patient_email
         return None, None
 
-    def get_patient_name(self, patient_id: str) -> tuple:
+    def get_patient_name(self, patient_id: UUID) -> tuple:
         """Returns patient name
 
         :param patient_id: uuid for patient
-        :type patient_id: str
+        :type patient_id: uuid
 
         :rtype: tuple
         """
@@ -40,11 +53,13 @@ class PatientService:
         patient_name: dict = patient.dict()["name"][0]
         return None, patient_name
 
-    def get_patient_payment_details(self, patient_id: str) -> tuple[Exception, tuple]:
+    def get_patient_payment_details(
+        self, patient_id: UUID
+    ) -> tuple[Optional[Exception], Optional[tuple]]:
         """Returns patient payment detaisl
 
         :param patient_id: uuid for patient
-        :type patient_id: str
+        :type patient_id: uuid
 
         :rtype: tuple
         """
@@ -72,51 +87,54 @@ class PatientService:
         return None, (customer_id, payment_method_id)
 
     # TODO: AB#788 This does not support multiple langauge for the name or address
+    # TODO: AB#1355 Support multiple orca ids to support multiple organizations
     def update(
         self,
-        patient_id: str,
-        family_name: str,
-        given_name: list,
-        gender: str,
-        phone: str,
-        dob: str,
-        address: list,
+        patient_id: UUID,
+        family_name: Optional[str],
+        given_name: Optional[list],
+        gender: Optional[str],
+        phone: Optional[str],
+        dob: Optional[str],
+        address: Optional[list],
+        orca_id: Optional[str],
     ):
-        patient = self.resource_client.get_resource(patient_id, "Patient")
+        resource = self.resource_client.get_resource(patient_id, "Patient")
+        patient = Patient(**resource.dict())
         modified = False
-        name = [{"use": "official"}]
         if family_name:
             modified = True
-            name[0]["family"] = family_name
-        else:
-            name[0]["family"] = patient.name[0].family
+            patient.name[0].family = family_name
 
         if given_name:
             modified = True
-            name[0]["given"] = given_name
-        else:
-            name[0]["given"] = patient.name[0].given
-
-        patient.name = name
+            patient.name[0].given = given_name
 
         if gender:
             if gender in {"male", "female"}:
                 modified = True
-                patient.gender = gender
+                patient.gender = Code(gender)
 
         if phone:
             modified = True
-            telecom = list(filter(lambda item: item.system != "phone", patient.telecom))
-            telecom.append({"system": "phone", "use": "mobile", "value": phone})
+            telecom = list(
+                filter(
+                    lambda item: ContactPoint(**item.__dict__).system != "phone",
+                    patient.telecom,
+                )
+            )
+            telecom.append(
+                ContactPointType(**{"system": "phone", "use": "mobile", "value": phone})
+            )
             patient.telecom = telecom
 
         if dob:
             format = "%Y-%m-%d"
             try:
                 # Validates string format for dob
-                _ = datetime.strptime(dob, format)
+                date = datetime.strptime(dob, format)
                 modified = True
-                patient.birthDate = dob
+                patient.birthDate = Date(month=date.month, day=date.day, year=date.year)
             except ValueError:
                 return (
                     Exception(
@@ -129,14 +147,19 @@ class PatientService:
             modified = True
             patient.address = remove_empty_string_from_address(address)
 
+        if orca_id:
+            modified = True
+            patient.extension = [
+                ExtensionType(**{"valueString": orca_id, "url": Uri("orca-id")})
+            ]
+
         if modified:
-            patient = construct_fhir_element("Patient", patient)
             patient = self.resource_client.put_resource(patient_id, patient)
 
             return None, patient
         return None, None
 
-    def check_link(self, link: str) -> tuple[bool, Response]:
+    def check_link(self, link: str) -> tuple[bool, Optional[Response]]:
         """
         This sanity checks the link for security reason to disallow arbitrary calls to get
         proxy result of the FHIR.
@@ -156,54 +179,57 @@ class PatientService:
         return True, None
 
     @staticmethod
-    def get_name(patient: DomainResource) -> str:
+    def get_name(patient: Patient) -> str:
         if patient.name and len(names := patient.name) > 0:
-            for name in names:
+            for name_item in names:
+                name = HumanName(**name_item.__dict__)
                 if name.use == "official":
                     return name.family + " " + " ".join(name.given)
         return ""
 
     @staticmethod
-    def get_kana(patient: DomainResource) -> str:
+    def get_kana(patient: Patient) -> str:
         if patient.name and len(names := patient.name) > 0:
-            for name in names:
+            for name_item in names:
+                name = HumanName(**name_item.__dict__)
                 if (
                     name.use != "official"
                     and name.extension
-                    and name.extension[0].valueString == "SYL"
+                    and name.extension[0]
+                    and (extension := Extension(**name.extension[0].__dict__))
+                    and extension.valueString == "SYL"
                 ):
                     return name.family + " " + " ".join(name.given)
         return ""
 
     @staticmethod
-    def get_phone(patient: DomainResource) -> str:
+    def get_phone(patient: Patient) -> str:
         if patient.telecom and len(telecoms := patient.telecom) > 0:
-            for telecom in telecoms:
+            for telecom_item in telecoms:
+                telecom = ContactPoint(**telecom_item.__dict__)
                 if telecom.use == "mobile":
                     return telecom.value
         return ""
 
     @staticmethod
-    def get_address(patient: DomainResource) -> str:
+    def get_address(patient: Patient) -> str:
         if patient.address and len(patient.address) > 0:
-            return (
-                patient.address[0].state
-                + patient.address[0].city
-                + " ".join(patient.address[0].line)
-            )
+            address = Address(**patient.address[0].__dict__)
+            return address.state + address.city + " ".join(address.line)
         return ""
 
     @staticmethod
-    def get_zip(patient: DomainResource) -> str:
+    def get_zip(patient: Patient) -> str:
         if patient.address and len(patient.address) > 0:
-            return patient.address[0].postalCode
+            address = Address(**patient.address[0].__dict__)
+            return address.postalCode
         return ""
 
 
-def remove_empty_string_from_address(addresses: list) -> list:
+def remove_empty_string_from_address(addresses: list) -> list[AddressType]:
     lines = [address["line"] for address in addresses]
     modified_lines = [[item for item in line if item != ""] for line in lines]
-    modified_addresses = []
+    modified_addresses: list[AddressType] = []
     for idx, address in enumerate(addresses):
         # Create a Deep copy
         modified_address = address.copy()

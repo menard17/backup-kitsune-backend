@@ -1,6 +1,6 @@
 import json
 
-from pytest_bdd import given, scenarios, then, when
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from integtest.characters import Patient, Practitioner
 from integtest.conftest import Client
@@ -114,3 +114,31 @@ def updated_patients(client: Client, patient: Patient):
     assert expected_telecom in output["telecom"]
     assert output["birthDate"] == "1993-01-01"
     assert output["address"][0]["country"] == "JP"
+
+
+@when(parsers.parse("orca id, {orca_id}, is added"))
+def add_orca_id(client: Client, patient: Patient, orca_id: str):
+    token = get_token(patient.uid)
+    updated_content = {
+        "orca_id": orca_id,
+    }
+    resp = client.put(
+        f"/patients/{patient.fhir_data['id']}",
+        data=json.dumps(updated_content),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@then(parsers.parse("patient can have one orca id: {orca_id}"))
+def get_orca_id(client: Client, patient: Patient, orca_id: str):
+    token = get_token(patient.uid)
+    patient_resp = client.get(
+        f"/patients/{patient.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert patient_resp.status_code == 200
+    output = json.loads(patient_resp.data)["data"]
+    assert output["extension"][0]["valueString"] == orca_id
