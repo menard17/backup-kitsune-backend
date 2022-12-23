@@ -44,6 +44,16 @@ class ResourceClient:
         self._session = session or _get_session()
         self._url = url or _get_url()
         self._headers = {"Content-Type": "application/fhir+json;charset=utf-8"}
+        self._last_seen_headers = {}
+
+    @property
+    def last_seen_etag(self):
+        """
+        The latest "Etag" seen from this client.
+        This is for optimistic locking.
+        see: https://build.fhir.org/http.html#concurrency
+        """
+        return self._last_seen_headers.get("Etag")
 
     def get_post_bundle(
         self, resource: DomainResource, fullurl: str = None
@@ -99,6 +109,7 @@ class ResourceClient:
             f"{self._url}", headers=header, data=result.json(indent=True)
         )
         response.raise_for_status()
+        self._last_seen_headers = response.headers
         return construct_fhir_element(body["resourceType"], response.json())
 
     def get_resource(
@@ -121,6 +132,7 @@ class ResourceClient:
         resource_path = f"{self._url}/{resource_type}/{resource_uid}"
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
+        self._last_seen_headers = response.headers
         result = construct_fhir_element(resource_type, response.json())
         return result
 
@@ -143,12 +155,14 @@ class ResourceClient:
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
+        self._last_seen_headers = response.headers
 
         return construct_fhir_element("Bundle", response.json())
 
     def link(self, url: str) -> DomainResource:
         response = self._session.get(url, headers=self._headers)
         response.raise_for_status()
+        self._last_seen_headers = response.headers
 
         return construct_fhir_element("Bundle", response.json())
 
@@ -180,6 +194,7 @@ class ResourceClient:
 
         response = self._session.get(resource_path, headers=self._headers)
         response.raise_for_status()
+        self._last_seen_headers = response.headers
 
         return construct_fhir_element("Bundle", response.json())
 
@@ -200,6 +215,7 @@ class ResourceClient:
             resource_path, headers=self._headers, data=resource.json(indent=True)
         )
         response.raise_for_status()
+        self._last_seen_headers = response.headers
         return construct_fhir_element(resource.resource_type, response.json())
 
     def patch_resource(
@@ -219,11 +235,15 @@ class ResourceClient:
 
         response = self._session.patch(resource_path, headers=_headers, data=body)
         response.raise_for_status()
+        self._last_seen_headers = response.headers
 
         return construct_fhir_element(resource_type, response.json())
 
     def put_resource(
-        self, resource_uid: UUID, resource: DomainResource
+        self,
+        resource_uid: UUID,
+        resource: DomainResource,
+        lock_header: str = "",
     ) -> DomainResource:
         """Updates a resource with put. Returns updated resource
         in DomainResource Python object.
@@ -231,10 +251,16 @@ class ResourceClient:
 
         resource_path = f"{self._url}/{resource.resource_type}/{resource_uid}"
 
+        headers = self._headers
+        if lock_header != "":
+            # Optimistic lock: https://build.fhir.org/http.html#concurrency
+            headers["If-Match"] = lock_header
+
         response = self._session.put(
-            resource_path, headers=self._headers, data=resource.json(indent=True)
+            resource_path, headers=headers, data=resource.json(indent=True)
         )
         response.raise_for_status()
+        self._last_seen_headers = response.headers
         return construct_fhir_element(resource.resource_type, response.json())
 
     def delete_resources(self, requests: list):
@@ -259,5 +285,6 @@ class ResourceClient:
             resource_path, headers=self._headers, data=bundle_body.json(indent=True)
         )
         response.raise_for_status()
+        self._last_seen_headers = response.headers
 
         return response.json()

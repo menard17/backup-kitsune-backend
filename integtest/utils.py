@@ -60,6 +60,14 @@ def create_user() -> User:
     return User(user.uid, email, token)
 
 
+def make_admin(user: User) -> User:
+    """Make an user admin.
+    Note that this overrides the claims so please use this before setting other roles.
+    """
+    auth.set_custom_user_claims(user.uid, {"roles": {"Admin": {}}})
+    return user
+
+
 def create_practitioner(
     client: Client,
     user: User,

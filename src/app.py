@@ -1,6 +1,7 @@
 import os
 from logging.config import dictConfig
 
+import requests
 import stripe
 from flask import Flask, request
 from flask_cors import CORS
@@ -13,6 +14,7 @@ from blueprints.diagnostic_reports import diagnostic_reports_blueprint
 from blueprints.document_references import document_references_blueprint
 from blueprints.encounters import encounters_blueprint
 from blueprints.invoices import invoices_blueprint
+from blueprints.lists import lists_blueprint
 from blueprints.medication_requests import medication_requests_blueprint
 from blueprints.messaging import messaging_blueprint
 from blueprints.organizations import organization_blueprint
@@ -65,6 +67,7 @@ app.register_blueprint(consent_blueprint)
 app.register_blueprint(document_references_blueprint)
 app.register_blueprint(encounters_blueprint)
 app.register_blueprint(invoices_blueprint)
+app.register_blueprint(lists_blueprint)
 app.register_blueprint(organization_blueprint)
 app.register_blueprint(patients_blueprint)
 app.register_blueprint(payments_blueprint)
@@ -94,6 +97,17 @@ def after_request(response):
 @app.teardown_request
 def teardown_request(err=None):
     teardown_request_log_endpoint_metric(app.logger, request, err)
+
+
+@app.errorhandler(requests.HTTPError)
+def handle_fhir_http_errors(err):
+    # Return 503 for optimistic locking error on FHIR
+    if err.response.status_code == 412:
+        lock_err_msg = "the If-Match version id doesn't match the most recent version"
+        if lock_err_msg in str(err.response.json()):
+            return "Concurrent update, please try later.", 503
+
+    return err.response.json(), 500
 
 
 if (base_path := "SECRETS_PATH") in os.environ:
