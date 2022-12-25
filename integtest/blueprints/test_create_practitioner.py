@@ -60,8 +60,6 @@ def fail_to_create_doctor(client: Client, user: User) -> str:
                 "end": "2021-08-15T14:55:57.967345+09:00",
                 "family_name": "Last name",
                 "given_name": "Given name",
-                "zoom_id": "zoom id",
-                "zoom_password": "zoom password",
                 "available_time": [
                     {
                         "daysOfWeek": ["mon", "tue", "wed"],
@@ -127,8 +125,6 @@ def create_second_doctor(client: Client, user: User, other_user: User):
             "gender": "male",
             "email": email,
             "photo": photo_base64,
-            "zoom_password": "zoom password",
-            "zoom_id": "zoom id",
             "available_time": {
                 "daysOfWeek": ["mon", "tue", "wed"],
                 "availableStartTime": "09:00:00",

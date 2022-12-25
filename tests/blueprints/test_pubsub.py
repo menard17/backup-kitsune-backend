@@ -221,13 +221,6 @@ ENCOUNTER_BUNDLE_DATA = {
                     ),
                     "versionId": "MTY2MjU5OTY5NDU0NzUzMTAwMA",
                 },
-                "extension": [
-                    {"url": "zoom-id", "valueString": "test-zoom-id"},
-                    {
-                        "url": "zoom-passcode",
-                        "valueString": "test-zoom-passcode",
-                    },
-                ],
                 "active": False,
                 "availableTime": [
                     {

@@ -13,7 +13,6 @@ def get_service_request(count):
     for _ in range(count):
         service_requests.append(service_request)
 
-    print(service_requests)
     return {
         "code": {"coding": service_requests},
         "id": "id1",

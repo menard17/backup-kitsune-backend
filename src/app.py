@@ -27,7 +27,6 @@ from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
 from blueprints.twilio_token import twilio_token_blueprint
 from blueprints.verifications import verifications_blueprint
-from blueprints.zoom import zoom_blueprint
 from utils.metric import (
     after_request_log_endpoint_metric,
     before_request_add_start_time,
@@ -80,7 +79,6 @@ app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(slots_blueprint)
 app.register_blueprint(verifications_blueprint)
 app.register_blueprint(pubsub_blueprint)
-app.register_blueprint(zoom_blueprint)
 app.register_blueprint(twilio_token_blueprint)
 
 

@@ -102,8 +102,6 @@ def create_practitioner(
             param_data["family_name_ja"]
             param_data["given_name_ja"]
             param_data["bio_ja"]
-        param_data["zoom_password"] = "zoom password"
-        param_data["zoom_id"] = "zoom id"
         param_data["available_time"] = available_time
 
     resp = client.post(

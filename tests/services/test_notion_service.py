@@ -267,10 +267,6 @@ PRACTITIONER_ROLE_DATA = {
             ]
         }
     ],
-    "extension": [
-        {"url": "zoom-id", "valueString": "test-id"},
-        {"url": "zoom-passcode", "valueString": "test-passcode"},
-    ],
     "id": "9de70669-1d0d-4d54-a241-3cb4047631e0",
     "meta": {
         "lastUpdated": "2022-09-08T01:14:54.547531+00:00",

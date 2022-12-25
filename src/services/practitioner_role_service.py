@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, List, Set, Tuple, TypedDict
+from typing import Dict, List, Optional, Set, Tuple, TypedDict
 
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
@@ -24,9 +24,7 @@ class PractitionerRoleService:
         end: str,
         practitioner_id: str,
         practitioner_name: str,
-        zoom_id: str = None,
-        zoom_password: str = None,
-        available_time: dict = None,
+        available_time: Optional[dict] = None,
     ):
         practitioner_code = SystemCode.practitioner_code(role_type)
 
@@ -55,11 +53,6 @@ class PractitionerRoleService:
                     "availableEndTime": "23:59:59",
                 },
             ]
-        if zoom_id and zoom_password:
-            practitioner_role_jsondict["extension"] = [
-                {"url": "zoom-id", "valueString": zoom_id},
-                {"url": "zoom-passcode", "valueString": zoom_password},
-            ]
 
         practitioner_role = construct_fhir_element(
             "PractitionerRole", practitioner_role_jsondict
@@ -73,11 +66,9 @@ class PractitionerRoleService:
     def update_practitioner_role(
         self,
         practitioner_role: DomainResource,
-        start: str = None,
-        end: str = None,
-        zoom_id: str = None,
-        zoom_password: str = None,
-        available_time: list = None,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        available_time: Optional[list] = None,
     ):
         modified = False
         if start:
@@ -92,12 +83,6 @@ class PractitionerRoleService:
                 practitioner_role.availableTime = [{}]
             else:
                 practitioner_role.availableTime = list(filter(None, available_time))
-        if zoom_id and zoom_password:
-            modified = True
-            practitioner_role.extension = [
-                {"url": "zoom-id", "valueString": zoom_id},
-                {"url": "zoom-passcode", "valueString": zoom_password},
-            ]
         if modified:
             practitioner_role_bundle = self.resource_client.get_put_bundle(
                 practitioner_role, practitioner_role.id
@@ -105,7 +90,9 @@ class PractitionerRoleService:
             return None, practitioner_role_bundle
         return None, None
 
-    def get_practitioner_ids(self, role_type: str) -> Tuple[Exception, Set[str]]:
+    def get_practitioner_ids(
+        self, role_type: str
+    ) -> Tuple[Optional[Exception], Optional[Set[str]]]:
         """Returns list of practitioner ids referenced by practitioner role with given role type
 
         :param role_type: doctor or nurse

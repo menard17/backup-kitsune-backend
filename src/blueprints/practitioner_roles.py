@@ -113,7 +113,16 @@ class PractitionerRoleController:
         :rtype: Response
         """
         request_body = request.get_json()
-        REQUIRED_FIELDS = ["start", "end", "email", "photo", "role_type", "gender", "family_name_en", "given_name_en"]
+        REQUIRED_FIELDS = [
+            "start",
+            "end",
+            "email",
+            "photo",
+            "role_type",
+            "gender",
+            "family_name_en",
+            "given_name_en",
+        ]
         for field in REQUIRED_FIELDS:
             if request_body.get(field) is None:
                 error_msg = f"{field} is missing in the request body"
@@ -126,18 +135,12 @@ class PractitionerRoleController:
         role_type = request_body.get("role_type")
         gender = request_body.get("gender")
 
-        zoom_id, zoom_password, available_time = None, None, []
+        available_time = []
         language_options = ["en", "ja"]
         biographies = get_biographies_ext(request_body, language_options)
         if role_type and (role_type == "doctor"):
-            if not (
-                (zoom_id := request_body.get("zoom_id"))
-                and (zoom_password := request_body.get("zoom_password"))
-                and (available_time := request_body.get("available_time"))
-            ):
-                return Response(
-                    status=400, response="Doctor requires available time and zoom cred"
-                )
+            if not ((available_time := request_body.get("available_time"))):
+                return Response(status=400, response="Doctor requires available time")
 
         PIXEL_SIZE = 104  # Max size of image in pixel
         byte_size = (PIXEL_SIZE**2) * 3
@@ -187,8 +190,6 @@ class PractitionerRoleController:
             end,
             pracititioner_id,
             name,
-            zoom_id,
-            zoom_password,
             available_time,
         )
         if err is not None:
@@ -238,8 +239,6 @@ class PractitionerRoleController:
         start = request_body.get("start")
         end = request_body.get("end")
         photo = request_body.get("photo")
-        zoom_id = request_body.get("zoom_id")
-        zoom_password = request_body.get("zoom_password")
         available_time = request_body.get("available_time")
         gender = request_body.get("gender")
         language_options = ["en", "ja"]
@@ -282,8 +281,6 @@ class PractitionerRoleController:
             role,
             start,
             end,
-            zoom_id,
-            zoom_password,
             available_time,
         )
         if err is not None:
@@ -514,8 +511,6 @@ def create_practitioner_role():
         'role_type': 'doctor',
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
-        'zoom_id': 'zoom id',
-        'zoom_password': 'zoom password',
         'available_time':  [],
         'email': 'test@umed.jp',
         'gender': 'male',
@@ -536,8 +531,6 @@ def update_practitioner_role(role_id: str):
     {
         'start': '2021-08-15T13:55:57.967345+09:00',
         'end': '2021-08-15T14:55:57.967345+09:00',
-        'zoom_id': 'zoom id',
-        'zoom_password': 'zoom password',
         'available_time':  [],
         'gender': 'male',
         'family_name_en': 'Last name',
