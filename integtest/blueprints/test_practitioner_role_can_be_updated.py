@@ -1,6 +1,6 @@
 import json
 
-from pytest_bdd import given, scenarios, then, when
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from integtest.characters import Practitioner, User
 from integtest.conftest import Client
@@ -129,6 +129,19 @@ def update_schedule_end(client: Client, practitioner: Practitioner):
     assert resp.status_code == 200
 
 
+@when(parsers.parse("the doctor updates the visit type to {visit_type}"))
+def update_visit_type(visit_type: str, client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps({"visit_type": visit_type}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
 @then("the doctor is converted to have prefix for nurse")
 def check_prefix(client: Client, user: User):
     resp = client.get(
@@ -223,3 +236,15 @@ def check_schedule_end(client: Client, practitioner: Practitioner):
     assert resp.status_code == 200
     assert role["period"]["end"] == NEW_END_DATE
     assert role["period"]["start"] == ORIGINAL_START_DATE
+
+
+@then(parsers.parse("the visit type is updated to {visit_type}"))
+def check_visit_type(visit_type: str, client: Client, practitioner: Practitioner):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/practitioner_roles/{practitioner.fhir_data['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    role = json.loads(resp.data)
+    assert resp.status_code == 200
+    assert any([c["coding"][0]["code"] == visit_type for c in role["code"]])

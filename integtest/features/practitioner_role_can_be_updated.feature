@@ -34,3 +34,18 @@ Feature: Practitioner Role can be updated
         And a doctor
         When the doctor updates the end date
         Then the end date is updated but not the start date
+    Scenario: Doctor can change their end date without changing start date
+        Given a user
+        And a doctor
+        When the doctor updates the end date
+        Then the end date is updated but not the start date
+    Scenario: Doctor can change their visit type to walk in
+        Given a user
+        And a doctor
+        When the doctor updates the visit type to walk-in
+        Then the visit type is updated to walk-in
+    Scenario: Doctor can change their visit type to appointment
+        Given a user
+        And a doctor
+        When the doctor updates the visit type to appointment
+        Then the visit type is updated to appointment

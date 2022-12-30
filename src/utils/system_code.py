@@ -6,7 +6,10 @@ class ServiceURL:
     service_category = "http://hl7.org/fhir/codesystem-service-category.html"
     appointment_type = "http://terminology.hl7.org/CodeSystem/v2-0276"
     service_request_code = "http://snomed.info/sct"
-    practition_type = "http://terminology.hl7.org/CodeSystem/practitioner-role"
+    practitioner_type = "http://terminology.hl7.org/CodeSystem/practitioner-role"
+    practitioner_visit_type = (
+        "https://www.notion.so/umed-group/code-system/practitioner-role"
+    )
     communication_code = "urn:ietf:bcp:47"
     document_type = "http://loinc.org"
     cancel_reason_type = (
@@ -159,16 +162,32 @@ class SystemCode:
             return create_coding_clause("ServiceRequest", request, display)
 
     @staticmethod
-    def practitioner_code(practition: str):
-        if practition == "doctor":
-            return create_coding_clause(ServiceURL.practition_type, "doctor")
-        elif practition == "nurse":
-            return create_coding_clause(ServiceURL.practition_type, "nurse")
-        elif practition == "staff":
+    def practitioner_code(role_type: str):
+        if role_type == "doctor":
+            return create_coding_clause(ServiceURL.practitioner_type, "doctor")
+        elif role_type == "nurse":
+            return create_coding_clause(ServiceURL.practitioner_type, "nurse")
+        elif role_type == "staff":
             return create_coding_clause(
-                ServiceURL.practition_type,
+                ServiceURL.practitioner_type,
                 "224608005",
                 "Administrative healthcare staff",
+            )
+        raise TypeError()
+
+    @staticmethod
+    def visit_type_code(visit_type: str):
+        if visit_type == "walk-in":
+            return create_coding_clause(
+                ServiceURL.practitioner_visit_type,
+                "walk-in",
+                "Walk In",
+            )
+        if visit_type == "appointment":
+            return create_coding_clause(
+                ServiceURL.practitioner_visit_type,
+                "appointment",
+                "Appointment",
             )
         raise TypeError()
 

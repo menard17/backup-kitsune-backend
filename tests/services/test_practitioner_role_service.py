@@ -1,11 +1,15 @@
+import copy
 import json
+from datetime import datetime
 
 import pytest
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
 
+from adapters.fhir_store import ResourceClient
 from services.practitioner_role_service import PractitionerRoleService
 from services.practitioner_service import Biography, HumanName
+from utils.system_code import ServiceURL
 
 practitioner = {
     "active": True,
@@ -49,6 +53,16 @@ practitioner_role = {
     "id": "1",
     "period": {"end": "2099-03-31", "start": "2021-01-01"},
     "practitioner": {"reference": "Practitioner/1"},
+    "code": [
+        {
+            "coding": [
+                {
+                    "system": ServiceURL.practitioner_type,
+                    "code": "doctor",
+                }
+            ],
+        }
+    ],
     "resourceType": "PractitionerRole",
 }
 
@@ -235,3 +249,116 @@ def test_get_radnom_loc_practitioner_name(mocker):
     # Then
     assert expected_family == actual_name["family"]
     assert expected_given == actual_name["given"][0]
+
+
+def test_create_practitioner_role():
+    service = PractitionerRoleService(ResourceClient())
+    err, bundle = service.create_practitioner_role(
+        identity="test-id",
+        role_type="doctor",
+        start="2021-01-01",
+        end="2022-01-01",
+        practitioner_id="test-practitioner-id",
+        practitioner_name="Dr. Test",
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "fri"],
+                "availableStartTime": "00:00:00",
+                "availableEndTime": "16:59:59",
+            },
+        ],
+    )
+
+    assert err is None
+    assert bundle["request"]["method"] == "POST"
+
+    role = bundle["resource"]
+    assert role.resource_type == "PractitionerRole"
+    assert any([c.coding[0].code == "doctor" for c in role.code])
+    assert role.practitioner.reference == "test-practitioner-id"
+    assert role.period.start == datetime.strptime("2021-01-01", "%Y-%m-%d").date()
+    assert role.period.end == datetime.strptime("2022-01-01", "%Y-%m-%d").date()
+
+
+def test_create_practitioner_role_with_visit_type():
+    service = PractitionerRoleService(ResourceClient())
+    err, bundle = service.create_practitioner_role(
+        identity="test-id",
+        role_type="doctor",
+        start="2021-01-01",
+        end="2022-01-01",
+        practitioner_id="test-practitioner-id",
+        practitioner_name="Dr. Test",
+        visit_type="walk-in",
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "fri"],
+                "availableStartTime": "00:00:00",
+                "availableEndTime": "16:59:59",
+            },
+        ],
+    )
+
+    assert err is None
+
+    role = bundle["resource"]
+    assert role.resource_type == "PractitionerRole"
+    assert any([c.coding[0].code == "walk-in" for c in role.code])
+
+
+def test_update_visit_type_of_practitioner_role_from_none():
+    service = PractitionerRoleService(ResourceClient())
+
+    role = construct_fhir_element("PractitionerRole", json.dumps(practitioner_role))
+    assert not any([c.coding[0].code == "walk-in" for c in role.code])
+
+    err, bundle = service.update_practitioner_role(role, visit_type="walk-in")
+
+    assert err is None
+    assert bundle["request"]["method"] == "PUT"
+
+    role = bundle["resource"]
+    assert role.resource_type == "PractitionerRole"
+    assert any([c.coding[0].code == "walk-in" for c in role.code])
+
+
+def test_update_visit_type_of_practitioner_role_from_another_type():
+    service = PractitionerRoleService(ResourceClient())
+
+    # given a practitioner role with the appointment visit type
+    role_data = copy.deepcopy(practitioner_role)
+    role_data["code"].append(
+        {
+            "coding": [
+                {
+                    "system": ServiceURL.practitioner_visit_type,
+                    "code": "appointment",
+                }
+            ],
+        }
+    )
+    role = construct_fhir_element("PractitionerRole", json.dumps(role_data))
+    assert any([c.coding[0].code == "appointment" for c in role.code])
+
+    err, bundle = service.update_practitioner_role(role, visit_type="walk-in")
+
+    assert err is None
+    assert bundle["request"]["method"] == "PUT"
+
+    role = bundle["resource"]
+    assert role.resource_type == "PractitionerRole"
+    assert any([c.coding[0].code == "walk-in" for c in role.code])
+    assert not any([c.coding[0].code == "appointment" for c in role.code])
+
+
+def test_update_visit_type_of_practitioner_role_returns_error_when_not_doctor():
+    service = PractitionerRoleService(ResourceClient())
+
+    # given a nurse
+    role_data = copy.deepcopy(practitioner_role)
+    role_data["code"][0]["coding"][0]["code"] = "nurse"
+
+    role = construct_fhir_element("PractitionerRole", json.dumps(role_data))
+
+    err, _ = service.update_practitioner_role(role, visit_type="walk-in")
+    assert err.args[0] == "Can only update visit type for doctor"

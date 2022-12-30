@@ -81,6 +81,7 @@ def create_practitioner(
             "availableEndTime": "16:30:00",
         },
     ],
+    visit_type: str = "",
 ):
     base64_prefix = "data:image/png;base64,"
     with open("artifact/image_base64") as f:
@@ -97,6 +98,10 @@ def create_practitioner(
         "email": user.email,
         "photo": photo_base64,
     }
+
+    if visit_type:
+        param_data["visit_type"] = visit_type
+
     if role_type == "doctor":
         if "ja" in language:
             param_data["family_name_ja"]

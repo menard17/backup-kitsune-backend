@@ -5,7 +5,7 @@ from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
 
 from adapters.fhir_store import ResourceClient
-from utils.system_code import SystemCode
+from utils.system_code import ServiceURL, SystemCode
 
 
 class AvailableTime(TypedDict):
@@ -24,9 +24,16 @@ class PractitionerRoleService:
         end: str,
         practitioner_id: str,
         practitioner_name: str,
+        visit_type: str = "",
         available_time: Optional[dict] = None,
     ):
         practitioner_code = SystemCode.practitioner_code(role_type)
+        code = [{"coding": [practitioner_code]}]
+
+        # visit type to differentiate doctors for appointments and lineup (walk-in)
+        if visit_type:
+            visit_type_code = SystemCode.visit_type_code(visit_type)
+            code.append({"coding": [visit_type_code]})
 
         practitioner_role_jsondict = {
             "resourceType": "PractitionerRole",
@@ -36,7 +43,7 @@ class PractitionerRoleService:
                 "reference": practitioner_id,
                 "display": practitioner_name,
             },
-            "code": [{"coding": [practitioner_code]}],
+            "code": code,
         }
 
         if available_time is not None:
@@ -69,6 +76,7 @@ class PractitionerRoleService:
         start: Optional[str] = None,
         end: Optional[str] = None,
         available_time: Optional[list] = None,
+        visit_type: str = "",
     ):
         modified = False
         if start:
@@ -83,6 +91,35 @@ class PractitionerRoleService:
                 practitioner_role.availableTime = [{}]
             else:
                 practitioner_role.availableTime = list(filter(None, available_time))
+
+        if visit_type:
+            modified = True
+            codes = practitioner_role.code or []
+
+            # check that only doctor can update visit type
+            if not any(
+                [
+                    c.coding[0].system == ServiceURL.practitioner_type
+                    and c.coding[0].code == "doctor"
+                    for c in codes
+                ]
+            ):
+                return Exception("Can only update visit type for doctor"), None
+
+            # find the code and override with the new visit type
+            # otherwise append with the new code if visit type code not exist already.
+            found_idx = None
+            new_code = SystemCode.visit_type_code(visit_type)
+            new_code = construct_fhir_element("CodeableConcept", {"coding": [new_code]})
+            for idx, code in enumerate(codes):
+                if code.coding[0].system == ServiceURL.practitioner_visit_type:
+                    found_idx = idx
+
+            if found_idx:
+                practitioner_role.code[found_idx] = new_code
+            else:
+                practitioner_role.code.append(new_code)
+
         if modified:
             practitioner_role_bundle = self.resource_client.get_put_bundle(
                 practitioner_role, practitioner_role.id

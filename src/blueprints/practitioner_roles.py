@@ -63,8 +63,16 @@ class PractitionerRoleController:
         if role_type := request.args.get("role_type"):
             search_clause.append(("role", role_type))
 
-        if practitoner_id := request.args.get("practitioner_id"):
-            search_clause.append(("practitioner", practitoner_id))
+        if visit_type := request.args.get("visit_type"):
+            search_clause.append(("role", visit_type))
+        else:
+            # Backward compatibility, need to default to not walk-in type
+            # which will lead to appointment type or undefined.
+            # Old data will not have the visit type code attached
+            search_clause.append(("role:not", "walk-in"))
+
+        if practitioner_id := request.args.get("practitioner_id"):
+            search_clause.append(("practitioner", practitioner_id))
         else:
             search_clause.append(("active", "true"))
 
@@ -104,7 +112,7 @@ class PractitionerRoleController:
     def create_practitioner_role(self, request: Request):
         """Returns created practitioner role
         In order to create 'practitioner role', 'practitioner' and 'schedule' are created.
-        This is done in transaction so that it's either all resources are created succeessfully
+        This is done in transaction so that it's either all resources are created successfully
         or nothing is created. parameter is provided to unittest purpose.
 
         :param request: request containing body from http request
@@ -134,6 +142,7 @@ class PractitionerRoleController:
         photo = request_body.get("photo", "")
         role_type = request_body.get("role_type")
         gender = request_body.get("gender")
+        visit_type = request_body.get("visit_type", "")
 
         available_time = []
         language_options = ["en", "ja"]
@@ -141,6 +150,9 @@ class PractitionerRoleController:
         if role_type and (role_type == "doctor"):
             if not ((available_time := request_body.get("available_time"))):
                 return Response(status=400, response="Doctor requires available time")
+
+        if visit_type and role_type != "doctor":
+            return Response(status=400, response="Only doctor has visit type")
 
         PIXEL_SIZE = 104  # Max size of image in pixel
         byte_size = (PIXEL_SIZE**2) * 3
@@ -151,7 +163,7 @@ class PractitionerRoleController:
             )
 
         role_id = f"urn:uuid:{uuid.uuid1()}"
-        pracititioner_id = f"urn:uuid:{uuid.uuid1()}"
+        practitioner_id = f"urn:uuid:{uuid.uuid1()}"
 
         resources = []
 
@@ -163,20 +175,20 @@ class PractitionerRoleController:
         )
         if practitioner_search.total > 0:
             return Response(
-                status=400, response=f"practitoner exists with given email: {email}"
+                status=400, response=f"practitioner exists with given email: {email}"
             )
 
         # Create a practitioner
         language_options = ["en", "ja"]
         names = get_names_ext(request_body, language_options, role_type)
         biographies = get_biographies_ext(request_body, language_options)
-        err, pracititioner = self.practitioner_service.create_practitioner(
-            pracititioner_id, email, photo, gender, biographies, names
+        err, practitioner = self.practitioner_service.create_practitioner(
+            practitioner_id, email, photo, gender, biographies, names
         )
 
         if err is not None:
             return Response(status=400, response=err.args[0])
-        resources.append(pracititioner)
+        resources.append(practitioner)
 
         # Create a practitioner role
         name = names[0].given_name + " " + names[0].family_name
@@ -188,8 +200,9 @@ class PractitionerRoleController:
             role_type,
             start,
             end,
-            pracititioner_id,
+            practitioner_id,
             name,
+            visit_type,
             available_time,
         )
         if err is not None:
@@ -227,7 +240,7 @@ class PractitionerRoleController:
         """Returns modified practitioner role
 
         Modifies practitioner or/and practitioner role.
-        This is done in transaction so that it's either all resources are modified succeessfully
+        This is done in transaction so that it's either all resources are modified successfully
         or nothing is modified.
 
         :param request: request containing body from http request
@@ -243,6 +256,7 @@ class PractitionerRoleController:
         gender = request_body.get("gender")
         language_options = ["en", "ja"]
         role_type = request_body.get("role_type")
+        visit_type = request_body.get("visit_type")
         names = get_names_ext(request_body, language_options, role_type)
         biographies = get_biographies_ext(request_body, language_options)
 
@@ -276,27 +290,28 @@ class PractitionerRoleController:
         # Modify practitioner role
         (
             err,
-            pracititioner_role_bundle,
+            practitioner_role_bundle,
         ) = self.practitioner_role_service.update_practitioner_role(
             role,
             start,
             end,
             available_time,
+            visit_type,
         )
         if err is not None:
             return Response(status=400, response=err.args[0])
 
-        if pracititioner_role_bundle:
-            resources.append(pracititioner_role_bundle)
+        if practitioner_role_bundle:
+            resources.append(practitioner_role_bundle)
 
         # Modify practitioner
-        err, pracititioner_bundle = self.practitioner_service.update_practitioner(
+        err, practitioner_bundle = self.practitioner_service.update_practitioner(
             practitioner, biographies, names, photo, gender
         )
         if err is not None:
             return Response(status=400, response=err.args[0])
-        if pracititioner_bundle:
-            resources.append(pracititioner_bundle)
+        if practitioner_bundle:
+            resources.append(practitioner_bundle)
 
         # Modify Schedule
         if start is not None or end is not None:
