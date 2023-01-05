@@ -27,8 +27,9 @@ def create_list() -> Response:
     return ListsController().create()
 
 
-@lists_blueprint.route("/", methods=["Get"])
+@lists_blueprint.route("/", methods=["GET"])
 @jwt_authenticated()
+@jwt_authorized("/Patient/*")
 def get_lists() -> Response:
     """
     This gets all of the lists.
@@ -36,8 +37,18 @@ def get_lists() -> Response:
     return ListsController().get_lists()
 
 
-@lists_blueprint.route("/<list_id>", methods=["Get"])
+@lists_blueprint.route("/<list_id>/counts", methods=["GET"])
 @jwt_authenticated()
+def get_number_of_item_in_list(list_id: str) -> Response:
+    """
+    This gets numer of item in the specific list.
+    """
+    return ListsController().get_list_len(list_id)
+
+
+@lists_blueprint.route("/<list_id>", methods=["GET"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/*")
 def get_a_list(list_id: str) -> Response:
     """
     This gets the data of a specific list.
@@ -98,6 +109,15 @@ class ListsController:
         return Response(
             status=200,
             response=json.dumps({"data": datetime_encoder(fhir_list.dict())}),
+        )
+
+    def get_list_len(self, list_id: str) -> Response:
+        fhir_list = self.resource_client.get_resource(list_id, "List")
+        print(fhir_list)
+        count = 0 if fhir_list.entry is None else len(fhir_list.entry)
+        return Response(
+            status=200,
+            response=json.dumps({"data": count}),
         )
 
     def create_entry(self, list_id: str, patient_id: str) -> Response:

@@ -14,6 +14,18 @@ LIST_DATA = {
     "title": "Patient Queue",
 }
 
+LIST_DATA_WITH_TWO_ITEMS = {
+    "resourceType": "List",
+    "id": "test-id-98712653",
+    "status": "current",
+    "mode": "working",
+    "title": "Patient Queue",
+    "entry": [
+        {"item": {"reference": "Patient/1"}},
+        {"item": {"reference": "Patient/2"}},
+    ],
+}
+
 
 SEARCH_LIST_DATA = {
     "entry": [
@@ -102,6 +114,22 @@ def test_get_a_list():
     assert result["id"] == LIST_DATA["id"]
 
 
+def test_get_list_len():
+    def mock_get_resource(list_id, resource_type):
+        assert resource_type == "List"
+        return construct_fhir_element("List", LIST_DATA_WITH_TWO_ITEMS)
+
+    resource_client = MockResourceClient()
+    resource_client.get_resource = mock_get_resource
+
+    controller = ListsController(resource_client)
+    expected_entry_len = 2
+    resp = controller.get_list_len(LIST_DATA_WITH_TWO_ITEMS["id"])
+    assert resp.status_code == 200
+    result = json.loads(resp.data)["data"]
+    assert result == expected_entry_len
+
+
 def test_create_entry():
     test_etag = "w/23"
     patient_id = "dummy-patient-id"
@@ -143,7 +171,6 @@ def test_create_entry_returns_bad_request_when_patient_already_in_list():
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
 
-    controller = ListsController(resource_client)
     controller = ListsController(resource_client)
     resp = controller.create_entry(LIST_DATA["id"], patient_id)
     assert resp.status_code == 400

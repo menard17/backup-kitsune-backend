@@ -1,11 +1,17 @@
 import json
 import threading
 
-from pytest_bdd import given, scenarios, then, when
+from pytest_bdd import given, parsers, scenarios, then, when
 
-from integtest.characters import Patient, User
+from integtest.characters import Patient, Practitioner, User
 from integtest.conftest import Client
-from integtest.utils import create_patient, create_user, get_token, make_admin
+from integtest.utils import (
+    create_patient,
+    create_practitioner,
+    create_user,
+    get_token,
+    make_admin,
+)
 
 scenarios("../features/lineup.feature")
 
@@ -24,13 +30,19 @@ def get_patient(client: Client) -> Patient:
     return create_patient(client, user)
 
 
+@given("a doctor", target_fixture="doctor")
+def get_doctor(client: Client) -> Practitioner:
+    user = create_user()
+    return create_practitioner(client, user, role_type="doctor")
+
+
 @given("a patient B", target_fixture="patient_b")
 def get_patient_b(client: Client) -> Patient:
     user = create_user()
     return create_patient(client, user)
 
 
-@when("the admin create a list", target_fixture="fhir_list")
+@when("the admin creates a list", target_fixture="fhir_list")
 def admin_create_a_list(client: Client, admin: User) -> dict:
     token = get_token(admin.uid)
     resp = client.post(
@@ -47,9 +59,9 @@ def admin_create_a_list(client: Client, admin: User) -> dict:
     return fhir_list
 
 
-@then("the patient can see all lists")
-def patient_can_see_all_lists(client: Client, patient: Patient):
-    token = get_token(patient.uid)
+@then("the doctor can see all lists")
+def doctor_can_see_all_lists(client: Client, doctor: Practitioner):
+    token = get_token(doctor.uid)
     resp = client.get(
         "/lists",
         headers={"Authorization": f"Bearer {token}"},
@@ -62,9 +74,9 @@ def patient_can_see_all_lists(client: Client, patient: Patient):
     assert len(resp_lists) > 0
 
 
-@then("the patient can see the list")
-def patient_can_see_the_list(client: Client, patient: Patient, fhir_list: dict):
-    token = get_token(patient.uid)
+@then("the doctor can see the list")
+def doctor_can_see_the_list(client: Client, doctor: Practitioner, fhir_list: dict):
+    token = get_token(doctor.uid)
     resp = client.get(
         f"/lists/{fhir_list['id']}",
         headers={"Authorization": f"Bearer {token}"},
@@ -73,6 +85,44 @@ def patient_can_see_the_list(client: Client, patient: Patient, fhir_list: dict):
     assert resp.status_code == 200
     resp_list = json.loads(resp.data)["data"]
     assert resp_list["id"] == fhir_list["id"]
+
+
+@then("the patient cannot see all lists")
+def patient_cannot_see_all_lists(client: Client, patient: Patient):
+    token = get_token(patient.uid)
+    resp = client.get(
+        "/lists",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+@then("the patient cannot see the list")
+def patient_cannot_see_the_list(client: Client, patient: Patient, fhir_list: dict):
+    token = get_token(patient.uid)
+    resp = client.get(
+        f"/lists/{fhir_list['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 401
+
+
+@then(parsers.parse("the patient can see the number of item in the list: {count}"))
+def patient_can_see_length_of_list(
+    client: Client, patient: Patient, fhir_list: dict, count: str
+):
+    token = get_token(patient.uid)
+    resp = client.get(
+        f"/lists/{fhir_list['id']}/counts",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    print(resp)
+    assert resp.status_code == 200
+    resp = json.loads(resp.data)["data"]
+    assert resp == int(count)
 
 
 @then("the patient can join the lineup", target_fixture="fhir_list")
