@@ -97,3 +97,10 @@ def practitioner_role_can_be_found_if_specify_walk_in_visit_type(
 
     resp_data = json.loads(resp.data)
     assert any([p["id"] == practitioner.fhir_data["id"] for p in resp_data])
+
+    role_id = practitioner.fhir_data["id"]
+    resp = client.patch(
+        f"/practitioner_roles/{role_id}?active=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 204

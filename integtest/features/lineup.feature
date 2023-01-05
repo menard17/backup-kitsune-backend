@@ -9,6 +9,7 @@ Feature: Patient Lineup
         And the patient cannot see all lists
         And the patient cannot see the list
         And the patient can see the number of item in the list: 0
+        And inactivate doctor
     Scenario: Patients can join and remove from the lineup
         Given an admin
         And a patient
@@ -23,3 +24,22 @@ Feature: Patient Lineup
         When the admin creates a list
         And multiple patients trying to join the lineup at the same time
         Then not all can successfully join
+    Scenario: Empty list with available doctor
+        Given an admin
+        And a doctor
+        When the admin creates a list
+        Then the correct available spot counts can be fetched: 1
+        And inactivate doctor
+    Scenario: Empty list with no available doctor
+        Given an admin
+        And a patient
+        When the admin creates a list
+        Then the correct available spot counts can be fetched: 0
+    Scenario: Two doctors
+        Given an admin
+        And a doctor
+        And a doctor B
+        When the admin creates a list
+        Then the correct available spot counts can be fetched: 2
+        And inactivate doctor
+        And inactivate doctor b

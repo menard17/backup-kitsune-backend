@@ -3,7 +3,9 @@ See the design doc and use cases for APIs here:
 https://www.notion.so/umed-group/Line-Up-Patient-Backend-Design-c45d8d26f6594dcbb4cb269d6cc405c5
 """
 import json
+from datetime import datetime
 
+import pytz
 from fhir.resources import construct_fhir_element
 from flask import Blueprint
 from flask.wrappers import Response
@@ -79,6 +81,12 @@ def delete_entry(list_id: str, patient_id: str) -> Response:
     return ListsController().delete_entry(list_id, patient_id)
 
 
+@lists_blueprint.route("/<list_id>/appointments", methods=["GET"])
+@jwt_authenticated()
+def get_spot_details(list_id: str) -> Response:
+    return ListsController().get_spot_details(list_id)
+
+
 class ListsController:
     def __init__(self, resource_client=None):
         self.resource_client = resource_client or ResourceClient()
@@ -113,12 +121,47 @@ class ListsController:
 
     def get_list_len(self, list_id: str) -> Response:
         fhir_list = self.resource_client.get_resource(list_id, "List")
-        print(fhir_list)
         count = 0 if fhir_list.entry is None else len(fhir_list.entry)
         return Response(
             status=200,
             response=json.dumps({"data": count}),
         )
+
+    def get_spot_details(self, list_id: str) -> Response:
+        fhir_list = self.resource_client.get_resource(list_id, "List")
+        count = 0 if fhir_list.entry is None else len(fhir_list.entry)
+        jst = pytz.timezone("Asia/Tokyo")
+        today = datetime.now().astimezone(jst)
+
+        search_clause = [
+            ("active", "true"),
+            ("role", "walk-in"),
+            ("date", "lt" + today.date().isoformat()),
+            ("date", "gt" + today.date().isoformat()),
+        ]
+
+        result = self.resource_client.search(
+            "PractitionerRole",
+            search=search_clause,
+        )
+
+        if result.entry is None:
+            return Response(status=200, response={"error": "No available doctors"})
+
+        duration = 420  # Expect each appointment to take 420 secs(7 mins)
+        weekday = convert_day_of_week_to_str(today.weekday())
+        spot_counts = (
+            get_spot_counts(duration, weekday, today.time(), result.entry) - count
+        )
+
+        resp = json.dumps(
+            {
+                "available_spot": spot_counts,
+                "time": today.isoformat(),
+                "list_id": list_id,
+            }
+        )
+        return Response(status=200, response=resp)
 
     def create_entry(self, list_id: str, patient_id: str) -> Response:
         # get the list data
@@ -168,3 +211,52 @@ class ListsController:
             status=200,
             response=json.dumps({"data": datetime_encoder(fhir_list.dict())}),
         )
+
+
+def get_spot_counts(
+    duration: int, day: str, time: datetime.time, bundle_entries: list
+) -> int:
+    """
+    One spot is defined as expected space for 1 appointment for 1 doctor.
+    If there are 6 spots, it means you are expected to have 6 appointments by 1 doctor or 3 appointments by 2 doctors.
+    The spot is different from slot as slot is not dynamic
+    but spot is used to forcast how many appointments can be created in the future.
+    This is abtract concept and not FHIR concept.
+
+    :param duration: length of expected appointment time in seconds
+    :type duration: int
+    :param day: day of the week from mon to sun. Consistent with FHIR format of day.
+    :type day: str
+    :param time: base time to calculate number of spots
+    :type time: datetime.time
+    :param bundle_entries: list of outputs from search of practitioner role
+    :type bundle_entries: list
+
+    :rtype: int
+    """
+    sums = 0
+    for bundle in bundle_entries:
+        available_times = bundle.resource.availableTime
+        for available_time in available_times:
+            if day in available_time.daysOfWeek:
+                start = available_time.availableStartTime
+                end = available_time.availableEndTime
+                if time > start and time < end:
+                    sums += (
+                        (
+                            _convert_time_to_datetime(end)
+                            - _convert_time_to_datetime(time)
+                        ).total_seconds()
+                    ) // duration
+    return int(sums)
+
+
+def _convert_time_to_datetime(time: datetime.time) -> datetime:
+    tokyo_timezone = pytz.timezone("Asia/Tokyo")
+    now = tokyo_timezone.localize(datetime.now())
+    return datetime(now.year, now.month, now.day, time.hour, time.minute, time.second)
+
+
+def convert_day_of_week_to_str(day: int) -> str:
+    day_dict = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
+    return day_dict[day]

@@ -1,6 +1,8 @@
 import json
 import threading
+from datetime import datetime, timedelta
 
+import pytz
 from pytest_bdd import given, parsers, scenarios, then, when
 
 from integtest.characters import Patient, Practitioner, User
@@ -33,7 +35,45 @@ def get_patient(client: Client) -> Patient:
 @given("a doctor", target_fixture="doctor")
 def get_doctor(client: Client) -> Practitioner:
     user = create_user()
-    return create_practitioner(client, user, role_type="doctor")
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now().astimezone(jst)
+    base_time = now.time().isoformat()
+    current_time_plus_ten_mins = (now + timedelta(minutes=10)).time().isoformat()
+    return create_practitioner(
+        client,
+        user,
+        role_type="doctor",
+        visit_type="walk-in",
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                "availableStartTime": base_time,
+                "availableEndTime": current_time_plus_ten_mins,
+            },
+        ],
+    )
+
+
+@given("a doctor B", target_fixture="doctor_b")
+def get_doctor_b(client: Client) -> Practitioner:
+    user = create_user()
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now().astimezone(jst)
+    base_time = now.time().isoformat()
+    current_time_plus_ten_mins = (now + timedelta(minutes=10)).time().isoformat()
+    return create_practitioner(
+        client,
+        user,
+        role_type="doctor",
+        visit_type="walk-in",
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                "availableStartTime": base_time,
+                "availableEndTime": current_time_plus_ten_mins,
+            },
+        ],
+    )
 
 
 @given("a patient B", target_fixture="patient_b")
@@ -119,7 +159,6 @@ def patient_can_see_length_of_list(
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
-    print(resp)
     assert resp.status_code == 200
     resp = json.loads(resp.data)["data"]
     assert resp == int(count)
@@ -238,3 +277,38 @@ def not_all_can_successfully_join(client: Client, admin: User, fhir_list: dict):
     resp_list = json.loads(resp.data)["data"]
     assert resp_list["id"] == fhir_list["id"]
     assert len(resp_list["entry"]) < CONCURRENT_PATIENT_NUM
+
+
+@then(parsers.parse("the correct available spot counts can be fetched: {count}"))
+def get_spot_counts(client: Client, admin: User, fhir_list: dict, count: str):
+    token = get_token(admin.uid)
+    resp = client.get(
+        f"/lists/{fhir_list['id']}/appointments",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    result = json.loads(resp.data)
+    assert result["available_spot"] == int(count)
+    assert resp.status_code == 200
+
+
+@then("inactivate doctor")
+def inactive_doctor(client: Client, doctor: Practitioner):
+    token = get_token(doctor.uid)
+    role_id = doctor.fhir_data["id"]
+    resp = client.patch(
+        f"/practitioner_roles/{role_id}?active=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 204
+
+
+@then("inactivate doctor b")
+def inactive_doctor_b(client: Client, doctor_b: Practitioner):
+    token = get_token(doctor_b.uid)
+    role_id = doctor_b.fhir_data["id"]
+    resp = client.patch(
+        f"/practitioner_roles/{role_id}?active=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 204
