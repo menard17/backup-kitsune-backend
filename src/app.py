@@ -9,6 +9,7 @@ from flask_cors import CORS
 from blueprints.accounts import account_blueprint
 from blueprints.address import address_blueprint
 from blueprints.appointments import appointment_blueprint
+from blueprints.config import config_blueprint
 from blueprints.calls import calls_blueprint
 from blueprints.consents import consent_blueprint
 from blueprints.diagnostic_reports import diagnostic_reports_blueprint
@@ -82,6 +83,7 @@ app.register_blueprint(slots_blueprint)
 app.register_blueprint(verifications_blueprint)
 app.register_blueprint(pubsub_blueprint)
 app.register_blueprint(twilio_token_blueprint)
+app.register_blueprint(config_blueprint)
 
 
 @app.before_request
