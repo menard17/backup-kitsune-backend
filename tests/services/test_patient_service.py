@@ -22,6 +22,7 @@ class MockPatientClient:
         phone=None,
         kana=None,
         orca_id=None,
+        voip_token=None,
     ):
         self.data = {
             "resourceType": "Patient",
@@ -102,6 +103,12 @@ class MockPatientClient:
                     "given": [kana[1]],
                 }
             )
+
+        if voip_token:
+            self.data["extension"] = [
+                {"url": "voip-token", "valueString": voip_token},
+            ]
+
         if orca_id:
             self.data["extension"] = [{"valueString": orca_id, "url": "orca-id"}]
         self.mocker = mocker
@@ -278,6 +285,20 @@ def test_get_kana_empty():
 
     # When
     actual = PatientService.get_kana(patient)
+
+    # Then
+    assert actual == expected
+
+
+def test_voip_token():
+    # Given
+    expected = "1"
+    mock = Mock(ResourceClient)
+    mock.get_resource = MockPatientClient(voip_token=expected).get_resource
+    patient_service = PatientService(mock)
+
+    # When
+    _, actual = patient_service.get_voip_token("example")
 
     # Then
     assert actual == expected

@@ -53,6 +53,31 @@ class PatientService:
         patient_name: dict = patient.dict()["name"][0]
         return None, patient_name
 
+    def get_voip_token(
+        self, patient_id: UUID
+    ) -> tuple[Optional[Exception], Optional[str]]:
+        """Returns patient's voip token
+
+        :param patient_id: uuid for patient
+        :ty[e patient_id: uuid
+
+        :rtype: tuple
+        """
+        patient = self.resource_client.get_resource(patient_id, "Patient")
+        if patient.extension is None:
+            return Exception(f"No extension is added with patient: {patient.id}"), None
+        voip_token = list(filter(lambda x: (x.url == "voip-token"), patient.extension))
+
+        if not voip_token:
+            return (
+                Exception(f"No voip_token is registered with patient: {patient.id}"),
+                None,
+            )
+
+        voip_token_value = voip_token[0].valueString
+
+        return None, voip_token_value
+
     def get_patient_payment_details(
         self, patient_id: UUID
     ) -> tuple[Optional[Exception], Optional[tuple]]:
