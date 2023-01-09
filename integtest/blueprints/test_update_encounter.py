@@ -5,11 +5,11 @@ from pytest_bdd import given, scenarios, then, when
 from integtest.characters import Patient, Practitioner, Appointment, Encounter
 from integtest.conftest import Client
 from integtest.utils import (
-    create_patient, 
-    create_practitioner, 
-    create_user, 
-    get_token, 
-    create_encounter, 
+    create_patient,
+    create_practitioner,
+    create_user,
+    get_token,
+    create_encounter,
     create_appointment
 )
 

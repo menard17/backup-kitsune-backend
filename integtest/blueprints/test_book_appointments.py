@@ -16,6 +16,7 @@ from integtest.utils import (
     create_practitioner,
     create_user,
     get_token,
+    make_admin,
 )
 
 scenarios("../features/book_appointments.feature")
@@ -39,8 +40,20 @@ def get_doctor(client: Client) -> Practitioner:
     return create_practitioner(client, user, role_type="doctor")
 
 
+@given("a doctor B", target_fixture="practitioner_b")
+def get_doctor_b(client: Client) -> Practitioner:
+    user = create_user()
+    return create_practitioner(client, user, role_type="doctor")
+
+
 @given("patient A", target_fixture="patient_a")
 def get_patient_a(client: Client, user) -> Patient:
+    return create_patient(client, user)
+
+
+@given("a patient A", target_fixture="patient_a")
+def get_patient_A(client: Client) -> Patient:
+    user = create_user()
     return create_patient(client, user)
 
 
@@ -682,3 +695,206 @@ def get_cancelled_appointments(
         len(list(filter(lambda item: item["id"] == appointment["id"], appointments)))
         > 0
     )
+
+
+@given("an admin", target_fixture="admin")
+def get_admin() -> User:
+    user = create_user()
+    return make_admin(user)
+
+
+@when("the admin creates a list", target_fixture="queue")
+def admin_create_a_list(client: Client, admin: User) -> dict:
+    token = get_token(admin.uid)
+    resp = client.post(
+        "/lists",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    queue = json.loads(resp.data)
+    assert queue["mode"] == "working"
+    assert queue["status"] == "current"
+    assert queue["title"] == "Patient Queue"
+    return queue
+
+
+@then("the patient can join the lineup", target_fixture="queue")
+def patient_join_the_lineup(client: Client, patient: Patient, queue: dict) -> dict:
+    token = get_token(patient.uid)
+    patient_id = patient.fhir_data["id"]
+    resp = client.post(
+        f"/lists/{queue['id']}/items/{patient_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    queue = json.loads(resp.data)["data"]
+    assert len(queue["entry"]) == 1
+    assert queue["entry"][0]["item"]["reference"] == f"Patient/{patient_id}"
+    return queue
+
+
+@then("the patinet A can join the lineup", target_fixture="queue")
+def patient_A_join_the_lineup(client: Client, patient_a: Patient, queue: dict) -> dict:
+    token = get_token(patient_a.uid)
+    patient_id = patient_a.fhir_data["id"]
+    resp = client.post(
+        f"/lists/{queue['id']}/items/{patient_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 201
+
+    queue = json.loads(resp.data)["data"]
+    assert len(queue["entry"]) == 2
+    # assert queue["entry"][0]["item"]["reference"] == f"Patient/{patient_id}"
+    return queue
+
+
+@when(parsers.parse("the doctor B updates the visit type to {visit_type}"))
+def update_visit_type_for_doctor_b(visit_type: str, client: Client, practitioner_b: Practitioner):
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now().astimezone(jst)
+    base_time = now.time().isoformat()
+    current_time_plus_ten_mins = (now + timedelta(minutes=10)).time().isoformat()
+    role = practitioner_b.fhir_data
+    token = get_token(practitioner_b.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps(
+            {
+                "available_time": [
+                    {
+                        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                        "availableStartTime": base_time,
+                        "availableEndTime": current_time_plus_ten_mins,
+                    },
+                ],
+                "visit_type": visit_type,
+                "role_type": "doctor",
+            }
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@when(parsers.parse("the doctor updates the visit type to {visit_type}"))
+def update_visit_type(visit_type: str, client: Client, practitioner: Practitioner):
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now().astimezone(jst)
+    base_time = now.time().isoformat()
+    current_time_plus_ten_mins = (now + timedelta(minutes=50)).time().isoformat()
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps(
+            {
+                "available_time": [
+                    {
+                        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+                        "availableStartTime": base_time,
+                        "availableEndTime": current_time_plus_ten_mins,
+                    },
+                ],
+                "visit_type": visit_type,
+            }
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@then("the doctor picks up the appointment")
+def doctor_pick_up_appointment_for_list(client: Client, practitioner: Practitioner, queue: dict):
+    token = get_token(practitioner.uid)
+    practitioner_id = practitioner.practitioner_id
+    resp = client.post(
+        f"appointments/list/{queue['id']}/practitioner/{practitioner_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201
+
+
+@then("the doctor B picks up the appointment")
+def doctorB_pick_up_appointment_for_list(client: Client, practitioner_b: Practitioner, queue: dict):
+    token = get_token(practitioner_b.uid)
+    practitioner_id = practitioner_b.practitioner_id
+    resp = client.post(
+        f"appointments/list/{queue['id']}/practitioner/{practitioner_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 201
+
+
+@then("the doctor B cannot pick up the appointment")
+def doctor_b_pick_up_appointment_for_list(client: Client, practitioner_b: Practitioner, queue: dict):
+    token = get_token(practitioner_b.uid)
+    practitioner_id = practitioner_b.practitioner_id
+    resp = client.post(
+        f"appointments/list/{queue['id']}/practitioner/{practitioner_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 400
+
+
+@when("the doctor updates the visit type to walk-in and change avaible time")
+def update_visit_type_with_avaible_time(client: Client, practitioner: Practitioner):
+    role = practitioner.fhir_data
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/practitioner_roles/{role['id']}",
+        data=json.dumps(
+            {
+                "available_time": [
+                    {
+                        "daysOfWeek": ["mon", "tue", "wed"],
+                        "availableStartTime": "01:00:00",
+                        "availableEndTime": "01:05:00",
+                    },
+                ],
+                "visit_type": "walk-in",
+                "role_type": "doctor",
+            }
+        ),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+
+
+@then("the doctor cannot pick up the appointment outside of the avaible time")
+def doctor_pick_up_appointment_for_list_outside_of_aviable_time(client: Client, practitioner: Practitioner, queue: dict):
+    token = get_token(practitioner.uid)
+    practitioner_id = practitioner.practitioner_id
+    resp = client.post(
+        f"appointments/list/{queue['id']}/practitioner/{practitioner_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 400
+
+
+@then("the patient is no longer on the list")
+def patient_not_in_the_list(client: Client, practitioner: Practitioner, queue: dict):
+    token = get_token(practitioner.uid)
+    resp = client.get(
+        f"/lists/{queue['id']}",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    resp_list = json.loads(resp.data)["data"]
+    assert 'entry' not in resp_list

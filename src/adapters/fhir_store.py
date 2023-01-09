@@ -83,7 +83,7 @@ class ResourceClient:
             bundle["fullUrl"] = fullurl
         return bundle
 
-    def create_resources(self, bundles: List[ResourceBundle]) -> BundleType:
+    def create_resources(self, bundles: List[ResourceBundle], lock_header: str = "") -> BundleType:
         """Creates resources in FHIR in transaction manner
 
         :param bundles: list of bundle resources
@@ -104,6 +104,10 @@ class ResourceClient:
         }
 
         result = construct_fhir_element(body["resourceType"], body)
+
+        if lock_header != "":
+            # Optimistic lock: https://build.fhir.org/http.html#concurrency
+            header["If-Match"] = lock_header
 
         response = self._session.post(
             f"{self._url}", headers=header, data=result.json(indent=True)

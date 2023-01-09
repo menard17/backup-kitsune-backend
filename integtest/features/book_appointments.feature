@@ -63,3 +63,44 @@ Feature: Book Appointment
         And a back-office staff
         When the patient books a free time of the doctor: 0
         Then the back-office staff can see the booked appointment
+    Scenario: One doctor picks up the appointment in list
+        Given a patient
+        And a doctor
+        And an admin
+        When the admin creates a list
+        Then the patient can join the lineup
+        When the doctor updates the visit type to walk-in
+        Then the doctor picks up the appointment
+        And the patient is no longer on the list
+    Scenario: Two Doctor picks up the appointment and one doctor cannot pick
+        Given a patient
+        And a doctor
+        And a doctor B
+        And an admin
+        When the admin creates a list
+        Then the patient can join the lineup
+        When the doctor updates the visit type to walk-in
+        Then the doctor picks up the appointment
+        When the doctor B updates the visit type to walk-in
+        Then the doctor B cannot pick up the appointment
+    Scenario: Two Doctor picks up the appointment
+        Given a patient
+        And a patient A
+        And a doctor
+        And a doctor B
+        And an admin
+        When the admin creates a list
+        Then the patient can join the lineup
+        And the patinet A can join the lineup
+        When the doctor updates the visit type to walk-in
+        Then the doctor picks up the appointment
+        When the doctor B updates the visit type to walk-in
+        Then the doctor B picks up the appointment
+    Scenario: Doctor picks up the appointment outside of the avaible hours
+        Given a patient
+        And a doctor
+        And an admin
+        When the admin creates a list
+        Then the patient can join the lineup
+        When the doctor updates the visit type to walk-in and change avaible time
+        Then the doctor cannot pick up the appointment outside of the avaible time
