@@ -108,8 +108,10 @@ def test_search_practitioner(mocker):
     resource_client = MockResourceClient()
     resource_client.search = mock_search
 
+    practitioner_role_service = MockPractitionerRoleService()
+
     request = FakeRequest(args={"email": email})
-    controller = PractitionerController(resource_client)
+    controller = PractitionerController(resource_client, practitioner_role_service)
     resp = controller.search_practitioners(request)
     resp_data = resp.data.decode("utf-8")
 
@@ -131,3 +133,8 @@ class FakeRequest:
 
     def args(self):
         return self.args
+
+
+class MockPractitionerRoleService:
+    def get_practitioner_ids(self, role_types):
+        return None, ["dummy-practitioner-id"]

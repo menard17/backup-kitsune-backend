@@ -131,23 +131,16 @@ class PractitionerRoleService:
         return None, None
 
     def get_practitioner_ids(
-        self, role_type: str
+        self, role_types: List[Tuple[str, str]]
     ) -> Tuple[Optional[Exception], Optional[Set[str]]]:
         """Returns list of practitioner ids referenced by practitioner role with given role type
 
-        :param role_type: doctor or nurse
-        :type role_type: str
+        :param role_types: list of role types , doctor or nurse or walk-in or appointments
+        :type role_type: List[Tuple[str, str]]
 
         :rtype: Tuple[Exception, Set[str]]
         """
-        if role_type != "doctor" and role_type != "nurse":
-            return Exception(f"Not implemented role is provided: {role_type}"), None
-
-        role_search_clause = []
-        role_search_clause.append(("role", role_type))
-        practitioner_roles = self.resource_client.search(
-            "PractitionerRole", role_search_clause
-        )
+        practitioner_roles = self.resource_client.search("PractitionerRole", role_types)
         if practitioner_roles.total == 0:
             return None, set()
 

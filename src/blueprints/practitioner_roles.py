@@ -1,7 +1,7 @@
 import json
-import uuid
 from datetime import datetime, time, timedelta
 from typing import List
+from uuid import UUID, uuid1
 
 import pytz
 from dateutil.parser import isoparse
@@ -98,11 +98,11 @@ class PractitionerRoleController:
         )
         return Response(status=200, response=resp)
 
-    def get_practitioner_role(self, role_id: uuid) -> Response:
+    def get_practitioner_role(self, role_id: UUID) -> Response:
         """Returns practitioner role with given role_id
 
         :param role_id: practitioner role id
-        :type role_id: uuid
+        :type role_id: UUID
         :return: practitioner role in JSON object
         :rtype: Response
         """
@@ -162,8 +162,8 @@ class PractitionerRoleController:
                 response=f"photo is: {image_size} and expected to be less than {byte_size}",
             )
 
-        role_id = f"urn:uuid:{uuid.uuid1()}"
-        practitioner_id = f"urn:uuid:{uuid.uuid1()}"
+        role_id = uuid1().urn
+        practitioner_id = uuid1().urn
 
         resources = []
 
@@ -236,7 +236,7 @@ class PractitionerRoleController:
         )[0].resource
         return Response(status=201, response=resp.json())
 
-    def update_practitioner_role(self, request, role_id: uuid):
+    def update_practitioner_role(self, request, role_id: UUID):
         """Returns modified practitioner role
 
         Modifies practitioner or/and practitioner role.

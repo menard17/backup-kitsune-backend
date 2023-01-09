@@ -36,11 +36,21 @@ class PractitionerController:
         else:
             search_clause.append(("active", str(True)))
 
+        role_types = []
         if role_type := request.args.get("role_type"):
+            role_types.append(("role", role_type))
+        if visit_type := request.args.get("visit_type"):
+            role_types.append(("role", visit_type))
+        else:
+            # Backward compatibility, need to default to not walk-in type
+            # which will lead to appointment type or undefined.
+            # Old data will not have the visit type code attached
+            role_types.append(("role:not", "walk-in"))
+        if role_types:
             (
                 err,
                 practitioner_id,
-            ) = self.practitioner_role_service.get_practitioner_ids(role_type)
+            ) = self.practitioner_role_service.get_practitioner_ids(role_types)
             if err is not None:
                 return Response(status=400, response=err.args[0])
 
