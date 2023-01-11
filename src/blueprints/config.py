@@ -23,7 +23,7 @@ class ConfigController:
         return Response(
             status=200,
             response=json.dumps(
-                {"list_id": LIST_ID},
+                {"patient_queue_list_id": LIST_ID},
                 default=json_serial,
             ),
         )
