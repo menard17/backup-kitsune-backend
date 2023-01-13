@@ -73,7 +73,8 @@ class PractitionerRoleController:
 
         if practitioner_id := request.args.get("practitioner_id"):
             search_clause.append(("practitioner", practitioner_id))
-        else:
+
+        if not to_bool(request.args.get("is_all")):
             search_clause.append(("active", "true"))
 
         if (role_id := request.args.get("role_id")) is not None:
