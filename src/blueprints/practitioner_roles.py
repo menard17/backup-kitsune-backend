@@ -65,11 +65,6 @@ class PractitionerRoleController:
 
         if visit_type := request.args.get("visit_type"):
             search_clause.append(("role", visit_type))
-        else:
-            # Backward compatibility, need to default to not walk-in type
-            # which will lead to appointment type or undefined.
-            # Old data will not have the visit type code attached
-            search_clause.append(("role:not", "walk-in"))
 
         if practitioner_id := request.args.get("practitioner_id"):
             search_clause.append(("practitioner", practitioner_id))

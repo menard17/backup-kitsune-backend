@@ -10,5 +10,4 @@ Feature: Create and Get Practitioner Role
     Scenario: Create practitioner role for lineup patients
         When a practitioner role is created with walk-in visit type
         Then the practitioner role has the walk-in visit type code
-        And the practitioner role can NOT be found in the default GET practitioners calls
         And the practitioner role can be found if specify walk-in visit type
