@@ -20,6 +20,10 @@ google-cloud = "^0.34.0"
 pandas = "^1.4.3"
 notion-client = "^1.0.0"
 setuptools = "65.5.1"
+cryptography = "^39.0.0"
+fhir-resources = "6.1.0"
+flask = "2.0.2"
+werkzeug = "2.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

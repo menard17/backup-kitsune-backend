@@ -9,8 +9,8 @@ from flask_cors import CORS
 from blueprints.accounts import account_blueprint
 from blueprints.address import address_blueprint
 from blueprints.appointments import appointment_blueprint
-from blueprints.config import config_blueprint
 from blueprints.calls import calls_blueprint
+from blueprints.config import config_blueprint
 from blueprints.consents import consent_blueprint
 from blueprints.diagnostic_reports import diagnostic_reports_blueprint
 from blueprints.document_references import document_references_blueprint
@@ -35,6 +35,7 @@ from utils.metric import (
     teardown_request_log_endpoint_metric,
 )
 from utils.notion_setup import NotionSingleton
+from utils.orca_setup import OrcaSingleton
 from utils.stripe_setup import StripeSingleton
 
 dictConfig(
@@ -115,9 +116,11 @@ def handle_fhir_http_errors(err):
 if (base_path := "SECRETS_PATH") in os.environ:
     StripeSingleton(stripe, os.environ[base_path])
     NotionSingleton.client(os.environ[base_path])
+    OrcaSingleton.client(os.environ[base_path])
 else:
     StripeSingleton(stripe)
     NotionSingleton.client()
+    OrcaSingleton.client()
 
 
 if __name__ == "__main__":

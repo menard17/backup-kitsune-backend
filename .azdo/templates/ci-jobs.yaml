@@ -20,6 +20,15 @@ jobs:
       sudo touch /notion_key/notion_key
       sudo chmod 777 /notion_key/notion_key
       sudo echo "key" > /notion_key/notion_key
+      sudo mkdir -p /secrets/orca_apikey /secrets/orca_cert_pass /secrets/orca_client_cert /secrets/orca_fqdn
+      sudo touch /secrets/orca_apikey/orca_apikey /secrets/orca_cert_pass/orca_cert_pass /secrets/orca_client_cert/orca_client_cert.p12 /secrets/orca_fqdn/orca_fqdn
+      sudo chmod 777 /secrets/orca_apikey/orca_apikey /secrets/orca_cert_pass/orca_cert_pass /secrets/orca_client_cert/orca_client_cert.p12 /secrets/orca_fqdn/orca_fqdn
+      sudo echo "api key" > /secrets/orca_apikey/orca_apikey
+      sudo echo "pass" > /secrets/orca_cert_pass/orca_cert_pass
+      sudo openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj "/CN=umed.jp"
+      sudo openssl pkcs12 -export -out orca_client_cert.p12 -in cert.pem -inkey key.pem -passout pass:pass
+      sudo cp orca_client_cert.p12 /secrets/orca_client_cert/orca_client_cert.p12
+      sudo echo "demo-weborca.cloud.orcamo.jp" > /secrets/orca_fqdn/orca_fqdn
     displayName: 'Create secrets file'
   - task: DownloadSecureFile@1
     name: googleApplicationCredentials
@@ -53,6 +62,7 @@ jobs:
   - script: |
       sudo rm /secrets/stripe_key
       sudo rm /notion_key/notion_key
+      sudo rm /secrets/orca_apikey/orca_apikey /secrets/orca_cert_pass/orca_cert_pass /secrets/orca_client_cert/orca_client_cert.p12 /secrets/orca_fqdn/orca_fqdn
     displayName: 'Delete a secret'
   - task: PublishTestResults@2
     condition: succeededOrFailed()

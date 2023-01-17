@@ -40,12 +40,21 @@ RUN poetry install --no-dev  # respects
 # For example using docker-compose to mount local volume under /app
 FROM python-base as development
 
+# Install git/ssh(depends on git push command)/pre-commit for dev env
+RUN apt-get update \
+    && apt-get install --no-install-recommends  -y \
+    git \
+    ssh \
+    pre-commit
+
 # Copying poetry and venv into image
 COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 # venv already has runtime deps installed we get a quicker install
+# run poetry lock toresolve mismatch between poetry lock and pyproject.toml
 WORKDIR $PYSETUP_PATH
+RUN poetry lock
 RUN poetry install
 
 WORKDIR /app

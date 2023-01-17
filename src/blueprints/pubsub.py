@@ -9,6 +9,7 @@ from flask import Blueprint, Response, request
 from adapters.fhir_store import ResourceClient
 from services.firestore_service import FireStoreService
 from services.notion_service import NotionService
+from services.orca_service import OrcaService
 
 pubsub_blueprint = Blueprint("pubsub", __name__, url_prefix="/pubsub")
 
@@ -29,11 +30,14 @@ class PubsubController:
         self,
         resource_client: ResourceClient = None,
         notion_service: NotionService = None,
+        orca_service: OrcaService = None,
         is_syncing_to_notion_enabled: str = None,
         firestore_service: FireStoreService = None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.notion_service = notion_service or NotionService()
+        self.orca_service = orca_service or OrcaService()
+
         self.is_syncing_to_notion_enabled = (
             is_syncing_to_notion_enabled or IS_SYNCING_TO_NOTION_ENABLED
         )
@@ -183,6 +187,10 @@ class PubsubController:
             patient=patient,
             medication_request=medication_request,
             service_request=service_request,
+        )
+
+        self.orca_service.sync_patient_to_orca(
+            patient=patient,
         )
 
         return Response(
