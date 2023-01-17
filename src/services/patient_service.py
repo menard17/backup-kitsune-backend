@@ -59,18 +59,18 @@ class PatientService:
         """Returns patient's voip token
 
         :param patient_id: uuid for patient
-        :ty[e patient_id: uuid
+        :type patient_id: uuid
 
         :rtype: tuple
         """
         patient = self.resource_client.get_resource(patient_id, "Patient")
         if patient.extension is None:
-            return Exception(f"No extension is added with patient: {patient.id}"), None
+            return Exception(f"No extension is added with patient: {patient_id}"), None
         voip_token = list(filter(lambda x: (x.url == "voip-token"), patient.extension))
 
         if not voip_token:
             return (
-                Exception(f"No voip_token is registered with patient: {patient.id}"),
+                Exception(f"No voip_token is registered with patient: {patient_id}"),
                 None,
             )
 

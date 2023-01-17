@@ -20,8 +20,10 @@ APPLE_PUSH_ENDPOINT = os.getenv("APPLE_PUSH_ENDPOINT")
 @jwt_authorized("/Patient/*")
 def call_by_appointment():
     request_body = request.get_json()
-    appointment_id = request_body.get("appointment")
-    patient_id = request_body.get("patient")
+    if request_body is None:
+        return Response(status=400, response="request body is missing")
+    appointment_id = request_body.get("appointment", None)
+    patient_id = request_body.get("patient", None)
     return CallsController().start(appointment_id, patient_id)
 
 
@@ -30,10 +32,10 @@ class CallsController:
         self.resource_client = resource_client or ResourceClient()
         self.patient_service = patient_service or PatientService(self.resource_client)
 
-    def start(self, appointment_id: str, patient_id: UUID) -> Response:
+    def start(self, appointment_id: UUID, patient_id: UUID) -> Response:
         err, voip_token = self.patient_service.get_voip_token(patient_id)
         if err:
-            return Response(status=400, response=err)
+            return Response(status=400, response=err.args)
 
         fs_voip_password = open("/voip_password/voip_password", "r")
         voip_password = fs_voip_password.readlines()[0].strip()

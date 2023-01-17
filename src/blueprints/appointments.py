@@ -1,17 +1,18 @@
 import json
 import uuid
 from datetime import datetime, timedelta
+from uuid import UUID
+
 import pytz
 from flask import Blueprint, Response, request
 
-from uuid import UUID
 from adapters.fhir_store import ResourceClient
 from blueprints.service_requests import ServiceRequestController
 from json_serialize import json_serial
 from services.appointment_service import AppointmentService
 from services.email_notification_service import EmailNotificationService
-from services.patient_service import PatientService
 from services.lists_service import ListsService
+from services.patient_service import PatientService
 from services.practitioner_role_service import PractitionerRoleService
 from services.schedule_service import ScheduleService
 from services.service_request_service import ServiceRequestService
@@ -41,7 +42,7 @@ class AppointmentController:
         email_notification_service=None,
         patient_service=None,
         practitioner_role_service=None,
-        lists_service=None
+        lists_service=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
@@ -61,9 +62,7 @@ class AppointmentController:
         self.practitioner_role_service = (
             practitioner_role_service or PractitionerRoleService(self.resource_client)
         )
-        self.lists_service = (
-            lists_service or ListsService(self.resource_client)
-        )
+        self.lists_service = lists_service or ListsService(self.resource_client)
 
     def book_appointment(self) -> Response:
         """Creates appointment and busy slot with given practitioner role and patient
@@ -385,24 +384,26 @@ class AppointmentController:
             cancellation,
         )
 
-    def create_appointment_on_queue(self, list_id: str, practitioner_id: UUID) -> Response:
+    def create_appointment_on_queue(
+        self, list_id: str, practitioner_id: UUID
+    ) -> Response:
         resources = []
         search_clause = []
         search_clause.append(("practitioner", practitioner_id))
-        practitioner_role = self.resource_client.search("PractitionerRole", search_clause)
+        practitioner_role = self.resource_client.search(
+            "PractitionerRole", search_clause
+        )
         practitioner_role_json = json.loads(practitioner_role.json())
         role_id = practitioner_role_json["entry"][0]["resource"]["id"]
         top_queue_patient, lists = self.lists_service.dequeue(list_id)
         lock_header = self.resource_client.last_seen_etag
-        print("top_queue_patient", top_queue_patient)
-        print(top_queue_patient is None)
         if top_queue_patient is None:
             return Response(status=400, response="No Patient in list")
         resources.append(lists)
         jst = pytz.timezone("Asia/Tokyo")
         now = datetime.now().astimezone(jst)
         start = now
-        end = (now + timedelta(minutes=10))
+        end = now + timedelta(minutes=10)
         tokyo_timezone = pytz.timezone("Asia/Tokyo")
         now = tokyo_timezone.localize(datetime.now())
         role_rid = f"PractitionerRole/{role_id}"
@@ -410,7 +411,11 @@ class AppointmentController:
         slot_uuid = uuid.uuid1().urn
 
         # validation for start time and end time for doctor
-        doctor_is_avaible = self.practitioner_role_service.schedule_is_available_for_doctor(role_id, start, end)
+        doctor_is_avaible = (
+            self.practitioner_role_service.schedule_is_available_for_doctor(
+                role_id, start, end
+            )
+        )
         if not doctor_is_avaible:
             # change response message
             return Response(status=400, response="No schedule is created")
@@ -524,7 +529,9 @@ def search():
     return AppointmentController().search_appointments(request, service_request_id)
 
 
-@appointment_blueprint.route("/list/<list_id>/practitioner/<practitioner_id>", methods=["POST"])
+@appointment_blueprint.route(
+    "/list/<list_id>/practitioner/<practitioner_id>", methods=["POST"]
+)
 @jwt_authenticated()
 @jwt_authorized("/Practitioner/{practitioner_id}")
 def create_appointment_on_queue(list_id: str, practitioner_id: str) -> Response:
