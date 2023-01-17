@@ -178,3 +178,8 @@ secrets/*
 src/service.json
 
 **/.DS_Store
+
+# Certificates
+cert.pem
+key.pem
+orca_client_cert.p12

@@ -18,7 +18,7 @@ class OrcaSingleton:
         return cls._instance
 
     @classmethod
-    def client(cls, orca_base_path: str = "/secrets"):
+    def client(cls, orca_base_path: str = ""):
         if cls.session is None and cls.uri is None:
             user = ""
             cls.orca_client_cert_path = (

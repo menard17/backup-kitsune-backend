@@ -80,22 +80,29 @@ docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file lo
 - Once that loads
 - run this command
 
-```
+```bash
+#!/bin/bash
 mkdir /secrets && echo <Your Stripe Key> > /secrets/stripe_key
-mkdir /secrets/notion_key && echo <Your notion Key>  > /secrets/notion_key/notion_key
 
-mkdir /secrets/twilio_account_sid && echo  <Your account id> > /secrets/twilio_account_sid/twilio_account_sid
+mkdir -p /secrets/orca_apikey /secrets/orca_cert_pass /secrets/orca_client_cert /secrets/orca_fqdn /secrets/notion_key /secrets/twilio_account_sid /secrets/twilio_verify_service_sid /secrets/twilio_auth_token
 
-mkdir /secrets/twilio_auth_token && echo  <Your account id> > /secrets/twilio_auth_token/twilio_auth_token
+echo <Your notion Key>  > /notion_key/notion_key
+echo  <Your account id> > /secrets/twilio_account_sid/twilio_account_sid
+echo  <Your account id> > /secrets/twilio_auth_token/twilio_auth_token
+echo  <Your account id> > /secrets/twilio_verify_service_sid/twilio_verify_service_sid
+echo "api key" > /secrets/orca_apikey/orca_apikey
+echo "pass" > /secrets/orca_cert_pass/orca_cert_pass
 
-mkdir /secrets/twilio_verify_service_sid && echo  <Your account id> > /secrets/twilio_verify_service_sid/twilio_verify_service_sid
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj "/CN=umed.jp"
+openssl pkcs12 -export -out orca_client_cert.p12 -in cert.pem -inkey key.pem -passout pass:pass
+cp orca_client_cert.p12 /secrets/orca_client_cert/orca_client_cert.p12
+echo "demo-weborca.cloud.orcamo.jp" > /secrets/orca_fqdn/orca_fqdn
 ```
 
 - this should create a secrets/stripe_key folder in the root directory
 - Then go back to the workspace kitsune-backend
 - Then run
 
-```
 poetry install
 export the environment variables into the terminal
 poetry run python srs/app.py
