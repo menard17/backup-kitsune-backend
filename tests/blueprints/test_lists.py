@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 
+import pytest
 from fhir.resources import construct_fhir_element
 from helper import MockResourceClient
 
@@ -320,3 +321,75 @@ def test_get_spot_counts():
     expected_total_spots = 55
 
     assert actual_total_spots == expected_total_spots
+
+
+def test_get_position_of_patient_for_malformed_list():
+    # Given
+    test_list = copy.deepcopy(LIST_DATA)
+    test_list["entry"] = [{"item": {"wrong": "Patient/1"}}]
+    list_id = "test-id-98712653"
+
+    def mock_get_resource(list_id, resource_type):
+        assert resource_type == "List"
+        assert list_id == LIST_DATA["id"]
+        return construct_fhir_element("List", test_list)
+
+    resource_client = MockResourceClient()
+    resource_client.get_resource = mock_get_resource
+
+    # When
+    controller = ListsController(resource_client)
+
+    # Then
+    with pytest.raises(ValueError):
+        controller.get_patient_position(list_id, "patient_id")
+
+
+def test_get_position_of_existing_patient():
+    # Given
+    test_list = copy.deepcopy(LIST_DATA_WITH_TWO_ITEMS)
+    list_id = "test-id-98712653"
+    first_patient_id = "1"
+    second_patient_id = "2"
+
+    def mock_get_resource(list_id, resource_type):
+        assert resource_type == "List"
+        assert list_id == LIST_DATA["id"]
+        return construct_fhir_element("List", test_list)
+
+    resource_client = MockResourceClient()
+    resource_client.get_resource = mock_get_resource
+
+    # When
+    controller = ListsController(resource_client)
+    first_response = controller.get_patient_position(list_id, first_patient_id)
+    second_response = controller.get_patient_position(list_id, second_patient_id)
+
+    # Then
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert first_response.data == b'{"data": {"position": 0}}'
+    assert second_response.data == b'{"data": {"position": 1}}'
+
+
+def test_get_position_of_nonexisting_patient():
+    # Given
+    test_list = copy.deepcopy(LIST_DATA_WITH_TWO_ITEMS)
+    list_id = "test-id-98712653"
+    patient_id = "3"
+
+    def mock_get_resource(list_id, resource_type):
+        assert resource_type == "List"
+        assert list_id == LIST_DATA["id"]
+        return construct_fhir_element("List", test_list)
+
+    resource_client = MockResourceClient()
+    resource_client.get_resource = mock_get_resource
+
+    # When
+    controller = ListsController(resource_client)
+    response = controller.get_patient_position(list_id, patient_id)
+
+    # Then
+    assert response.status_code == 200
+    assert response.data == b'{"data": {"position": -1}}'

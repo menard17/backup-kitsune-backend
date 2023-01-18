@@ -48,6 +48,17 @@ def get_number_of_item_in_list(list_id: str) -> Response:
     return ListsController().get_list_len(list_id)
 
 
+@lists_blueprint.route("/<list_id>/patients/<patient_id>/counts", methods=["GET"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/{patient_id}")
+def get_position_of_patient(list_id: str, patient_id: str) -> Response:
+    """
+    This gets the position of the given patient in the specific list.
+    Returns -1 if the patient does not exist
+    """
+    return ListsController().get_patient_position(list_id, patient_id)
+
+
 @lists_blueprint.route("/<list_id>", methods=["GET"])
 @jwt_authenticated()
 @jwt_authorized("/Patient/*")
@@ -126,6 +137,23 @@ class ListsController:
             status=200,
             response=json.dumps({"data": count}),
         )
+
+    def get_patient_position(self, list_id: str, patient_id: str) -> Response:
+        fhir_list = self.resource_client.get_resource(list_id, "List")
+        if not fhir_list:
+            return Response(status=400, response=f"list does not exist: {list_id}")
+        if entries := fhir_list.entry:
+            for idx, list_entry in enumerate(entries):
+                if (
+                    list_entry
+                    and list_entry.item
+                    and list_entry.item.reference
+                    and patient_id in list_entry.item.reference
+                ):
+                    return Response(
+                        status=200, response=json.dumps({"data": {"position": idx}})
+                    )
+        return Response(status=200, response=json.dumps({"data": {"position": -1}}))
 
     def get_spot_details(self, list_id: str) -> Response:
         fhir_list = self.resource_client.get_resource(list_id, "List")

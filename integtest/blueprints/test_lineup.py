@@ -164,6 +164,36 @@ def patient_can_see_length_of_list(
     assert resp == int(count)
 
 
+@then(parsers.parse("the patient can see the position of item in the list: {count}"))
+def patient_can_see_the_position_of_list(
+    client: Client, patient: Patient, fhir_list: dict, count: str
+):
+    token = get_token(patient.uid)
+    resp = client.get(
+        f"/lists/{fhir_list['id']}/patients/{patient.fhir_data['id']}/counts",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    resp = json.loads(resp.data)["data"]
+    assert resp == {"position": int(count)}
+
+
+@then(parsers.parse("the patientB can see the position of item in the list: {count}"))
+def patientB_can_see_the_position_of_list(
+    client: Client, patient_b: Patient, fhir_list: dict, count: str
+):
+    token = get_token(patient_b.uid)
+    resp = client.get(
+        f"/lists/{fhir_list['id']}/patients/{patient_b.fhir_data['id']}/counts",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    resp = json.loads(resp.data)["data"]
+    assert resp == {"position": int(count)}
+
+
 @then("the patient can join the lineup", target_fixture="fhir_list")
 def patient_join_the_lineup(client: Client, patient: Patient, fhir_list: dict) -> dict:
     token = get_token(patient.uid)
@@ -312,3 +342,31 @@ def inactive_doctor_b(client: Client, doctor_b: Practitioner):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 204
+
+
+@then(
+    "the patient cannot see the number of item in the list if wrong id of list is used"
+)
+def patient_cannot_see_the_numer_of_item(client: Client, patient: Patient):
+    wrong_list_id = "wrong_id"
+    token = get_token(patient.uid)
+    resp = client.get(
+        f"/lists/{wrong_list_id}/counts",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 500
+
+
+@then(
+    "the patient cannot see the position of item in the list if wrong id of list is used"
+)
+def patient_cannot_see_the_position_of_list(client: Client, patient: Patient):
+    wrong_list_id = "wrong_id"
+    token = get_token(patient.uid)
+    resp = client.get(
+        f"/lists/{wrong_list_id}/patients/{patient.fhir_data['id']}/counts",
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 500
