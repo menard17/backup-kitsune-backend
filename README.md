@@ -94,8 +94,8 @@ echo "api key" > /secrets/orca_apikey/orca_apikey
 echo "pass" > /secrets/orca_cert_pass/orca_cert_pass
 
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj "/CN=umed.jp"
-openssl pkcs12 -export -out orca_client_cert.p12 -in cert.pem -inkey key.pem -passout pass:pass
-cp orca_client_cert.p12 /secrets/orca_client_cert/orca_client_cert.p12
+openssl pkcs12 -export -out orca_client_cert -in cert.pem -inkey key.pem -passout pass:pass
+cp orca_client_cert /secrets/orca_client_cert/orca_client_cert
 echo "demo-weborca.cloud.orcamo.jp" > /secrets/orca_fqdn/orca_fqdn
 ```
 

@@ -182,4 +182,4 @@ src/service.json
 # Certificates
 cert.pem
 key.pem
-orca_client_cert.p12
+orca_client_cert

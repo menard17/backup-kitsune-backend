@@ -22,7 +22,7 @@ class OrcaSingleton:
         if cls.session is None and cls.uri is None:
             user = ""
             cls.orca_client_cert_path = (
-                f"{orca_base_path}/orca_client_cert/orca_client_cert.p12"
+                f"{orca_base_path}/orca_client_cert/orca_client_cert"
             )
             cls.fs_orca_apikey = open(f"{orca_base_path}/orca_apikey/orca_apikey", "r")
             cls.apikey = cls.fs_orca_apikey.readlines()[0].strip()
