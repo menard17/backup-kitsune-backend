@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import UUID
 
 from fhir.resources.address import Address
@@ -13,6 +13,7 @@ from fhir.resources.fhirtypes import (
     ExtensionType,
     Uri,
 )
+from fhir.resources.domainresource import DomainResource
 from fhir.resources.humanname import HumanName
 from fhir.resources.patient import Patient
 from flask.wrappers import Response
@@ -249,6 +250,15 @@ class PatientService:
             address = Address(**patient.address[0].__dict__)
             return address.postalCode
         return ""
+
+    def put_orca_id_for_patient(self, orca_id: str, patient_id: UUID) -> Tuple[Optional[Exception], DomainResource]:
+        resource = self.resource_client.get_resource(patient_id, "Patient")
+        patient = Patient(**resource.dict())
+        patient.extension = [
+            ExtensionType(**{"valueString": orca_id, "url": Uri("orca-id")})
+        ]
+        patient = self.resource_client.put_resource(patient_id, patient)
+        return None, patient
 
 
 def remove_empty_string_from_address(addresses: list) -> list[AddressType]:

@@ -55,6 +55,13 @@ def put_patients(patient_id: UUID) -> Response:
     return PatientController().update_patient(request, patient_id)
 
 
+@patients_blueprint.route("/<patient_id>/orca", methods=["PUT"])
+@jwt_authenticated()
+@jwt_authorized("/Patient/*")
+def put_orca_id_for_patient(patient_id: UUID) -> Response:
+    return PatientController().put_orca_id_for_patient(request, patient_id)
+
+
 class PatientController:
     def __init__(self, resource_client=None, patient_service=None):
         self.resource_client = resource_client or ResourceClient()
@@ -257,3 +264,15 @@ class PatientController:
             return Response(
                 status=200, response=json.dumps({"data": []}, default=json_serial)
             )
+
+    def put_orca_id_for_patient(self, request, patient_id: UUID) -> Response:
+        request_body = request.get_json()
+        orca_id = request_body.get("orca_id")
+        err, patient = self.patient_service.put_orca_id_for_patient(orca_id, patient_id)
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        return Response(
+            status=200,
+            response=json.dumps({"data": datetime_encoder(patient.dict())}),
+        )
