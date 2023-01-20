@@ -11,6 +11,8 @@ class OrcaSingleton:
 
     session: Session = None
     uri: str = None
+    POOL_CONNECTIONS = 100
+    POOL_MAXSIZE = 100
 
     def __new__(cls):
         if not hasattr(cls, "_instance"):
@@ -54,6 +56,8 @@ class OrcaSingleton:
                     pkcs12_filename=cls.orca_client_cert_path,
                     pkcs12_password=cls.cert_pass,
                     max_retries=retries,
+                    pool_connections=cls.POOL_CONNECTIONS,
+                    pool_maxsize=cls.POOL_MAXSIZE,
                 ),
             )
 

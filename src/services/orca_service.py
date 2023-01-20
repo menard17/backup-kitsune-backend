@@ -29,9 +29,9 @@ class OrcaService:
                 orca_uri + f"{api_endpoint}{request_option}",
                 headers={"Content-Type": "application/xml"},
             )
+            session.close()
         except ConnectionError:
             return Exception("Could't access to ORCA"), None
-
         return None, receive_data
 
     def post_orca_data(
@@ -49,6 +49,7 @@ class OrcaService:
                 headers={"Content-Type": "application/xml"},
                 data=xml_data.encode("utf-8"),
             )
+            session.close()
         except ConnectionError:
             return Exception("Could't access to ORCA"), None
 
