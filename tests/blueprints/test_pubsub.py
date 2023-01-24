@@ -495,7 +495,7 @@ TEST_ENCOUNTER_PAGE_ID = "test-encounter-page-id"
 
 
 def test_fhir_when_no_envelope_then_return_204(
-    resource_client, notion_service, orca_service, firestore_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(
         data=_generate_pubsub_message(
@@ -508,7 +508,6 @@ def test_fhir_when_no_envelope_then_return_204(
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="false",
         firestore_service=firestore_service,
     )
@@ -519,13 +518,12 @@ def test_fhir_when_no_envelope_then_return_204(
 
 
 def test_fhir_when_no_envelope_then_return_400(
-    resource_client, notion_service, orca_service, firestore_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={})
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -536,13 +534,12 @@ def test_fhir_when_no_envelope_then_return_400(
 
 
 def test_fhir_when_no_message_in_envelope_then_return_400(
-    resource_client, notion_service, orca_service, firestore_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={"invalid": "data"})
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -553,13 +550,12 @@ def test_fhir_when_no_message_in_envelope_then_return_400(
 
 
 def test_fhir_when_no_attributes_in_message_then_return_400(
-    resource_client, notion_service, orca_service, firestore_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={"message": {"data": "data"}})
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -570,13 +566,12 @@ def test_fhir_when_no_attributes_in_message_then_return_400(
 
 
 def test_fhir_when_no_data_in_message_then_return_400(
-    resource_client, notion_service, orca_service, firestore_service
+    resource_client, notion_service, firestore_service
 ):
     request = FakeRequest(data={"message": {"attributes": "attributes"}})
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -590,7 +585,7 @@ def test_fhir_when_no_data_in_message_then_return_400(
     "resource", ["Appointment", "Patient", "Practitioner", "PractitionerRole"]
 )
 def test_fhir_when_no_operation_match_then_return_204(
-    resource_client, notion_service, orca_service, firestore_service, resource
+    resource_client, notion_service, firestore_service, resource
 ):
     request = FakeRequest(
         data=_generate_pubsub_message(
@@ -603,7 +598,6 @@ def test_fhir_when_no_operation_match_then_return_204(
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -618,7 +612,7 @@ def test_fhir_when_no_operation_match_then_return_204(
     ["Encounter", "MedicationRequest", "ServiceRequest", "DocumentReference"],
 )
 def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
-    resource_client, notion_service, orca_service, firestore_service, resource
+    resource_client, notion_service, firestore_service, resource
 ):
     notion_service.query_encounter_page.return_value = {"results": []}
     notion_service.create_encounter_page.return_value = {"id": TEST_ENCOUNTER_PAGE_ID}
@@ -633,7 +627,6 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -674,7 +667,7 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
     ["Encounter", "MedicationRequest", "ServiceRequest", "DocumentReference"],
 )
 def test_post_encounter_when_page_exists_then_update_page_and_return_200(
-    resource_client, notion_service, orca_service, firestore_service, resource
+    resource_client, notion_service, firestore_service, resource
 ):
     notion_service.query_encounter_page.return_value = {
         "results": [{"id": TEST_ENCOUNTER_PAGE_ID}]
@@ -690,7 +683,6 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
     controller = PubsubController(
         resource_client,
         notion_service,
-        orca_service,
         is_syncing_to_notion_enabled="true",
         firestore_service=firestore_service,
     )
@@ -721,10 +713,6 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
         patient=mock.ANY,
         medication_request=mock.ANY,
         service_request=mock.ANY,
-    )
-
-    orca_service.sync_patient_to_orca.assert_called_once_with(
-        patient=mock.ANY,
     )
 
 
@@ -784,9 +772,4 @@ def notion_service(mocker):
 
 @pytest.fixture
 def firestore_service(mocker):
-    yield Mock()
-
-
-@pytest.fixture
-def orca_service(mocker):
     yield Mock()
