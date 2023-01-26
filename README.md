@@ -99,7 +99,6 @@ echo  <Your account id> > /secrets/twilio_verify_service_sid/twilio_verify_servi
 poetry install
 export the environment variables into the terminal
 poetry run python srs/app.py
-```
 
 You should have your endpoint running at `http://localhost:8080`
 

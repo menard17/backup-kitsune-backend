@@ -1,5 +1,5 @@
-import uuid
 from datetime import datetime, time, timedelta
+from uuid import UUID, uuid1
 
 import pytz
 from fhir.resources import construct_fhir_element
@@ -92,8 +92,8 @@ class SlotService:
     def create_slot_bundle(
         self,
         role_id,
-        start,
-        end,
+        start: str,
+        end: str,
         slot_id,
         status="busy",
         comment="slot creation from backend",
@@ -119,13 +119,13 @@ class SlotService:
         return err, slot
 
     def update_slot(
-        self, slot_id: uuid, status: str
+        self, slot_id: UUID, status: str
     ) -> tuple[Exception, DomainResource]:
         """
         Update slot status. this method is idempotent.
 
         :param slot_id: id of slot
-        :type slot_id: uuid
+        :type slot_id: UUID
         :param status: status you want to update to. status can be either free or busy
         :type status: str
 
@@ -143,7 +143,7 @@ class SlotService:
 
     def search_overlapped_slots(
         self,
-        schedule_id: uuid,
+        schedule_id: UUID,
         start: str,
         end: str,
         additional_params: list[tuple] = [],
@@ -159,7 +159,7 @@ class SlotService:
         search slots.
 
         :param schedule_id: id of schedule for this slot search
-        :type schedule_id: uuid
+        :type schedule_id: UUID
         :param start: start time in ISO format
         :type start: str
         :param end: end time in ISO format
@@ -210,7 +210,7 @@ class SlotService:
         might mess up with linking resources since these are no real FHIR.
 
         :param schedule_id: id of schedule for this slot search
-        :type schedule_id: uuid
+        :type schedule_id: UUID
         :param start_time: start time as datetime object
         :type start_time: datetime
         :param end_time: end time as datetime object
@@ -238,7 +238,7 @@ class SlotService:
                 slot_start, slot_end, busy_slots
             ):
                 slot_jsondict = {
-                    "id": f"{uuid.uuid4()}",
+                    "id": f"{uuid1()}",
                     "resourceType": "Slot",
                     "schedule": {"reference": f"Schedule/{schedule_id}"},
                     "status": "free",

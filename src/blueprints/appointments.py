@@ -1,7 +1,6 @@
 import json
-import uuid
 from datetime import datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid1
 
 import pytz
 from flask import Blueprint, Response, request
@@ -114,7 +113,7 @@ class AppointmentController:
         role_rid = f"PractitionerRole/{role_id}"
         patient_rid = f"Patient/{patient_id}"
 
-        slot_uuid = f"urn:uuid:{uuid.uuid1()}"
+        slot_uuid = uuid1().urn
         err, slot = self.slot_service.create_slot_bundle(
             role_rid,
             start,
@@ -131,7 +130,7 @@ class AppointmentController:
         # Create Request Service Bundle
         service_request_uuid = None
         if requester_id is not None or encounter_id is not None:
-            service_request_uuid = f"urn:uuid:{uuid.uuid1()}"
+            service_request_uuid = uuid1().urn
             encounter_rid = f"Encounter/{encounter_id}"
             requester_rid = f"PractitionerRole/{requester_id}"
             err, service_request = self.service_request_service.create_service_request(
@@ -147,7 +146,7 @@ class AppointmentController:
             resources.append(service_request)
 
         # Create Appointment Bundle
-        appointment_uuid = f"urn:uuid:{uuid.uuid1()}"
+        appointment_uuid = uuid1().urn
         (
             err,
             appointment,
@@ -404,23 +403,30 @@ class AppointmentController:
         now = datetime.now().astimezone(jst)
         start = now
         end = now + timedelta(minutes=10)
-        tokyo_timezone = pytz.timezone("Asia/Tokyo")
-        now = tokyo_timezone.localize(datetime.now())
         role_rid = f"PractitionerRole/{role_id}"
         patient_rid = f"Patient/{top_queue_patient}"
-        slot_uuid = uuid.uuid1().urn
+        slot_uuid = uuid1().urn
+
+        err, slot = self.slot_service.create_slot_bundle(
+            role_rid, start.isoformat(), end.isoformat(), slot_uuid
+        )
+
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        resources.append(slot)
 
         # validation for start time and end time for doctor
-        doctor_is_avaible = (
+        doctor_is_available = (
             self.practitioner_role_service.schedule_is_available_for_doctor(
                 role_id, start, end
             )
         )
-        if not doctor_is_avaible:
+        if not doctor_is_available:
             # change response message
-            return Response(status=400, response="No schedule is created")
+            return Response(status=400, response="Doctor is not available")
         # Create Appointment Bundle
-        appointment_uuid = uuid.uuid1().urn
+        appointment_uuid = uuid1().urn
         (
             err,
             appointment,
@@ -431,6 +437,7 @@ class AppointmentController:
             slot_uuid,
             patient_rid,
             "followup",
+            None,
             appointment_uuid,
             "online",
         )
