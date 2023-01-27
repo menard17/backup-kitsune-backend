@@ -405,16 +405,6 @@ class AppointmentController:
         end = now + timedelta(minutes=10)
         role_rid = f"PractitionerRole/{role_id}"
         patient_rid = f"Patient/{top_queue_patient}"
-        slot_uuid = uuid1().urn
-
-        err, slot = self.slot_service.create_slot_bundle(
-            role_rid, start.isoformat(), end.isoformat(), slot_uuid
-        )
-
-        if err is not None:
-            return Response(status=400, response=err.args[0])
-
-        resources.append(slot)
 
         # validation for start time and end time for doctor
         doctor_is_available = (
@@ -434,7 +424,7 @@ class AppointmentController:
             role_rid,
             start.isoformat(),
             end.isoformat(),
-            slot_uuid,
+            None,
             patient_rid,
             "followup",
             None,

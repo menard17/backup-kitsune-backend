@@ -67,6 +67,9 @@ class AppointmentService:
             ],
         }
 
+        if slot_id is not None:
+            appointment_jsondict["slot"] = [{"reference": slot_id}]
+
         if service_request_id is not None:
             appointment_jsondict["basedOn"] = [
                 {
