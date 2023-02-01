@@ -45,7 +45,8 @@ RUN apt-get update \
     && apt-get install --no-install-recommends  -y \
     git \
     ssh \
-    pre-commit
+    pre-commit \
+    curl
 
 # Copying poetry and venv into image
 COPY --from=builder-base $POETRY_HOME $POETRY_HOME
