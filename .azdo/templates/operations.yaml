@@ -1,0 +1,47 @@
+parameters:
+- name: env
+  type: string
+- name: region
+  type: string
+- name: serviceAccounts
+  type: string
+- name: command
+  type: string
+- name: projectId
+  type: string
+- name: serviceAccountKeyFileName
+  type: string
+
+jobs:
+- job: OP_${{ parameters.env }}
+  steps:
+  - script: |
+      gcloud auth activate-service-account --quiet --key-file <(echo ${{ parameters.serviceAccounts }} | base64 -d)
+    displayName: 'Authorize gcp'
+  - task: DownloadSecureFile@1
+    name: googleApplicationCredentials
+    displayName: 'Download GOOGLE_APPLICATION_CREDENTIALS'
+    inputs:
+      secureFile: ${{ parameters.serviceAccountKeyFileName }}
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: 3.9
+    displayName: Install Python
+  - script: |
+      python -m pip install -U pip
+      pip install poetry
+      poetry install
+    displayName: Install software
+  - script: |
+      # setup python env var
+      export PYTHONPATH=src/
+      export FCM_TOKEN=$(FCM_TOKEN)
+      export PROJECT=${{ parameters.projectId }}
+      export FHIR_DATASET=hdb-kitsune-${{ parameters.env }}-${{ parameters.region }}
+      export FHIR_STORE=fhr-kitsune-${{ parameters.env }}-${{ parameters.region }}
+
+      echo "Run Operation Command: [${{ parameters.command }}]"
+      ${{ parameters.command }}
+    displayName: Run Operation Command
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: $(googleApplicationCredentials.secureFilePath)

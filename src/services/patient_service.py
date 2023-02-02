@@ -117,13 +117,13 @@ class PatientService:
     def update(
         self,
         patient_id: UUID,
-        family_name: Optional[str],
-        given_name: Optional[list],
-        gender: Optional[str],
-        phone: Optional[str],
-        dob: Optional[str],
-        address: Optional[list],
-        orca_id: Optional[str],
+        family_name: Optional[str] = None,
+        given_name: Optional[list] = None,
+        gender: Optional[str] = None,
+        phone: Optional[str] = None,
+        dob: Optional[str] = None,
+        address: Optional[list] = None,
+        orca_id: Optional[str] = None,
     ):
         resource = self.resource_client.get_resource(patient_id, "Patient")
         patient = Patient(**resource.dict())

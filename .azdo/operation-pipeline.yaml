@@ -1,0 +1,54 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-20.04
+
+variables:
+- group: CloudRun
+- group: ValidationCI
+- group: CloudRunCICD
+
+resources:
+  repositories:
+  - repository: Infra
+    type: github
+    name: umed-jp/infra
+    endpoint: umed-jp
+
+stages:
+- stage: OP_DEV
+  displayName: Operation for Dev
+  condition: and(eq(variables['Build.Reason'],  'Manual'), eq(variables['run_env'], 'dev'))
+  jobs:
+  - template: templates/operations.yaml
+    parameters:
+      env: dev
+      region: asia-northeast1
+      serviceAccountKeyFileName: post-deployment-dev.json
+      serviceAccounts: $(deployer-sp)
+      projectId: kitsune-dev-313313
+      command: $(command)
+- stage: OP_STG
+  displayName: Operation for Stage
+  condition: and(eq(variables['Build.Reason'],  'Manual'), eq(variables['run_env'], 'stg'))
+  jobs:
+  - template: templates/operations.yaml
+    parameters:
+      env: stg
+      region: asia-northeast1
+      serviceAccountKeyFileName: post-deployment-stg.json
+      projectId: kitsune-stage
+      serviceAccounts: $(deployer-sp)
+      command: $(command)
+- stage: OP_PROD
+  displayName: Operation for Prod
+  condition: and(eq(variables['Build.Reason'],  'Manual'), eq(variables['run_env'], 'prod'))
+  jobs:
+  - template: templates/operations.yaml
+    parameters:
+      env: prod
+      region: asia-northeast1
+      serviceAccountKeyFileName: post-deployment-prod.json
+      projectId: kitsune-prod
+      serviceAccounts: $(deployer-sp)
+      command: $(command)
