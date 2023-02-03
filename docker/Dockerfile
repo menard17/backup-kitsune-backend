@@ -79,6 +79,10 @@ CMD exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 app:a
 # in only our runtime deps that were installed in the 'builder-base'
 FROM python-base as production
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends  -y \
+    curl
+
 COPY --from=builder-base $VENV_PATH $VENV_PATH
 
 WORKDIR /app
