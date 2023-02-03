@@ -505,10 +505,11 @@ def get_validated_processed_code(code: str):
     table = dict(zip(map(ord, "０１２３４５６７８９"), map(ord, "0123456789")))
     result = code.translate(table)
     result = re.sub("[^0-9]", "", result)
+
     if len(result) != 7:
-        raise Exception(response=f"code needs to be length of 7: {len(result)}")
+        raise Exception(f"code needs to be length of 7: {len(result)}")
     if not result.isnumeric():
-        raise Exception(response=f"Code needs to be numeric: {result}")
+        raise Exception(f"Code needs to be numeric: {result}")
     return result
 
 
@@ -523,5 +524,5 @@ def get_address():
         zipcode = request.args.get("zipcode")
         code = get_validated_processed_code(zipcode)
     except Exception as err:
-        return Response(status=400, response=err.message)
+        return Response(status=400, response=str(err))
     return AddressController.get_address_by_zip(code)
