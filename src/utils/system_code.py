@@ -130,6 +130,10 @@ class SystemCode:
             return create_coding_clause(
                 ServiceURL.document_type, "55110-1", "Conclusions Document"
             )
+        elif document_type == "medical_card":
+            return create_coding_clause(
+                ServiceURL.document_type, "00001-1", "Medical Card"
+            )
         else:
             return document_type
 
@@ -147,6 +151,8 @@ class SystemCode:
             return create_token(ServiceURL.document_type, "34117-2")
         elif document_type == "clinical_note":
             return create_token(ServiceURL.document_type, "55110-1")
+        elif document_type == "medical_card":
+            return create_token(ServiceURL.document_type, "00001-1")
         else:
             return document_type
 
