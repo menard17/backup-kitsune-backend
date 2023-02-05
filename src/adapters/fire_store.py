@@ -14,3 +14,6 @@ class FireStoreClient:
             self.client.collection(collection).add(value)
         else:
             self.client.collection(collection).document(id).set(value)
+
+    def get_collection(self, collection: str):
+        return self.client.collection(collection)
