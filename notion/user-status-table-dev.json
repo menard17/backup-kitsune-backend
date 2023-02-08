@@ -1,9 +1,35 @@
 {
+    "object": "database",
+    "id": "472e7883-2de3-4dcb-833f-ff958972092a",
+    "cover": null,
+    "icon": null,
+    "created_time": "2022-11-07T14:54:00.000Z",
+    "created_by": {
+        "object": "user",
+        "id": "f430d328-e374-42f6-81a4-bf9c44ffe259"
+    },
+    "last_edited_by": {
+        "object": "user",
+        "id": "0603f6e4-f7e0-44a8-bf45-a044963151da"
+    },
+    "last_edited_time": "2023-02-01T11:39:00.000Z",
     "title": [
         {
+            "type": "text",
             "text": {
-                "content": "User Status Table Dev"
-            }
+                "content": "User Status Table Dev",
+                "link": null
+            },
+            "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+            },
+            "plain_text": "User Status Table Dev",
+            "href": null
         }
     ],
     "description": [
@@ -25,107 +51,135 @@
             "href": null
         }
     ],
+    "is_inline": false,
     "properties": {
-        "delivery_staff": null,
-        "prescription": {
-            "id": "IK%5BF",
-            "name": "prescription",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "doctor": {
-            "id": "PubG",
-            "name": "doctor",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "account_id": {
-            "id": "QVU~",
-            "name": "account_id",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "address": {
-            "id": "TClb",
-            "name": "address",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "gender": {
-            "id": "TCzX",
-            "name": "gender",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "user_name_kana": null,
-        "email": {
-            "id": "W%5D%5CV",
-            "name": "email",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "insurance_card_back": {
-            "id": "X%3F%7C%7B",
-            "name": "insurance_card_back",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "tests": {
-            "id": "%60%7C%3CW",
-            "name": "tests",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "emr": {
-            "id": "clcw",
-            "name": "emr",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "user_name": {
-            "id": "gTFg",
-            "name": "user_name",
-            "type": "rich_text",
-            "rich_text": {}
+        "Id": {
+            "id": "%3AFZ%5B",
+            "name": "Id",
+            "type": "formula",
+            "formula": {
+                "expression": "slice(prop(\"encounter_id\"), 0, 4)"
+            }
         },
         "insurance_card_front": {
-            "id": "g_p%7B",
+            "id": "%3B%3CCV",
             "name": "insurance_card_front",
             "type": "rich_text",
             "rich_text": {}
         },
-        "area": null,
-        "phone_number": {
-            "id": "noUf",
-            "name": "phone_number",
+        "email": {
+            "id": "%3CzSn",
+            "name": "email",
             "type": "rich_text",
             "rich_text": {}
         },
-        "visit_status": null,
-        "delivery_date": {
-            "id": "qOCx",
-            "name": "delivery_date",
-            "type": "date",
-            "date": {}
+        "gender": {
+            "id": "%3D%3Dyf",
+            "name": "gender",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "address": {
+            "id": "%3EDof",
+            "name": "address",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "insurance_card_back": {
+            "id": "Agu%3B",
+            "name": "insurance_card_back",
+            "type": "rich_text",
+            "rich_text": {}
         },
         "Last edited by": {
-            "id": "tH%3Bn",
+            "id": "M%3E_I",
             "name": "Last edited by",
             "type": "last_edited_by",
             "last_edited_by": {}
         },
+        "phone_number": {
+            "id": "O%60b%3C",
+            "name": "phone_number",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "tests": {
+            "id": "RvZZ",
+            "name": "tests",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "user_name_kana": {
+            "id": "_KhT",
+            "name": "user_name_kana",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "account_id": {
+            "id": "%60n%3Da",
+            "name": "account_id",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "user_name": {
+            "id": "aRZO",
+            "name": "user_name",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "medical_card": {
+            "id": "a%7DR%40",
+            "name": "medical_card",
+            "type": "rich_text",
+            "rich_text": {}
+        },
         "Last edited time": {
-            "id": "xAL%3B",
+            "id": "bMx%3D",
             "name": "Last edited time",
             "type": "last_edited_time",
             "last_edited_time": {}
         },
-        "emr_number": null,
+        "doctor": {
+            "id": "hhyS",
+            "name": "doctor",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "dob": {
+            "id": "l%3C%3EW",
+            "name": "dob",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "delivery_date": {
+            "id": "uNm%3C",
+            "name": "delivery_date",
+            "type": "date",
+            "date": {}
+        },
+        "prescription": {
+            "id": "wshM",
+            "name": "prescription",
+            "type": "rich_text",
+            "rich_text": {}
+        },
+        "emr": {
+            "id": "ySeK",
+            "name": "emr",
+            "type": "rich_text",
+            "rich_text": {}
+        },
         "encounter_id": {
             "id": "title",
             "name": "encounter_id",
             "type": "title",
             "title": {}
         }
-    }
+    },
+    "parent": {
+        "type": "page_id",
+        "page_id": "1f05480e-48f6-4dc0-991f-3d11341fc738"
+    },
+    "url": "https://www.notion.so/472e78832de34dcb833fff958972092a",
+    "archived": false
 }

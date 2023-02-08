@@ -488,6 +488,100 @@ INSURANCE_CARD_BUNDLE_DATA = {
     "type": "searchset",
     "resourceType": "Bundle",
 }
+
+MEDICAL_CARD_BUNDLE_DATA = {
+    "entry": [
+        {
+            "fullUrl": "https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/DocumentReference/66ee2c78-7878-4823-9da2-4cfb5321ff54",  # noqa: E501
+            "resource": {
+                "id": "66ee2c78-7878-4823-9da2-4cfb5321ff54",
+                "meta": {
+                    "lastUpdated": datetime.datetime(
+                        2023, 1, 30, 7, 49, 14, 368052, tzinfo=datetime.timezone.utc
+                    ),
+                    "versionId": "MTY3NTA2NDk1NDM2ODA1MjAwMA",
+                },
+                "content": [
+                    {
+                        "attachment": {
+                            "creation": datetime.datetime(
+                                2023,
+                                1,
+                                30,
+                                7,
+                                49,
+                                13,
+                                315173,
+                                tzinfo=datetime.timezone.utc,
+                            ),
+                            "title": "Page 0",
+                            "url": "https://firebasestorage.googleapis.com/v0/b/kitsune-dev-313313.appspot.com/o/users%2FE0OzBrJ97FYBsxlkqGX8U0psDNF3%2Fmedical_card%2Fpage-0-1675064949889.png?alt=media&token=539afa39-621c-4255-8180-af70e62d5b01",  # noqa: E501
+                        }
+                    },
+                    {
+                        "attachment": {
+                            "creation": datetime.datetime(
+                                2023,
+                                1,
+                                30,
+                                7,
+                                49,
+                                13,
+                                315183,
+                                tzinfo=datetime.timezone.utc,
+                            ),
+                            "title": "Page 1",
+                            "url": "https://firebasestorage.googleapis.com/v0/b/kitsune-dev-313313.appspot.com/o/users%2FE0OzBrJ97FYBsxlkqGX8U0psDNF3%2Fmedical_card%2Fpage-1-1675064925492.png?alt=media&token=0a23adf0-5057-40a0-b6f7-1e5f834deede",  # noqa: E501
+                        }
+                    },
+                ],
+                "date": datetime.datetime(
+                    2023,
+                    1,
+                    30,
+                    7,
+                    49,
+                    13,
+                    315208,
+                    tzinfo=datetime.timezone.utc,
+                ),
+                "status": "current",
+                "subject": {
+                    "reference": "Patient/66afe5ca-de5d-42ce-8ecd-c28b7bb9233b"
+                },
+                "type": {
+                    "coding": [
+                        {
+                            "code": "00001-1",
+                            "display": "Medical Card",
+                            "system": "http://loinc.org",
+                        }
+                    ]
+                },
+                "resourceType": "DocumentReference",
+            },
+            "search": {"mode": "match"},
+        }
+    ],
+    "link": [
+        {
+            "relation": "search",
+            "url": "https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/DocumentReference/?_count=300&patient=66afe5ca-de5d-42ce-8ecd-c28b7bb9233b&status=current&type=00001-1",  # noqa: E501
+        },
+        {
+            "relation": "first",
+            "url": "https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/DocumentReference/?_count=300&patient=66afe5ca-de5d-42ce-8ecd-c28b7bb9233b&status=current&type=00001-1",  # noqa: E501
+        },
+        {
+            "relation": "self",
+            "url": "https://healthcare.googleapis.com/v1/projects/kitsune-dev-313313/locations/asia-northeast1/datasets/hdb-kitsune-dev-asia-northeast1/fhirStores/fhr-kitsune-dev-asia-northeast1/fhir/DocumentReference/?_count=300&patient=66afe5ca-de5d-42ce-8ecd-c28b7bb9233b&status=current&type=00001-1",  # noqa: E501
+        },
+    ],
+    "total": 1,
+    "type": "searchset",
+    "resourceType": "Bundle",
+}
+
 # Use correct id for assertion
 TEST_ENCOUNTER_ID = "579fa116-251d-4a9b-9a69-3ab03b573452"
 TEST_PATIENT_ID = "02989bec-b084-47d9-99fd-259ac6f3360c"
@@ -651,6 +745,7 @@ def test_post_encounter_when_no_existing_page_then_create_page_and_return_200(
         medication_request=mock.ANY,
         service_request=mock.ANY,
         insurance_card=mock.ANY,
+        medical_card=mock.ANY,
     )
 
     firestore_service.sync_encounter_to_firestore.assert_called_once_with(
@@ -705,6 +800,7 @@ def test_post_encounter_when_page_exists_then_update_page_and_return_200(
         medication_request=mock.ANY,
         service_request=mock.ANY,
         insurance_card=mock.ANY,
+        medical_card=mock.ANY,
     )
 
     firestore_service.sync_encounter_to_firestore.assert_called_once_with(
@@ -756,8 +852,19 @@ def resource_client(mocker):
                 ("patient", TEST_PATIENT_ID),
                 ("status", "current"),
                 ("type", "64290-0"),
+            ] or search == [
+                ("patient", TEST_PATIENT_ID),
+                ("status", "current"),
+                ("type", "00001-1"),
             ]
-            return Bundle(**INSURANCE_CARD_BUNDLE_DATA)
+            if search == [
+                ("patient", TEST_PATIENT_ID),
+                ("status", "current"),
+                ("type", "64290-0"),
+            ]:
+                return Bundle(**INSURANCE_CARD_BUNDLE_DATA)
+            else:
+                return Bundle(**MEDICAL_CARD_BUNDLE_DATA)
 
     mock_resouce_client = MockResourceClient()
     mock_resouce_client.search = mock_search

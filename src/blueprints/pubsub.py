@@ -126,6 +126,7 @@ class PubsubController:
         # search, so we have to make a separate one.
         patient = self._find_resource_in_bundle(encounter_bundle, "Patient")
         insurance_card_bundle = None
+        medical_card_bundle = None
         if patient is not None:
             insurance_card_search_clause = [
                 ("patient", patient.id),
@@ -134,6 +135,14 @@ class PubsubController:
             ]
             insurance_card_bundle = self.resource_client.search(
                 "DocumentReference", search=insurance_card_search_clause
+            )
+            medical_card_search_clause = [
+                ("patient", patient.id),
+                ("status", "current"),
+                ("type", "00001-1"),  # Custom code for Insurance Card
+            ]
+            medical_card_bundle = self.resource_client.search(
+                "DocumentReference", search=medical_card_search_clause
             )
 
         encounter = self._find_resource_in_bundle(encounter_bundle, "Encounter")
@@ -153,6 +162,9 @@ class PubsubController:
         )
         insurance_card = self._find_resource_in_bundle(
             insurance_card_bundle, "DocumentReference"
+        )
+        medical_card = self._find_resource_in_bundle(
+            medical_card_bundle, "DocumentReference"
         )
 
         notion_encounter_query_results = self.notion_service.query_encounter_page(
@@ -175,6 +187,7 @@ class PubsubController:
             medication_request=medication_request,
             service_request=service_request,
             insurance_card=insurance_card,
+            medical_card=medical_card,
         )
 
         self.firestore_service.sync_encounter_to_firestore(

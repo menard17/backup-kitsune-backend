@@ -67,6 +67,7 @@ class NotionService:
         medication_request: MedicationRequest = None,
         service_request: ServiceRequest = None,
         insurance_card: DocumentReference = None,
+        medical_card: DocumentReference = None,
     ):
         # Have to add a default date
         properties = {}
@@ -119,6 +120,15 @@ class NotionService:
             else self._find_attachment(insurance_card, "back").url
         )
         properties["insurance_card_back"] = get_propery_value(insurance_card_back)
+        medical_card_attachments = ""
+        if medical_card is not None:
+            page = 0
+            attachment = self._find_attachment(medical_card, f"Page {page}")
+            while attachment:
+                medical_card_attachments += attachment.url + "\n"
+                page += 1
+                attachment = self._find_attachment(medical_card, f"Page {page}")
+        properties["medical_card"] = get_propery_value(medical_card_attachments)
         account_id = "" if account is None else account.id
         properties["account_id"] = get_propery_value(account_id)
         properties["prescription"] = get_propery_value(

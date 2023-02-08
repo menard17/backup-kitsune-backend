@@ -407,6 +407,38 @@ INSURANCE_CARD_DATA = {
     },
 }
 
+MEDICAL_CARD_DATA = {
+    "content": [
+        {
+            "attachment": {
+                "creation": "2023-01-30T07:49:13.315173+00:00",
+                "title": "Page 0",
+                "url": "https://test-medical-card-url",
+            },
+        },
+    ],
+    "date": "2023-01-30T07:49:13.315208+00:00",
+    "id": "66ee2c78-7878-4823-9da2-4cfb5321ff54",
+    "meta": {
+        "lastUpdated": "2023-01-30T07:49:14.368052+00:00",
+        "versionId": "MTY3NTA2NDk1NDM2ODA1MjAwMA",
+    },
+    "resourceType": "DocumentReference",
+    "status": "current",
+    "subject": {
+        "reference": "Patient/02989bec-b084-47d9-99fd-259ac6f3360c",
+    },
+    "type": {
+        "coding": [
+            {
+                "code": "00001-1",
+                "display": "Medical Card",
+                "system": "http://loinc.org",
+            },
+        ],
+    },
+}
+
 TEST_ACCOUNT = Account(**ACCOUNT_DATA)
 TEST_APPOINTMENT = Appointment(**APPOINTMENT_DATA)
 TEST_PATIENT = Patient(**PATIENT_DATA)
@@ -415,6 +447,7 @@ TEST_CLINICAL_NOTE = DocumentReference(**CLINICAL_NOTE_DATA)
 TEST_MEDICATION_REQUEST = MedicationRequest(**MEDICATION_REQUEST_DATA)
 TEST_SERIVCE_REQUEST = ServiceRequest(**SERVICE_REQUEST_DATA)
 TEST_INSURANCE_CARD = DocumentReference(**INSURANCE_CARD_DATA)
+TEST_MEDICAL_CARD = DocumentReference(**MEDICAL_CARD_DATA)
 
 TEST_ENCOUNTER_DATABASE_ID = "test-encounter-database-id"
 TEST_ENCOUNTER_PAGE_ID = "test-encounter-page-id"
@@ -461,6 +494,7 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
         medication_request=TEST_MEDICATION_REQUEST,
         service_request=TEST_SERIVCE_REQUEST,
         insurance_card=TEST_INSURANCE_CARD,
+        medical_card=TEST_MEDICAL_CARD,
     )
 
     notion_client.pages.update.assert_called_once_with(
@@ -507,6 +541,15 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
                     }
                 ]
             },
+            "medical_card": {
+                "rich_text": [
+                    {
+                        "text": {
+                            "content": "https://test-medical-card-url\n",
+                        }
+                    }
+                ]
+            },
             "gender": {"rich_text": [{"text": {"content": ""}}]},
             "account_id": {
                 "rich_text": [
@@ -530,6 +573,7 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
         medication_request=TEST_MEDICATION_REQUEST,
         service_request=TEST_SERIVCE_REQUEST,
         insurance_card=TEST_INSURANCE_CARD,
+        medical_card=TEST_MEDICAL_CARD,
     )
 
     notion_client.pages.update.assert_called_once_with(
@@ -555,6 +599,9 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
             },
             "insurance_card_back": {
                 "rich_text": [{"text": {"content": "https://test-back-url"}}]
+            },
+            "medical_card": {
+                "rich_text": [{"text": {"content": "https://test-medical-card-url\n"}}]
             },
             "gender": {"rich_text": [{"text": {"content": "female"}}]},
             "account_id": {
