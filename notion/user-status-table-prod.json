@@ -1,131 +1,521 @@
 {
-    "title": [
-        {
-            "text": {
-                "content": "User Status Table Prod"
-            }
-        }
-    ],
-    "description": [
-        {
-            "type": "text",
-            "text": {
-                "content": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.",
-                "link": null
-            },
-            "annotations": {
-                "bold": false,
-                "italic": false,
-                "strikethrough": false,
-                "underline": false,
-                "code": false,
-                "color": "default"
-            },
-            "plain_text": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.",
-            "href": null
-        }
-    ],
-    "properties": {
-        "delivery_staff": null,
-        "prescription": {
-            "id": "IK%5BF",
-            "name": "prescription",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "doctor": {
-            "id": "PubG",
-            "name": "doctor",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "account_id": {
-            "id": "QVU~",
-            "name": "account_id",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "address": {
-            "id": "TClb",
-            "name": "address",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "gender": {
-            "id": "TCzX",
-            "name": "gender",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "user_name_kana": null,
-        "email": {
-            "id": "W%5D%5CV",
-            "name": "email",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "insurance_card_back": {
-            "id": "X%3F%7C%7B",
-            "name": "insurance_card_back",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "tests": {
-            "id": "%60%7C%3CW",
-            "name": "tests",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "emr": {
-            "id": "clcw",
-            "name": "emr",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "user_name": {
-            "id": "gTFg",
-            "name": "user_name",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "insurance_card_front": {
-            "id": "g_p%7B",
-            "name": "insurance_card_front",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "area": null,
-        "phone_number": {
-            "id": "noUf",
-            "name": "phone_number",
-            "type": "rich_text",
-            "rich_text": {}
-        },
-        "visit_status": null,
-        "delivery_date": {
-            "id": "qOCx",
-            "name": "delivery_date",
-            "type": "date",
-            "date": {}
-        },
-        "Last edited by": {
-            "id": "tH%3Bn",
-            "name": "Last edited by",
-            "type": "last_edited_by",
-            "last_edited_by": {}
-        },
-        "Last edited time": {
-            "id": "xAL%3B",
-            "name": "Last edited time",
-            "type": "last_edited_time",
-            "last_edited_time": {}
-        },
-        "emr_number": null,
-        "encounter_id": {
-            "id": "title",
-            "name": "encounter_id",
-            "type": "title",
-            "title": {}
-        }
-    }
+	"object": "database",
+	"id": "ca3627a5-ace3-4e0f-b081-7c7cec354d71",
+	"cover": null,
+	"icon": null,
+	"created_time": "2022-11-07T14:55:00.000Z",
+	"created_by": {
+		"object": "user",
+		"id": "f430d328-e374-42f6-81a4-bf9c44ffe259"
+	},
+	"last_edited_by": {
+		"object": "user",
+		"id": "ab13c394-4de5-453f-aff9-128bf25e1b30"
+	},
+	"last_edited_time": "2023-02-09T07:09:00.000Z",
+	"title": [
+		{
+			"type": "text",
+			"text": {
+				"content": "User Status Table Prod",
+				"link": null
+			},
+			"annotations": {
+				"bold": false,
+				"italic": false,
+				"strikethrough": false,
+				"underline": false,
+				"code": false,
+				"color": "default"
+			},
+			"plain_text": "User Status Table Prod",
+			"href": null
+		}
+	],
+	"description": [
+		{
+			"type": "text",
+			"text": {
+				"content": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.\n",
+				"link": null
+			},
+			"annotations": {
+				"bold": false,
+				"italic": false,
+				"strikethrough": false,
+				"underline": false,
+				"code": false,
+				"color": "default"
+			},
+			"plain_text": "DO NOT MODIFY THE HEADERS. Contact dev team for further inquiries on updating the headers.\n",
+			"href": null
+		}
+	],
+	"is_inline": false,
+	"properties": {
+		"area": {
+			"id": "%3A%7B%3Fw",
+			"name": "area",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"address": {
+			"id": "%3BzRP",
+			"name": "address",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"Last edited time": {
+			"id": "%3CVg%60",
+			"name": "Last edited time",
+			"type": "last_edited_time",
+			"last_edited_time": {}
+		},
+		"visit_status": {
+			"id": "Ak%3C%7D",
+			"name": "visit_status",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "47f967b9-526b-4dd7-a35f-6039b2383076",
+						"name": "online",
+						"color": "orange"
+					},
+					{
+						"id": "67ddca84-d0fd-48b9-ac9e-2790bb5e0d13",
+						"name": "something",
+						"color": "yellow"
+					}
+				]
+			}
+		},
+		"tests": {
+			"id": "Dmr%3A",
+			"name": "tests",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"健観_開始日": {
+			"id": "DuBk",
+			"name": "健観_開始日",
+			"type": "date",
+			"date": {}
+		},
+		"Test Result": {
+			"id": "EHWN",
+			"name": "Test Result",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "ab4aeb35-0112-4775-890f-082d2458ed49",
+						"name": "陽性",
+						"color": "yellow"
+					},
+					{
+						"id": "a6265abd-47f3-4b24-9cd6-7d8d3d3b6fba",
+						"name": "陰性",
+						"color": "gray"
+					}
+				]
+			}
+		},
+		"prescription": {
+			"id": "Ea%3D%3B",
+			"name": "prescription",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"証明書": {
+			"id": "GKw%7D",
+			"name": "証明書",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "d80ce4a9-200d-4017-b89c-a4aecfdbe871",
+						"name": "決済済み",
+						"color": "green"
+					},
+					{
+						"id": "17905ad5-7784-407c-a709-6f6b2c063bdf",
+						"name": "送付済み",
+						"color": "blue"
+					},
+					{
+						"id": "876be9ff-0835-4901-a5c7-53dd6d388c35",
+						"name": "作成済み",
+						"color": "red"
+					},
+					{
+						"id": "387d10bf-0fe0-4cb8-8883-7a204c424ec6",
+						"name": "希望有り",
+						"color": "yellow"
+					}
+				]
+			}
+		},
+		"email": {
+			"id": "I%7CYo",
+			"name": "email",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"user_name_kana": {
+			"id": "JLBQ",
+			"name": "user_name_kana",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"Service Type": {
+			"id": "KMG%7D",
+			"name": "Service Type",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "<_G{",
+						"name": "訪問診療",
+						"color": "blue"
+					},
+					{
+						"id": "w|FF",
+						"name": "オンライン診療",
+						"color": "green"
+					}
+				]
+			}
+		},
+		"orca_id": {
+			"id": "KRSb",
+			"name": "orca_id",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"emr_number": {
+			"id": "OqdH",
+			"name": "emr_number",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"user_name_kana_rev": {
+			"id": "TYL%5C",
+			"name": "user_name_kana_rev",
+			"type": "formula",
+			"formula": {
+				"expression": "replaceAll(prop(\"user_name_kana\"), \" \", \"　\")"
+			}
+		},
+		"健観_終了日": {
+			"id": "VA%7D%3F",
+			"name": "健観_終了日",
+			"type": "date",
+			"date": {}
+		},
+		"Notification Status": {
+			"id": "WKVm",
+			"name": "Notification Status",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "9bb8342d-1386-41ed-adfe-7e86f5f28048",
+						"name": "Done",
+						"color": "gray"
+					},
+					{
+						"id": "980ce484-4562-4305-b51f-378fd395ece8",
+						"name": "In-Progress",
+						"color": "green"
+					},
+					{
+						"id": "5ff19683-8a16-4ac3-b935-ea60568a30bf",
+						"name": "NA",
+						"color": "brown"
+					}
+				]
+			}
+		},
+		"決済金額": {
+			"id": "Y%3C%3Al",
+			"name": "決済金額",
+			"type": "number",
+			"number": {
+				"format": "number"
+			}
+		},
+		"決済調整金額": {
+			"id": "ZIZB",
+			"name": "決済調整金額",
+			"type": "formula",
+			"formula": {
+				"expression": "(prop(\"tests\") == \"無し\" and prop(\"prescription\") == \"無し\" or prop(\"prescription\") == \"院外処方\") ? prop(\"決済金額\") : (1000 + prop(\"決済金額\"))"
+			}
+		},
+		"user_name_rev": {
+			"id": "Z%5DQt",
+			"name": "user_name_rev",
+			"type": "formula",
+			"formula": {
+				"expression": "replaceAll(prop(\"user_name\"), \" \", \"　\")"
+			}
+		},
+		"dob": {
+			"id": "%5Eob%7B",
+			"name": "dob",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"Cancel": {
+			"id": "_L%40R",
+			"name": "Cancel",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "04040260-e48c-43b9-81bc-bd178de10814",
+						"name": "キャンセル",
+						"color": "red"
+					}
+				]
+			}
+		},
+		"delivery_date": {
+			"id": "be%3C%5B",
+			"name": "delivery_date",
+			"type": "date",
+			"date": {}
+		},
+		"insurance_card_back": {
+			"id": "dHFp",
+			"name": "insurance_card_back",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"doctor": {
+			"id": "eBzC",
+			"name": "doctor",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"院外処方フラグ": {
+			"id": "fGpd",
+			"name": "院外処方フラグ",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "115f4c78-d6e7-41e7-a131-5de9057eed43",
+						"name": "在庫不足",
+						"color": "green"
+					},
+					{
+						"id": "6d440bd5-5607-4f2c-8f48-9d9454c6dd5e",
+						"name": "ラインナップ不足",
+						"color": "red"
+					},
+					{
+						"id": "56657076-9694-4cd5-bc99-62608682eb63",
+						"name": "不明",
+						"color": "brown"
+					}
+				]
+			}
+		},
+		"Test ID": {
+			"id": "fNjm",
+			"name": "Test ID",
+			"type": "formula",
+			"formula": {
+				"expression": "slice(prop(\"encounter_id\"), 0, 4)"
+			}
+		},
+		"phone_number": {
+			"id": "iwdL",
+			"name": "phone_number",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"emr": {
+			"id": "jjOH",
+			"name": "emr",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"Last edited by": {
+			"id": "jm%3En",
+			"name": "Last edited by",
+			"type": "last_edited_by",
+			"last_edited_by": {}
+		},
+		"HER-SYS ID": {
+			"id": "mPYz",
+			"name": "HER-SYS ID",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"発生届": {
+			"id": "nVt%7B",
+			"name": "発生届",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "d187630f-9314-4481-b136-662fcc4bc91a",
+						"name": "対象外",
+						"color": "brown"
+					},
+					{
+						"id": "a1946fb1-d7bb-4075-8dab-31c360848bfc",
+						"name": "完了",
+						"color": "gray"
+					}
+				]
+			}
+		},
+		"Status": {
+			"id": "nk%60z",
+			"name": "Status",
+			"type": "multi_select",
+			"multi_select": {
+				"options": [
+					{
+						"id": "653c2602-82a6-4ef8-9db8-f8ee15e57336",
+						"name": "1_受付済",
+						"color": "gray"
+					},
+					{
+						"id": "6380a291-b713-4b4f-865b-2b98f98a1cab",
+						"name": "2_カルテ作成済",
+						"color": "brown"
+					},
+					{
+						"id": "d766a8a8-0329-40ce-9ad0-27b14d79b934",
+						"name": "3_ORCA送信済",
+						"color": "orange"
+					},
+					{
+						"id": "c7f11e58-63e2-485b-ba0c-2ff35e453fd4",
+						"name": "4_ORCA登録済",
+						"color": "yellow"
+					},
+					{
+						"id": "2f5c989d-32e5-4352-b759-368d35c71adf",
+						"name": "5_決済中",
+						"color": "purple"
+					},
+					{
+						"id": "51ffb2f6-f780-4407-a27c-475d4030624b",
+						"name": "6_決済済",
+						"color": "green"
+					},
+					{
+						"id": "1a595e67-80c5-4c9c-ba4c-f6af7639b49a",
+						"name": "保険/医療証不備(未対応)",
+						"color": "red"
+					},
+					{
+						"id": "7c3e77c9-9a4b-49fa-bb5f-8d9acf1c45fe",
+						"name": "保険/医療証不備(対応中)",
+						"color": "blue"
+					},
+					{
+						"id": "2d080367-fbe9-4054-bd3b-439b09695cc4",
+						"name": "決済エラー",
+						"color": "default"
+					}
+				]
+			}
+		},
+		"gender": {
+			"id": "or%3D%5D",
+			"name": "gender",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"user_name": {
+			"id": "o%7CBf",
+			"name": "user_name",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"Formula": {
+			"id": "p%3CXf",
+			"name": "Formula",
+			"type": "formula",
+			"formula": {
+				"expression": ""
+			}
+		},
+		"insurance_card_front": {
+			"id": "qoB_",
+			"name": "insurance_card_front",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"delivery_staff": {
+			"id": "rs%7Cg",
+			"name": "delivery_staff",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"健観ステータス": {
+			"id": "xN%5DJ",
+			"name": "健観ステータス",
+			"type": "select",
+			"select": {
+				"options": [
+					{
+						"id": "YmdY",
+						"name": "対象",
+						"color": "green"
+					},
+					{
+						"id": "n[]Q",
+						"name": "対象外",
+						"color": "brown"
+					}
+				]
+			}
+		},
+		"emr_rev": {
+			"id": "%7DPnj",
+			"name": "emr_rev",
+			"type": "formula",
+			"formula": {
+				"expression": "replaceAll(prop(\"emr\"), \"\\n\", \"\")"
+			}
+		},
+		"Created time": {
+			"id": "%7DeYq",
+			"name": "Created time",
+			"type": "created_time",
+			"created_time": {}
+		},
+		"account_id": {
+			"id": "%7Dp%40o",
+			"name": "account_id",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"medical_card": {
+			"id": "%7Dw%60Z",
+			"name": "medical_card",
+			"type": "rich_text",
+			"rich_text": {}
+		},
+		"encounter_id": {
+			"id": "title",
+			"name": "encounter_id",
+			"type": "title",
+			"title": {}
+		}
+	},
+	"parent": {
+		"type": "page_id",
+		"page_id": "1f05480e-48f6-4dc0-991f-3d11341fc738"
+	},
+	"url": "https://www.notion.so/ca3627a5ace34e0fb0817c7cec354d71",
+	"archived": false
 }
