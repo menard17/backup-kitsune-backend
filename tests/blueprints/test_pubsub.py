@@ -432,22 +432,6 @@ INSURANCE_CARD_BUNDLE_DATA = {
                             "url": "https://test-front-url",
                         }
                     },
-                    {
-                        "attachment": {
-                            "creation": datetime.datetime(
-                                2022,
-                                8,
-                                24,
-                                11,
-                                43,
-                                59,
-                                724246,
-                                tzinfo=datetime.timezone.utc,
-                            ),
-                            "title": "back",
-                            "url": "https://test-back-url",
-                        }
-                    },
                 ],
                 "date": datetime.datetime(
                     2022, 8, 24, 11, 43, 59, 724248, tzinfo=datetime.timezone.utc

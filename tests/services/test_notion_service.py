@@ -379,13 +379,6 @@ INSURANCE_CARD_DATA = {
                 "url": "https://test-front-url",
             }
         },
-        {
-            "attachment": {
-                "creation": "2022-08-24T11:43:59.724246+00:00",
-                "title": "back",
-                "url": "https://test-back-url",
-            }
-        },
     ],
     "date": "2022-08-24T11:43:59.724248+00:00",
     "id": "cebbdc53-9e44-4947-b45a-359dab89e8ea",
@@ -527,20 +520,6 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
                     }
                 ]
             },
-            "insurance_card_back": {
-                "rich_text": [
-                    {
-                        "text": {
-                            "content": AnyUrl(
-                                "https://test-back-url",
-                                scheme="https",
-                                host="test-back-url",
-                                host_type="int_domain",
-                            )
-                        }
-                    }
-                ]
-            },
             "medical_card": {
                 "rich_text": [
                     {
@@ -596,9 +575,6 @@ def test_sync_encounter_to_notion_happy_path(notion_client):
             "doctor": {"rich_text": [{"text": {"content": "Taro Yamada"}}]},
             "insurance_card_front": {
                 "rich_text": [{"text": {"content": "https://test-front-url"}}]
-            },
-            "insurance_card_back": {
-                "rich_text": [{"text": {"content": "https://test-back-url"}}]
             },
             "medical_card": {
                 "rich_text": [{"text": {"content": "https://test-medical-card-url\n"}}]

@@ -114,12 +114,6 @@ class NotionService:
             else self._find_attachment(insurance_card, "front").url
         )
         properties["insurance_card_front"] = get_propery_value(insurance_card_front)
-        insurance_card_back = (
-            ""
-            if insurance_card is None
-            else self._find_attachment(insurance_card, "back").url
-        )
-        properties["insurance_card_back"] = get_propery_value(insurance_card_back)
         medical_card_attachments = ""
         if medical_card is not None:
             page = 0
