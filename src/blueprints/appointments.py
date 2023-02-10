@@ -11,6 +11,7 @@ from json_serialize import json_serial
 from services.appointment_service import AppointmentService
 from services.email_notification_service import EmailNotificationService
 from services.lists_service import ListsService
+from services.patient_call_logs_service import PatientCallLogsService
 from services.patient_service import PatientService
 from services.practitioner_role_service import PractitionerRoleService
 from services.schedule_service import ScheduleService
@@ -42,6 +43,7 @@ class AppointmentController:
         patient_service=None,
         practitioner_role_service=None,
         lists_service=None,
+        patient_call_logs_serivce=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.slot_service = slot_service or SlotService(self.resource_client)
@@ -62,6 +64,9 @@ class AppointmentController:
             practitioner_role_service or PractitionerRoleService(self.resource_client)
         )
         self.lists_service = lists_service or ListsService(self.resource_client)
+        self.patient_call_logs_service = (
+            patient_call_logs_serivce or PatientCallLogsService()
+        )
 
     def book_appointment(self) -> Response:
         """Creates appointment and busy slot with given practitioner role and patient
@@ -167,9 +172,17 @@ class AppointmentController:
         resources.append(appointment)
 
         resp = self.resource_client.create_resources(resources)
+
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
+
+        err_logs, _ = self.patient_call_logs_service.upsert_call_docs(
+            resp.id, patient_id
+        )
+
+        if err_logs:
+            return Response(status=400, response=err_logs)
 
         if send_notification != "false":
             self._send_notification(appointment)
@@ -440,6 +453,13 @@ class AppointmentController:
         resp = list(
             filter(lambda x: x.resource.resource_type == "Appointment", resp.entry)
         )[0].resource
+
+        err_logs, _ = self.patient_call_logs_service.upsert_call_docs(
+            resp.id, top_queue_patient
+        )
+
+        if err_logs:
+            return Response(status=400, response=err_logs)
 
         return Response(status=201, response=resp.json())
 

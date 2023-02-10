@@ -6,7 +6,7 @@ from uuid import UUID
 from flask import Blueprint, Response, request
 
 from adapters.fhir_store import ResourceClient
-from adapters.fire_store import FireStoreClient
+from services.patient_call_logs_service import PatientCallLogsService
 from services.patient_service import PatientService
 from utils.middleware import jwt_authenticated, jwt_authorized
 
@@ -35,11 +35,13 @@ class CallsController:
         self,
         resource_client=None,
         patient_service=None,
-        firestore_client=None,
+        patient_call_logs_serivce=None,
     ):
         self.resource_client = resource_client or ResourceClient()
         self.patient_service = patient_service or PatientService(self.resource_client)
-        self.firestore_client = firestore_client or FireStoreClient()
+        self.patient_call_logs_service = (
+            patient_call_logs_serivce or PatientCallLogsService()
+        )
 
     def start(self, appointment_id: UUID, patient_id: UUID) -> Response:
         err, voip_token = self.patient_service.get_voip_token(patient_id)
@@ -51,7 +53,9 @@ class CallsController:
         data = self._get_data(appointment_id)
         command = self._build_command(endpoint, cert, data)
 
-        err, _ = self.upsert_call_docs(appointment_id, patient_id)
+        err, _ = self.patient_call_logs_service.upsert_call_docs(
+            appointment_id, patient_id
+        )
 
         if err:
             return Response(status=400, response=err)
@@ -94,27 +98,3 @@ class CallsController:
             endpoint,
         ]
         return command
-
-    def upsert_call_docs(self, appointment_id: UUID, patient_id: UUID) -> tuple:
-        call_ref = self.firestore_client.get_collection(PATIENT_CALL_LOGS)
-        call_log_collection = call_ref.where("id", "==", appointment_id).stream()
-        call_log_data = [{**doc.to_dict(), "id": doc.id} for doc in call_log_collection]
-
-        try:
-            if call_log_data:
-                for log in call_log_data:
-                    self.firestore_client.update_value(
-                        PATIENT_CALL_LOGS, log["id"], {"status": CALLING_STATUS}
-                    )
-            else:
-                value = {
-                    "patient_id": patient_id,
-                    "status": CALLING_STATUS,
-                    "appointment_id": appointment_id,
-                }
-                self.firestore_client.add_value(
-                    PATIENT_CALL_LOGS, value, appointment_id
-                )
-            return None, "Successfully saved call logs."
-        except Exception as err:
-            return f"Error while saving call logs: {err}", None
