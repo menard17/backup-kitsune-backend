@@ -10,7 +10,7 @@ from flask import Response, request
 from utils import role_auth
 
 default_app = firebase_admin.initialize_app()
-log = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 def jwt_authenticated(email_validation: bool = False):

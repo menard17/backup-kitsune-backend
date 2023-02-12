@@ -7,7 +7,7 @@ import firebase_admin
 from adapters.fhir_store import ResourceClient
 from services.patient_service import PatientService
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 def bind_ids(filepath: str):

@@ -9,7 +9,7 @@ from utils.middleware import jwt_authenticated
 
 verifications_blueprint = Blueprint("verifications", __name__, url_prefix="/")
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 @jwt_authenticated()

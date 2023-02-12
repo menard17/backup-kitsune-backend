@@ -5,7 +5,7 @@ import stripe
 
 from adapters.fhir_store import ResourceClient
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 class PaymentService:
