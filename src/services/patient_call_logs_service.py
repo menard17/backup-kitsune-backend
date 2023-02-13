@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from adapters.fire_store import FireStoreClient
@@ -27,6 +28,7 @@ class PatientCallLogsService:
                     "patient_id": patient_id,
                     "status": CREATED_STATUS,
                     "appointment_id": appointment_id,
+                    "timestamp": datetime.now(),
                 }
                 self.firestore_client.add_value(
                     PATIENT_CALL_LOGS, value, appointment_id
