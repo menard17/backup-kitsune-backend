@@ -14,7 +14,9 @@ class PatientCallLogsService:
 
     def upsert_call_docs(self, appointment_id: UUID, patient_id: UUID) -> tuple:
         call_ref = self.firestore_client.get_collection(PATIENT_CALL_LOGS)
-        call_log_collection = call_ref.where("id", "==", appointment_id).stream()
+        call_log_collection = call_ref.where(
+            "appointment_id", "==", appointment_id
+        ).stream()
         call_log_data = [{**doc.to_dict(), "id": doc.id} for doc in call_log_collection]
 
         try:
