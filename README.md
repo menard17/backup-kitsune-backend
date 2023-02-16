@@ -83,9 +83,10 @@ docker run -v /secrets/stripe_key:/secrets/stripe_key -p 8003:8080 --env-file lo
 ```bash
 #!/bin/bash
 mkdir /secrets
-mkdir -p secrets/notion_key /secrets/twilio_account_sid /secrets/twilio_verify_service_sid /secrets/twilio_auth_token /notion_key /voip_password /twilio_video_sid /twilio_video_account_sid /twilio_video_secret /voip_certificate
+mkdir -p secrets/notion_key /secrets/twilio_account_sid /secrets/twilio_verify_service_sid /secrets/twilio_auth_token /notion_key /voip_password /twilio_video_sid /twilio_video_account_sid /twilio_video_secret /voip_certificate /secrets/notion_key/
 echo "key" > /secrets/stripe_key
-echo "key"  > /notion_key/notion_key
+echo "key" > /secrets/notion_key/notion_key
+echo "key" > /notion_key/notion_key
 echo "key" > /secrets/twilio_account_sid/twilio_account_sid
 echo "key" > /secrets/twilio_auth_token/twilio_auth_token
 echo "key" > /secrets/twilio_verify_service_sid/twilio_verify_service_sid
@@ -94,7 +95,6 @@ echo "key" > /twilio_video_sid/twilio_video_sid
 echo "key" > /twilio_video_account_sid/twilio_video_account_sid
 echo "key" > /twilio_video_secret/twilio_video_secret
 echo "key" > /voip_certificate/voip_certificate
-
 ```
 
 - this should create a secrets/stripe_key folder in the root directory

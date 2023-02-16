@@ -11,6 +11,7 @@ from flask import Blueprint
 from flask.wrappers import Response
 
 from adapters.fhir_store import ResourceClient
+from services.slack_notification_service import SlackNotificationService
 from utils.datetime_encoder import datetime_encoder
 from utils.middleware import jwt_authenticated, jwt_authorized
 
@@ -99,8 +100,11 @@ def get_spot_details(list_id: str) -> Response:
 
 
 class ListsController:
-    def __init__(self, resource_client=None):
+    def __init__(self, resource_client=None, slack_notification_service=None):
         self.resource_client = resource_client or ResourceClient()
+        self.slack_notification_service = (
+            slack_notification_service or SlackNotificationService()
+        )
 
     def create(self) -> Response:
         empty_list = {
@@ -208,6 +212,9 @@ class ListsController:
         fhir_list = self.resource_client.put_resource(
             fhir_list.id, fhir_list, lock_header
         )
+
+        self.slack_notification_service.send()
+
         return Response(
             status=201,
             response=json.dumps({"data": datetime_encoder(fhir_list.dict())}),

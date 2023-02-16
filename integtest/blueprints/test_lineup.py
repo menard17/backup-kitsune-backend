@@ -199,7 +199,7 @@ def patient_join_the_lineup(client: Client, patient: Patient, fhir_list: dict) -
     token = get_token(patient.uid)
     patient_id = patient.fhir_data["id"]
     resp = client.post(
-        f"/lists/{fhir_list['id']}/items/{patient_id}",
+        f"/lists/{fhir_list['id']}/items/{patient_id}?notification=false",
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -218,7 +218,7 @@ def patient_b_also_join_the_lineup(
     token = get_token(patient_b.uid)
     patient_id = patient_b.fhir_data["id"]
     resp = client.post(
-        f"/lists/{fhir_list['id']}/items/{patient_id}",
+        f"/lists/{fhir_list['id']}/items/{patient_id}?notification=false",
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -267,7 +267,7 @@ def multiple_patients_lining_up(
 
     def patient_join(token, patient_id, result_idx):
         resp = client.post(
-            f"/lists/{fhir_list['id']}/items/{patient_id}",
+            f"/lists/{fhir_list['id']}/items/{patient_id}?notification=false",
             headers={"Authorization": f"Bearer {token}"},
             content_type="application/json",
         )

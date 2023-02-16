@@ -1,6 +1,7 @@
 import copy
 import datetime
 import json
+from unittest.mock import Mock
 
 import pytest
 from fhir.resources import construct_fhir_element
@@ -233,12 +234,15 @@ def test_create_entry():
     resource_client.get_resource = mock_get_resource
     resource_client.put_resource = mock_put_resource
 
-    controller = ListsController(resource_client)
+    mock_slack_notification_service = Mock()
+
+    controller = ListsController(resource_client, mock_slack_notification_service)
     resp = controller.create_entry(LIST_DATA["id"], patient_id)
     assert resp.status_code == 201
     result = json.loads(resp.data)["data"]
     assert result["id"] == LIST_DATA["id"]
     assert result["entry"][0]["item"]["reference"] == f"Patient/{patient_id}"
+    mock_slack_notification_service.send.assert_called_once()
 
 
 def test_create_entry_returns_bad_request_when_patient_already_in_list():
@@ -253,11 +257,13 @@ def test_create_entry_returns_bad_request_when_patient_already_in_list():
 
     resource_client = MockResourceClient()
     resource_client.get_resource = mock_get_resource
+    mock_slack_notification_service = Mock()
 
-    controller = ListsController(resource_client)
+    controller = ListsController(resource_client, mock_slack_notification_service)
     resp = controller.create_entry(LIST_DATA["id"], patient_id)
     assert resp.status_code == 400
     assert resp.data == b"Patient already in the list"
+    mock_slack_notification_service.send.assert_not_called()
 
 
 def test_delete_entry():

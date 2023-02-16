@@ -725,7 +725,7 @@ def patient_join_the_lineup(client: Client, patient: Patient, queue: dict) -> di
     token = get_token(patient.uid)
     patient_id = patient.fhir_data["id"]
     resp = client.post(
-        f"/lists/{queue['id']}/items/{patient_id}",
+        f"/lists/{queue['id']}/items/{patient_id}?notification=false",
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -742,7 +742,7 @@ def patient_A_join_the_lineup(client: Client, patient_a: Patient, queue: dict) -
     token = get_token(patient_a.uid)
     patient_id = patient_a.fhir_data["id"]
     resp = client.post(
-        f"/lists/{queue['id']}/items/{patient_id}",
+        f"/lists/{queue['id']}/items/{patient_id}?notification=false",
         headers={"Authorization": f"Bearer {token}"},
         content_type="application/json",
     )
@@ -755,7 +755,9 @@ def patient_A_join_the_lineup(client: Client, patient_a: Patient, queue: dict) -
 
 
 @when(parsers.parse("the doctor B updates the visit type to {visit_type}"))
-def update_visit_type_for_doctor_b(visit_type: str, client: Client, practitioner_b: Practitioner):
+def update_visit_type_for_doctor_b(
+    visit_type: str, client: Client, practitioner_b: Practitioner
+):
     jst = pytz.timezone("Asia/Tokyo")
     now = datetime.now().astimezone(jst)
     base_time = now.time().isoformat()
@@ -812,7 +814,9 @@ def update_visit_type(visit_type: str, client: Client, practitioner: Practitione
 
 
 @then("the doctor picks up the appointment")
-def doctor_pick_up_appointment_for_list(client: Client, practitioner: Practitioner, queue: dict):
+def doctor_pick_up_appointment_for_list(
+    client: Client, practitioner: Practitioner, queue: dict
+):
     token = get_token(practitioner.uid)
     practitioner_id = practitioner.practitioner_id
     resp = client.post(
@@ -825,7 +829,9 @@ def doctor_pick_up_appointment_for_list(client: Client, practitioner: Practition
 
 
 @then("the doctor B picks up the appointment")
-def doctorB_pick_up_appointment_for_list(client: Client, practitioner_b: Practitioner, queue: dict):
+def doctorB_pick_up_appointment_for_list(
+    client: Client, practitioner_b: Practitioner, queue: dict
+):
     token = get_token(practitioner_b.uid)
     practitioner_id = practitioner_b.practitioner_id
     resp = client.post(
@@ -838,7 +844,9 @@ def doctorB_pick_up_appointment_for_list(client: Client, practitioner_b: Practit
 
 
 @then("the doctor B cannot pick up the appointment")
-def doctor_b_pick_up_appointment_for_list(client: Client, practitioner_b: Practitioner, queue: dict):
+def doctor_b_pick_up_appointment_for_list(
+    client: Client, practitioner_b: Practitioner, queue: dict
+):
     token = get_token(practitioner_b.uid)
     practitioner_id = practitioner_b.practitioner_id
     resp = client.post(
@@ -876,7 +884,9 @@ def update_visit_type_with_avaible_time(client: Client, practitioner: Practition
 
 
 @then("the doctor cannot pick up the appointment outside of the avaible time")
-def doctor_pick_up_appointment_for_list_outside_of_aviable_time(client: Client, practitioner: Practitioner, queue: dict):
+def doctor_pick_up_appointment_for_list_outside_of_aviable_time(
+    client: Client, practitioner: Practitioner, queue: dict
+):
     token = get_token(practitioner.uid)
     practitioner_id = practitioner.practitioner_id
     resp = client.post(
@@ -897,4 +907,4 @@ def patient_not_in_the_list(client: Client, practitioner: Practitioner, queue: d
         content_type="application/json",
     )
     resp_list = json.loads(resp.data)["data"]
-    assert 'entry' not in resp_list
+    assert "entry" not in resp_list
