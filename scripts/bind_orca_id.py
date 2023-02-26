@@ -1,13 +1,13 @@
 import argparse
 import csv
 from os.path import exists
-import logging
+import structlog
 import firebase_admin
 
 from adapters.fhir_store import ResourceClient
 from services.patient_service import PatientService
 
-log = logging.getLogger()
+log = structlog.get_logger()
 
 
 def bind_ids(filepath: str):

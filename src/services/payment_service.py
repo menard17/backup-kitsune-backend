@@ -1,11 +1,11 @@
-import logging
+import structlog
 from typing import Optional
 
 import stripe
 
 from adapters.fhir_store import ResourceClient
 
-log = logging.getLogger()
+log = structlog.get_logger()
 
 
 class PaymentService:

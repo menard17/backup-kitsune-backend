@@ -1,6 +1,7 @@
 import json
 from typing import Union
 from uuid import UUID
+import structlog
 
 from fhir.resources.consent import Consent
 from fhir.resources.patient import Patient
@@ -17,6 +18,8 @@ from utils.middleware import jwt_authenticated, jwt_authorized
 DEFAULT_PAGE_COUNT = "300"
 
 patients_blueprint = Blueprint("patients", __name__, url_prefix="/patients")
+
+log = structlog.get_logger()
 
 
 @patients_blueprint.route("/<patient_id>", methods=["GET"])

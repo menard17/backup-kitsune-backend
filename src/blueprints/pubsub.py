@@ -1,5 +1,5 @@
 import base64
-import logging
+import structlog
 import os
 import re
 
@@ -12,7 +12,7 @@ from services.notion_service import NotionService
 
 pubsub_blueprint = Blueprint("pubsub", __name__, url_prefix="/pubsub")
 
-log = logging.getLogger()
+log = structlog.get_logger()
 
 
 # TODO: AB#1211, this flag is used to enable firestore as well.

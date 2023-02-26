@@ -1,8 +1,13 @@
 import os
-from logging.config import dictConfig
+import sys
+import structlog
+import logging
+import orjson
 
 import requests
 import stripe
+import flask
+import uuid
 from flask import Flask, request
 from flask_cors import CORS
 
@@ -37,24 +42,58 @@ from utils.metric import (
 from utils.notion_setup import NotionSingleton
 from utils.stripe_setup import StripeSingleton
 
-dictConfig(
-    {
-        "version": 1,
-        "formatters": {
-            "default": {
-                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
-            }
-        },
-        "handlers": {
-            "wsgi": {
-                "class": "logging.StreamHandler",
-                "stream": "ext://flask.logging.wsgi_errors_stream",
-                "formatter": "default",
-            }
-        },
-        "root": {"level": "INFO", "handlers": ["wsgi"]},
-    }
+# Structlog Logging Configuration
+# The below configuration is for output structured logging for this codebase.
+# This includes, but not limited to:
+# - Common additional fields to log, such as log level, timestamp, filename...
+# - Specific fields for every requests, such as UUID for request_id
+# - Different configuration for local development (terminal) and container-based.
+# Note that gunicorn needs to have a different set of configuration. See gunicorn.conf.py.
+# See:
+# - https://www.structlog.org/en/stable/standard-library.html#rendering-using-structlog-based-formatters-within-logging
+# - https://www.structlog.org/en/stable/logging-best-practices.html#pretty-printing-vs-structured-output
+# - https://www.structlog.org/en/stable/performance.html
+shared_processors = [
+    structlog.contextvars.merge_contextvars,
+    structlog.processors.add_log_level,
+    structlog.processors.TimeStamper(fmt="iso", utc=True),
+    structlog.processors.CallsiteParameterAdder(
+        {
+            structlog.processors.CallsiteParameter.FILENAME,
+            structlog.processors.CallsiteParameter.FUNC_NAME,
+            structlog.processors.CallsiteParameter.LINENO,
+        }
+    ),
+]
+structlog.configure(
+    processors=shared_processors
+    + [
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
 )
+if sys.stderr.isatty():
+    platform_specific_processors = [
+        structlog.dev.ConsoleRenderer(),
+    ]
+else:
+    platform_specific_processors = [
+        structlog.processors.format_exc_info,
+        structlog.processors.dict_tracebacks,
+        structlog.processors.JSONRenderer(serializer=orjson.dumps),
+    ]
+formatter = structlog.stdlib.ProcessorFormatter(
+    foreign_pre_chain=shared_processors,
+    processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta]
+    + platform_specific_processors,
+)
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+root_logger = logging.getLogger()
+root_logger.addHandler(handler)
+root_logger.setLevel(logging.INFO)
 
 app = Flask(__name__)
 
@@ -88,17 +127,22 @@ app.register_blueprint(config_blueprint)
 
 @app.before_request
 def before_request():
-    return before_request_add_start_time(request)
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        view=flask.request.path,
+        request_id=str(uuid.uuid4()),
+    )
+    before_request_add_start_time(request)
 
 
 @app.after_request
 def after_request(response):
-    return after_request_log_endpoint_metric(app.logger, request, response)
+    return after_request_log_endpoint_metric(request, response)
 
 
 @app.teardown_request
-def teardown_request(err=None):
-    teardown_request_log_endpoint_metric(app.logger, request, err)
+def teardown_request(err: Exception = None):
+    teardown_request_log_endpoint_metric(request, err)
 
 
 @app.errorhandler(requests.HTTPError)

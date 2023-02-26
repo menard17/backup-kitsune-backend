@@ -1,4 +1,4 @@
-import logging
+import structlog
 import re
 from functools import wraps
 from typing import Any, Callable
@@ -10,7 +10,7 @@ from flask import Response, request
 from utils import role_auth
 
 default_app = firebase_admin.initialize_app()
-log = logging.getLogger()
+log = structlog.get_logger()
 
 
 def jwt_authenticated(email_validation: bool = False):
