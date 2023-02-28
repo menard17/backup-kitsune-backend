@@ -97,7 +97,7 @@ class PractitionerService:
         modified_names = [name.get_name_with_lang() for name in names]
         practitioner_jsondict = {
             "resourceType": "Practitioner",
-            "active": True,
+            "active": False,
             "name": modified_names,
             "telecom": [{"system": "email", "value": email, "use": "work"}],
             "gender": gender,

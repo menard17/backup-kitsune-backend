@@ -3,6 +3,7 @@ Feature: Get Practitioner Roles
         Given a doctor
         And a nurse
         And a patient
+        When the doctor and the nurse get enabled
         Then the patient can fetch all doctors info
         And the patient can fetch all nurses info
         And practitioner can be included in practitioner role

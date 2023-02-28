@@ -53,6 +53,21 @@ def cannot_get_disabled_doctor(client: Client, patient: Patient, doctor: Practit
     )
     assert filtered_doctor_size == 0
 
+@when("the doctor and the nurse get enabled")
+def enable_doctor(client: Client, doctor: Practitioner, nurse: Practitioner):
+    doctor_token = get_token(doctor.uid)
+    doctor_role_id = doctor.fhir_data["id"]
+    client.patch(
+        f"/practitioner_roles/{doctor_role_id}?active=true",
+        headers={"Authorization": f"Bearer {doctor_token}"},
+    )
+
+    nurse_token = get_token(nurse.uid)
+    nurse_role_id = nurse.fhir_data["id"]
+    client.patch(
+        f"/practitioner_roles/{nurse_role_id}?active=true",
+        headers={"Authorization": f"Bearer {nurse_token}"},
+    )
 
 @then("the patient can fetch all doctors info")
 def get_doctor_details(
