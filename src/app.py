@@ -2,7 +2,6 @@ import os
 import sys
 import structlog
 import logging
-import orjson
 
 import requests
 import stripe
@@ -82,7 +81,7 @@ else:
     platform_specific_processors = [
         structlog.processors.format_exc_info,
         structlog.processors.dict_tracebacks,
-        structlog.processors.JSONRenderer(serializer=orjson.dumps),
+        structlog.processors.JSONRenderer(),
     ]
 formatter = structlog.stdlib.ProcessorFormatter(
     foreign_pre_chain=shared_processors,

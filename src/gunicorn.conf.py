@@ -1,6 +1,5 @@
 import structlog
 import sys
-import orjson
 
 # gunicorn Logging Configuration
 # gunicorn have a different set of logs, so we need to separately configure
@@ -20,7 +19,7 @@ if sys.stderr.isatty():
 else:
     custom_formatter = {
         "()": structlog.stdlib.ProcessorFormatter,
-        "processor": structlog.processors.JSONRenderer(serializer=orjson.dumps),
+        "processor": structlog.processors.JSONRenderer(),
         "foreign_pre_chain": pre_chain,
     }
 

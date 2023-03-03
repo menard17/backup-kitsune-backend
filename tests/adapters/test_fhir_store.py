@@ -88,7 +88,7 @@ def test_create_resource(mocker, session, url, test_patient_data):
     session.post.assert_called_once_with(
         "testurl/Patient",
         headers={"Content-Type": "application/fhir+json;charset=utf-8"},
-        data='{\n  "resourceType": "Patient"\n}',
+        data='{\n "resourceType": "Patient"\n}',
     )
     response.raise_for_status.assert_called_once()
 
@@ -130,7 +130,7 @@ def test_put_resource(mocker, session, url, test_patient_data):
     session.put.assert_called_once_with(
         "testurl/Patient/patient-id",
         headers={"Content-Type": "application/fhir+json;charset=utf-8"},
-        data='{\n  "resourceType": "Patient"\n}',
+        data='{\n "resourceType": "Patient"\n}',
     )
     response.raise_for_status.assert_called_once()
 

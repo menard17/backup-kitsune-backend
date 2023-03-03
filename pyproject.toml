@@ -25,7 +25,6 @@ fhir-resources = "6.1.0"
 flask = "2.0.2"
 werkzeug = "2.0.2"
 structlog = "^22.3.0"
-orjson = "^3.8.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
