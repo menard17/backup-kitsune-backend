@@ -1,5 +1,6 @@
 import structlog
 import sys
+from utils.logging import add_gcp_fields
 
 # gunicorn Logging Configuration
 # gunicorn have a different set of logs, so we need to separately configure
@@ -17,6 +18,7 @@ if sys.stderr.isatty():
         "foreign_pre_chain": pre_chain,
     }
 else:
+    pre_chain += [add_gcp_fields]
     custom_formatter = {
         "()": structlog.stdlib.ProcessorFormatter,
         "processor": structlog.processors.JSONRenderer(),

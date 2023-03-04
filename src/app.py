@@ -40,6 +40,7 @@ from utils.metric import (
 )
 from utils.notion_setup import NotionSingleton
 from utils.stripe_setup import StripeSingleton
+from utils.logging import add_gcp_fields
 
 # Structlog Logging Configuration
 # The below configuration is for output structured logging for this codebase.
@@ -79,6 +80,7 @@ if sys.stderr.isatty():
     ]
 else:
     platform_specific_processors = [
+        add_gcp_fields,
         structlog.processors.format_exc_info,
         structlog.processors.dict_tracebacks,
         structlog.processors.JSONRenderer(),
