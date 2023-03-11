@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from flask import Flask
 from jinja2 import Environment, FileSystemLoader
@@ -53,6 +54,11 @@ if __name__ == "__main__":
             endpoints[rule.endpoint] = {
                 "methods": str(rule.methods),
                 "rule": str(rule.rule),
+                "methodsEqualQuery": "(" + " OR ".join(rule.methods) + ")",
+                "urlRegexQuery": "{}{}".format(
+                    re.sub("<[a-zA-Z0-9_]+>", "[a-zA-Z0-9-]+", rule.rule.strip("/")),
+                    "(|/|\\?.*)$",
+                ),
             }
 
         template = env.get_template("dashboard.j2")
