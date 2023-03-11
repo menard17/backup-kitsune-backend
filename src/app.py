@@ -33,11 +33,6 @@ from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
 from blueprints.twilio_token import twilio_token_blueprint
 from blueprints.verifications import verifications_blueprint
-from utils.metric import (
-    after_request_log_endpoint_metric,
-    before_request_add_start_time,
-    teardown_request_log_endpoint_metric,
-)
 from utils.notion_setup import NotionSingleton
 from utils.stripe_setup import StripeSingleton
 from utils.logging import add_gcp_fields
@@ -133,17 +128,6 @@ def before_request():
         view=flask.request.path,
         request_id=str(uuid.uuid4()),
     )
-    before_request_add_start_time(request)
-
-
-@app.after_request
-def after_request(response):
-    return after_request_log_endpoint_metric(request, response)
-
-
-@app.teardown_request
-def teardown_request(err: Exception = None):
-    teardown_request_log_endpoint_metric(request, err)
 
 
 @app.errorhandler(requests.HTTPError)
