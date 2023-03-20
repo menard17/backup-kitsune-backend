@@ -15,6 +15,11 @@ def get_list_id() -> Response:
     return ConfigController().get_list_id()
 
 
+@config_blueprint.route("/questionnaire", methods=["GET"])
+def get_prequestionnaire_id() -> Response:
+    return ConfigController().get_prequestionnaire_id()
+
+
 class ConfigController:
     def get_list_id(self) -> Response:
         "This is a mitigation plan to have an env variable to contain list id."
@@ -24,6 +29,17 @@ class ConfigController:
             status=200,
             response=json.dumps(
                 {"patientQueueListId": LIST_ID},
+                default=json_serial,
+            ),
+        )
+
+    def get_prequestionnaire_id(self) -> Response:
+        PREQUESTIONNAIRE_ID = os.getenv("PREQUESTIONNAIRE_ID")
+
+        return Response(
+            status=200,
+            response=json.dumps(
+                {"prequestionnaireId": PREQUESTIONNAIRE_ID},
                 default=json_serial,
             ),
         )
