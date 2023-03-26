@@ -6,6 +6,7 @@ from typing import Dict
 import requests
 
 EMAIL_ENDPOINT = "https://prod-25.northcentralus.logic.azure.com:443/workflows/108894277fde4e4ea6d5894e8bd05b5a/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kP-CxO9SUX6sDVZIh6ItOR1E4inz62owZCR7Ml8vQSo"  # noqa: E501
+env = os.environ["ENV"]
 
 
 class EmailNotificationService:
@@ -22,7 +23,6 @@ class EmailNotificationService:
     ):
         date_format = "%Y/%m/%d"
         time_format = "%H:%M"
-        env = os.environ["ENV"]
         pay_load = {
             "env": env,
             "date": start.strftime(date_format),
