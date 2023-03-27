@@ -1,13 +1,13 @@
+import logging
 import os
 import sys
-import structlog
-import logging
+import uuid
 
+import flask
 import requests
 import stripe
-import flask
-import uuid
-from flask import Flask, request
+import structlog
+from flask import Flask
 from flask_cors import CORS
 
 from blueprints.accounts import account_blueprint
@@ -28,14 +28,15 @@ from blueprints.patients import patients_blueprint
 from blueprints.payments import payments_blueprint
 from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
+from blueprints.prequestionnaire import prequestionnaire_blueprint
 from blueprints.pubsub import pubsub_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
 from blueprints.twilio_token import twilio_token_blueprint
 from blueprints.verifications import verifications_blueprint
+from utils.logging import add_gcp_fields
 from utils.notion_setup import NotionSingleton
 from utils.stripe_setup import StripeSingleton
-from utils.logging import add_gcp_fields
 
 # Structlog Logging Configuration
 # The below configuration is for output structured logging for this codebase.
@@ -119,6 +120,7 @@ app.register_blueprint(verifications_blueprint)
 app.register_blueprint(pubsub_blueprint)
 app.register_blueprint(twilio_token_blueprint)
 app.register_blueprint(config_blueprint)
+app.register_blueprint(prequestionnaire_blueprint)
 
 
 @app.before_request

@@ -1,3 +1,5 @@
+import json
+
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
 
@@ -78,6 +80,10 @@ class FakeRequest:
 
     def args(self):
         return self.args
+
+    @property
+    def json(self):
+        return json.loads(self.data) if self.data else None
 
 
 class FakeAppointment:

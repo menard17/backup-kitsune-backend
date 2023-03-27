@@ -524,8 +524,7 @@ files = [
 pydantic = {version = ">=1.7.2", extras = ["email"]}
 
 [package.extras]
-all = ["Jinja2 (==2.11.1)", "MarkupSafe (==1.1.1)", "black", "certifi", "colorlog (==2.10.0)", "coverage", "fhirspec", "flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "flake8-isort (==3.0.0)", "isort (==4.3.21)", "mypy", "orjson (>=3.4.3)", "pytest (>5.4.0)", "pytest-cov (>=2.10.0)", "pytest-runner", "requests (==2.23.0)", "zest-releaser[recommended]"]
-orjson = ["orjson (>=3.4.3)"]
+all = ["Jinja2 (==2.11.1)", "MarkupSafe (==1.1.1)", "black", "certifi", "colorlog (==2.10.0)", "coverage", "fhirspec", "flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "flake8-isort (==3.0.0)", "isort (==4.3.21)", "mypy", "pytest (>5.4.0)", "pytest-cov (>=2.10.0)", "pytest-runner", "requests (==2.23.0)", "zest-releaser[recommended]"]
 test = ["black", "coverage", "flake8 (==3.8.3)", "flake8-bugbear (==20.1.4)", "flake8-isort (==3.0.0)", "isort (==4.3.21)", "mypy", "pytest (>5.4.0)", "pytest-cov (>=2.10.0)", "pytest-runner", "requests (==2.23.0)"]
 
 [[package]]
