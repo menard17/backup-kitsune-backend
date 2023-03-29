@@ -176,6 +176,22 @@ class PrequestionnaireController:
             extension=localization_list,
         )
 
+        if fhir_prequestionnaire.item[item_index].type == "choice":
+            old_options = list(map(lambda item: item.valueCoding.display, fhir_prequestionnaire.item[item_index].answerOption))
+            new_options = []
+            if updated_item.answerOption:
+                new_options = list(map(lambda item: item.valueCoding.display, updated_item.answerOption))
+
+            deleted_options = [option for option in old_options if option not in new_options]
+
+            for deleted_option in deleted_options:
+                for item in fhir_prequestionnaire.item or []:
+                    if not item.enableWhen:
+                        continue
+                    item.enableWhen = [
+                        ew for ew in item.enableWhen if ew.answerCoding.display != deleted_option
+                    ]
+
         fhir_prequestionnaire.item[item_index] = updated_item
 
         updated_prequestionnaire = self.resource_client.put_resource(
