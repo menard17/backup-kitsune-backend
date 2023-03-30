@@ -30,6 +30,7 @@ from blueprints.practitioner_roles import practitioner_roles_blueprint
 from blueprints.practitioners import practitioners_blueprint
 from blueprints.prequestionnaire import prequestionnaire_blueprint
 from blueprints.pubsub import pubsub_blueprint
+from blueprints.questionnaire_response import questionnaire_response_blueprint
 from blueprints.service_requests import service_requests_blueprint
 from blueprints.slots import slots_blueprint
 from blueprints.twilio_token import twilio_token_blueprint
@@ -118,6 +119,7 @@ app.register_blueprint(service_requests_blueprint)
 app.register_blueprint(slots_blueprint)
 app.register_blueprint(verifications_blueprint)
 app.register_blueprint(pubsub_blueprint)
+app.register_blueprint(questionnaire_response_blueprint)
 app.register_blueprint(twilio_token_blueprint)
 app.register_blueprint(config_blueprint)
 app.register_blueprint(prequestionnaire_blueprint)
