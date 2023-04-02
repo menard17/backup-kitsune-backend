@@ -104,3 +104,13 @@ Feature: Book Appointment
         Then the patient can join the lineup
         When the doctor updates the visit type to walk-in and change avaible time
         Then the doctor cannot pick up the appointment outside of the avaible time
+    Scenario: One doctor picks up and cancel the appointment in list
+        Given a patient
+        And a doctor
+        And an admin
+        When the admin creates a list
+        Then the patient can join the lineup
+        When the doctor updates the visit type to walk-in
+        Then the doctor picks up the appointment
+        When the doctor cancels the appointment
+        Then the appointment status is updated as cancelled

@@ -428,6 +428,21 @@ class AppointmentController:
         if not doctor_is_available:
             # change response message
             return Response(status=400, response="Doctor is not available")
+
+        # Create New Slot Bundle
+        slot_uuid = uuid1().urn
+        err, slot = self.slot_service.create_slot_bundle(
+            role_rid,
+            start.isoformat(),
+            end.isoformat(),
+            slot_uuid,
+            "busy",
+        )
+        if err is not None:
+            return Response(status=400, response=err.args[0])
+
+        resources.append(slot)
+
         # Create Appointment Bundle
         appointment_uuid = uuid1().urn
         (
@@ -437,7 +452,7 @@ class AppointmentController:
             role_rid,
             start.isoformat(),
             end.isoformat(),
-            None,
+            slot_uuid,
             patient_rid,
             "followup",
             None,

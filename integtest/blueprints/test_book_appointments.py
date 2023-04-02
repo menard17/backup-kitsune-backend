@@ -787,10 +787,6 @@ def update_visit_type_for_doctor_b(
 
 @when(parsers.parse("the doctor updates the visit type to {visit_type}"))
 def update_visit_type(visit_type: str, client: Client, practitioner: Practitioner):
-    jst = pytz.timezone("Asia/Tokyo")
-    now = datetime.now().astimezone(jst)
-    base_time = now.time().isoformat()
-    current_time_plus_ten_mins = (now + timedelta(minutes=50)).time().isoformat()
     role = practitioner.fhir_data
     token = get_token(practitioner.uid)
     resp = client.put(
@@ -800,8 +796,8 @@ def update_visit_type(visit_type: str, client: Client, practitioner: Practitione
                 "available_time": [
                     {
                         "daysOfWeek": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-                        "availableStartTime": base_time,
-                        "availableEndTime": current_time_plus_ten_mins,
+                        "availableStartTime": "00:00:00",
+                        "availableEndTime": "23:59:59",
                     },
                 ],
                 "visit_type": visit_type,
@@ -813,9 +809,11 @@ def update_visit_type(visit_type: str, client: Client, practitioner: Practitione
     assert resp.status_code == 200
 
 
-@then("the doctor picks up the appointment")
+@then("the doctor picks up the appointment", target_fixture="appointment")
 def doctor_pick_up_appointment_for_list(
-    client: Client, practitioner: Practitioner, queue: dict
+    client: Client,
+    practitioner: Practitioner,
+    queue: dict,
 ):
     token = get_token(practitioner.uid)
     practitioner_id = practitioner.practitioner_id
@@ -826,6 +824,7 @@ def doctor_pick_up_appointment_for_list(
     )
 
     assert resp.status_code == 201
+    return json.loads(resp.data)
 
 
 @then("the doctor B picks up the appointment")
@@ -908,3 +907,25 @@ def patient_not_in_the_list(client: Client, practitioner: Practitioner, queue: d
     )
     resp_list = json.loads(resp.data)["data"]
     assert "entry" not in resp_list
+
+
+@when("the doctor cancels the appointment", target_fixture="appointment")
+def doctor_cancel_appointment(
+    client: Client,
+    practitioner: Practitioner,
+    appointment: Appointment,
+):
+    token = get_token(practitioner.uid)
+    resp = client.put(
+        f"/appointments/{appointment['id']}/status",
+        data=json.dumps({"status": "cancelled", "email_notification": "false"}),
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    return json.loads(resp.data)
+
+
+@then("the appointment status is updated as cancelled")
+def check_appointment_status_cancelled(appointment):
+    assert appointment["status"] == "cancelled"

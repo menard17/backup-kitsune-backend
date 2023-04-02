@@ -1,12 +1,12 @@
 import json
 import uuid
-import pandas as pd
+from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple, TypedDict
 
+import pandas as pd
 from fhir.resources import construct_fhir_element
 from fhir.resources.domainresource import DomainResource
 
-from datetime import datetime
 from adapters.fhir_store import ResourceClient
 from utils.system_code import ServiceURL, SystemCode
 
@@ -179,18 +179,30 @@ class PractitionerRoleService:
                 return None, practitioner_name_list[0].dict()
         return Exception("No item found"), None
 
-    def schedule_is_available_for_doctor(self, role_id: uuid, startTime: datetime, endTime: datetime):
+    def schedule_is_available_for_doctor(
+        self, role_id: uuid, start_time: datetime, end_time: datetime
+    ):
         search_clause = [
             ("_id", role_id),
             ("active", str(True)),
             ("coding", "walk-in"),
         ]
-        practitioner_role = self.resource_client.search("PractitionerRole", search_clause)
+        practitioner_role = self.resource_client.search(
+            "PractitionerRole", search_clause
+        )
         practitioner_role_json = json.loads(practitioner_role.json())
         available_time = practitioner_role_json["entry"][0]["resource"]["availableTime"]
-        available_time_start = datetime.strftime(pd.to_datetime(available_time[0]['availableStartTime']), "%H:%M:00")
-        available_time_end = datetime.strftime(pd.to_datetime(available_time[0]['availableEndTime']), "%H:%M:00")
-        startTime_str = startTime.strftime("%H:%M:00")
-        endTime_str = endTime.strftime("%H:%M:00")
-        return (available_time_start <= startTime_str and available_time_end >= startTime_str and
-                available_time_start <= endTime_str and available_time_end >= endTime_str)
+        available_time_start = datetime.strftime(
+            pd.to_datetime(available_time[0]["availableStartTime"]), "%H:%M:00"
+        )
+        available_time_end = datetime.strftime(
+            pd.to_datetime(available_time[0]["availableEndTime"]), "%H:%M:00"
+        )
+        start_time_str = start_time.strftime("%H:%M:00")
+        end_time_str = end_time.strftime("%H:%M:00")
+        return (
+            available_time_start <= start_time_str
+            and available_time_end >= start_time_str
+            and available_time_start <= end_time_str
+            and available_time_end >= end_time_str
+        )
