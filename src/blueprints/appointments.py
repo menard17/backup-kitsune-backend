@@ -220,11 +220,15 @@ class AppointmentController:
             return Response(status=400, response=err.args[0])
 
         appointment_json = json.loads(appointment["resource"].json())
-        slot_id = appointment_json["slot"][0]["reference"].split("/")[1]
-        err, slot = self.slot_service.update_slot(slot_id, "free")
-        if err is not None:
-            return Response(status=400, response=err.args[0])
-        resources.append(slot)
+
+        # free slots, assuming at most one slot
+        slots = appointment_json["slot"]
+        if len(slots) > 0 and slots[0].get("reference"):
+            slot_id = slots[0]["reference"].split("/")[1]
+            err, slot = self.slot_service.update_slot(slot_id, "free")
+            if err is not None:
+                return Response(status=400, response=err.args[0])
+            resources.append(slot)
 
         resp = self.resource_client.create_resources(resources)
         resp = list(
@@ -429,20 +433,6 @@ class AppointmentController:
             # change response message
             return Response(status=400, response="Doctor is not available")
 
-        # Create New Slot Bundle
-        slot_uuid = uuid1().urn
-        err, slot = self.slot_service.create_slot_bundle(
-            role_rid,
-            start.isoformat(),
-            end.isoformat(),
-            slot_uuid,
-            "busy",
-        )
-        if err is not None:
-            return Response(status=400, response=err.args[0])
-
-        resources.append(slot)
-
         # Create Appointment Bundle
         appointment_uuid = uuid1().urn
         (
@@ -452,7 +442,7 @@ class AppointmentController:
             role_rid,
             start.isoformat(),
             end.isoformat(),
-            slot_uuid,
+            None,
             patient_rid,
             "followup",
             None,
