@@ -444,7 +444,7 @@ class AppointmentController:
             end.isoformat(),
             None,
             patient_rid,
-            "followup",
+            "walkin",
             None,
             appointment_uuid,
             "online",
