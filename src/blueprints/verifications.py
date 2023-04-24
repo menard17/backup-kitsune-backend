@@ -1,8 +1,9 @@
 import json
-import structlog
 
+import structlog
 from flask import Blueprint, request
 from flask.wrappers import Response
+from twilio.base.exceptions import TwilioRestException
 
 from services.verification_service import VerificationService
 from utils.middleware import jwt_authenticated
@@ -45,7 +46,7 @@ class VerficationController:
                 response=json.dumps({"status": verification_status}),
                 mimetype="application/json",
             )
-        except Exception:
+        except TwilioRestException:
             err_msg = (
                 f"There was a problem with starting verification. Input: {request_body}"
             )
@@ -74,7 +75,7 @@ class VerficationController:
                 response=json.dumps({"status": verification_check_status}),
                 mimetype="application/json",
             )
-        except Exception:
+        except TwilioRestException:
             err_msg = (
                 f"There was a problem with checking verification. Input: {request_body}"
             )

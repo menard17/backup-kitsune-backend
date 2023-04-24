@@ -1,3 +1,5 @@
+from twilio.base.exceptions import TwilioRestException
+
 from utils.twilio_setup import TwilioSingleton
 
 ALLOWED_CHANNELS = ["email", "sms"]
@@ -22,7 +24,13 @@ class VerificationService:
                 None,
             )
 
-        verification = self._service.verifications.create(to=to, channel=channel)
+        try:
+            verification = self._service.verifications.create(to=to, channel=channel)
+        except TwilioRestException as e:
+            if e.status == 400 and "Invalid parameter" in e.msg:
+                return Exception(f"bad start_verification call: {e.msg}"), None
+            # bubble up unexpected exception
+            raise e
 
         return None, verification.status
 

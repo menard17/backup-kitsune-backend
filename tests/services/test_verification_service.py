@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from twilio.base.exceptions import TwilioRestException
 
 from services.verification_service import VerificationService
 
@@ -24,6 +25,26 @@ def test_start_verification_disallowed_channels(twilio_service):
 
     assert err is not None
     assert err.args[0].startswith("Channel voice is not allowed")
+
+
+def test_start_verification_invalid_param_exception_handled(twilio_service):
+    verification_service = VerificationService(twilio_service)
+
+    def mock_create_raises_invalid_param_exception(to, channel):
+        raise TwilioRestException(
+            400,
+            "test-url",
+            "Unable to create record: Invalid parameter `To`: +8116921344",
+        )
+
+    twilio_service.verifications.create = mock_create_raises_invalid_param_exception
+
+    err, _ = verification_service.start_verification(
+        to="+8116921344", channel="sms", locale="ja"
+    )
+
+    assert err is not None
+    assert err.args[0].startswith("bad start_verification call:")
 
 
 def test_start_verification_unsupported_locales(twilio_service):
