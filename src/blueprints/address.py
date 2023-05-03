@@ -471,6 +471,8 @@ class AddressController:
         pref_code = code[0:3]
         with open(f"{BASE_PATH}/zip-{pref_code}.json") as f:
             data = json.load(f)
+        if isinstance(data, dict) and data.get(code) is None:
+            raise Exception("valid postal code")
         pref_data = data[code]
         street = None
         if len(pref_data) == 3:
@@ -523,6 +525,6 @@ def get_address():
     try:
         zipcode = request.args.get("zipcode")
         code = get_validated_processed_code(zipcode)
+        return AddressController.get_address_by_zip(code)
     except Exception as err:
         return Response(status=400, response=str(err))
-    return AddressController.get_address_by_zip(code)
