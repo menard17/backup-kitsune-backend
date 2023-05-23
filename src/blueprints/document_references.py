@@ -79,6 +79,11 @@ class DocumentReferenceController:
         pages = request_body.get("pages")
         if len(pages) == 0:
             return Response(status=400, response="at least one page should be added")
+        ok, err_msg = self.document_reference_service.check_create_document_reference(
+            pages
+        )
+        if not ok:
+            return Response(status=400, response=err_msg)
 
         subject_match = re.search("(Patient|Practitioner)/(.*)", subject)
         if not subject_match:

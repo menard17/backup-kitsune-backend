@@ -176,6 +176,26 @@ def test_create_document_reference_for_someoneelse():
     assert resp.data == b"patient can only create document references for him/herself"
 
 
+def test_create_document_reference_returns_bad_request_on_bad_pages_data():
+    resource_client = MockResourceClient()
+
+    controller = DocumentReferenceController(resource_client)
+    request_data = DOCUMENT_REFERENCE_POST_REQUEST
+    request_data["pages"] = [
+        {"urll": "https://bad-url.com", "dataa": "bad-data"},
+    ]
+    req = FakeRequest(
+        data=request_data,
+        claims={"roles": {"Patient": {"id": TEST_PATIENT_ID}}},
+    )
+    resp = controller.create_document_reference(req)
+
+    assert resp.status_code == 400
+    # error message from the
+    # `DocumentReferenceService.check_create_document_reference()` function
+    assert resp.data == b"Page data should have either `url` or `data`"
+
+
 def test_search_document_reference_for_oneself():
 
     tokyo_timezone = pytz.timezone("Asia/Tokyo")

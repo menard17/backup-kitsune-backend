@@ -10,6 +10,16 @@ class DocumentReferenceService:
     def __init__(self, resource_client: ResourceClient) -> None:
         self.resource_client = resource_client
 
+    def check_create_document_reference(self, pages) -> tuple[bool, str]:
+        """
+        Function to check whether the input is valid to create the document reference.
+        Returns a boolean indicating whether it if valid or not and a string as the error message.
+        """
+        for page in pages:
+            if not page.get("url") and not page.get("data"):
+                return False, "Page data should have either `url` or `data`"
+        return True, None
+
     def create_document_reference(
         self, subject, document_type, pages, practitioner_role_id, encounter_id
     ):
@@ -18,7 +28,7 @@ class DocumentReferenceService:
             content = {}
             if page.get("url"):
                 content["attachment"] = {"url": page["url"]}
-            if page.get("data"):
+            elif page.get("data"):
                 content["attachment"] = {
                     "data": page["data"],
                     "contentType": "text/xml;charset=utf-8",
