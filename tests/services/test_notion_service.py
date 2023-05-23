@@ -539,6 +539,71 @@ def test_sync_encounter_to_notion_when_gender_and_dob_is_missing(notion_client):
     )
 
 
+def test_sync_encounter_to_notion_address_without_use_as_home(notion_client):
+    """
+    Sometimes the patient data do not have the address with a specific "use" type.
+    It is likely older version of the app do not have it automatically set.
+    """
+    notion_service = NotionService(notion_client, TEST_ENCOUNTER_DATABASE_ID)
+
+    patient_data = PATIENT_DATA
+    patient_data["address"] = [
+        {
+            "city": "港区",
+            "line": ["1-1-1"],
+            "postalCode": "111-1111",
+            "state": "東京都",
+        }
+    ]
+    test_patient = Patient(**patient_data)
+
+    notion_service.sync_encounter_to_notion(
+        encounter_page_id=TEST_ENCOUNTER_PAGE_ID,
+        account=TEST_ACCOUNT,
+        appointment=TEST_APPOINTMENT,
+        patient=test_patient,
+        practitioner_role=TEST_PRACTITIONER_ROLE,
+        clinical_note=TEST_CLINICAL_NOTE,
+        medication_request=TEST_MEDICATION_REQUEST,
+        service_request=TEST_SERIVCE_REQUEST,
+        insurance_card=TEST_INSURANCE_CARD,
+        medical_card=TEST_MEDICAL_CARD,
+    )
+
+    notion_client.pages.update.assert_called_once_with(
+        page_id="test-encounter-page-id",
+        properties={
+            "delivery_date": {"date": {"start": "2022-09-05T10:28:00+09:00"}},
+            "email": {"rich_text": [{"text": {"content": "home-email@gmail.com"}}]},
+            "user_name": {"rich_text": [{"text": {"content": "Official Name"}}]},
+            "user_name_kana": {
+                "rich_text": [{"text": {"content": "kanaFamilyName kanaGivenName"}}]
+            },
+            "dob": {"rich_text": [{"text": {"content": "2020-08-20"}}]},
+            "phone_number": {"rich_text": [{"text": {"content": "08011111111"}}]},
+            "address": {"rich_text": [{"text": {"content": "111-1111 東京都 港区 1-1-1"}}]},
+            "emr": {"rich_text": [{"text": {"content": "TEST_CLINICAL_NOTE\n"}}]},
+            "prescription": {
+                "rich_text": [{"text": {"content": "ロキソニン&セルベックス\nトランサミン"}}]
+            },
+            "tests": {"rich_text": [{"text": {"content": "PCR検査施行"}}]},
+            "doctor": {"rich_text": [{"text": {"content": "Taro Yamada"}}]},
+            "insurance_card_front": {
+                "rich_text": [{"text": {"content": "https://test-front-url"}}]
+            },
+            "medical_card": {
+                "rich_text": [{"text": {"content": "https://test-medical-card-url\n"}}]
+            },
+            "gender": {"rich_text": [{"text": {"content": "female"}}]},
+            "account_id": {
+                "rich_text": [
+                    {"text": {"content": "393631e9-7a1d-48ac-a733-0bd649ca3d68"}}
+                ]
+            },
+        },
+    )
+
+
 def test_sync_encounter_to_notion_happy_path(notion_client):
     notion_service = NotionService(notion_client, TEST_ENCOUNTER_DATABASE_ID)
 

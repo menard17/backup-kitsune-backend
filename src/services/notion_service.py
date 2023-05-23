@@ -185,7 +185,14 @@ class NotionService:
         if patient is None:
             return ""
 
+        # try to find the house address first
         address = next((x for x in patient.address if x.use == "home"), None)
+
+        # older version of the app seems not having the "use" field specified.
+        # in that case, use the first address.
+        if address is None:
+            address = next((x for x in patient.address if x.use is None), None)
+
         if address is None:
             return ""
 
